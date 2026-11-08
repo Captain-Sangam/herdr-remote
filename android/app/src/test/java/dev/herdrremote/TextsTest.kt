@@ -6,6 +6,8 @@ import dev.herdrremote.ui.Texts
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
+import java.net.SocketTimeoutException
 
 class TextsTest {
     @Test
@@ -24,5 +26,14 @@ class TextsTest {
         assertTrue(Texts.error(ApiException(503, "hc unavailable")).contains("Herdr"))
         assertTrue(Texts.error(UnreachableException("x")).contains("not reachable"))
         assertTrue(Texts.error(RuntimeException("boom")).contains("Outcome unknown"))
+    }
+
+    @Test
+    fun anActionKeepsTheDaemonsReasonAndNothingElse() {
+        assertEquals("The prompt has moved on. Reload it.", Texts.actionError(ApiException(409, "x", "stale")))
+        assertEquals("The Mac cannot reach Herdr right now.", Texts.actionError(ApiException(503, "hc unavailable")))
+        for (e in listOf(UnreachableException("x"), SocketTimeoutException("timeout"), IOException("reset"), RuntimeException("boom"))) {
+            assertEquals(e.toString(), "Outcome unknown. Check the transcript before you send again.", Texts.actionError(e))
+        }
     }
 }

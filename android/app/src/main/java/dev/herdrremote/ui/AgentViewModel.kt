@@ -61,6 +61,9 @@ object Texts {
         is UnreachableException -> "The Mac is not reachable."
         else -> "Outcome unknown. Check the transcript before you send again."
     }
+
+    /** After an action: the daemon's own reply keeps its reason; any other failure may have reached the Mac. */
+    fun actionError(e: Throwable): String = if (e is ApiException) error(e) else result("outcome_unknown")
 }
 
 class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : ViewModel() {
@@ -138,7 +141,7 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 val res = api.decide(address, DecisionRequest(Uuid7.make(api.now()), if (approve) "approve" else "deny", p.turn, p.promptHash))
                 _note.value = Texts.result(res)
             } catch (e: Exception) {
-                _note.value = Texts.error(e)
+                _note.value = Texts.actionError(e)
             }
             _busy.value = false
             refreshPrompt()
@@ -155,7 +158,7 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 _note.value = Texts.result(api.message(address, MessageRequest(Uuid7.make(api.now()), text)))
                 onSent()
             } catch (e: Exception) {
-                _note.value = Texts.error(e)
+                _note.value = Texts.actionError(e)
             }
             _busy.value = false
         }

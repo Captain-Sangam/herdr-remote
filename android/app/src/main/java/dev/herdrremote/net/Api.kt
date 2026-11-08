@@ -3,7 +3,9 @@ package dev.herdrremote.net
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.Call
 import okhttp3.ConnectionSpec
+import okhttp3.EventListener
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -22,6 +24,18 @@ class ApiException(val status: Int, val error: String, val reason: String? = nul
 
 /** No endpoint answered; the view keeps its last data and shows its age. */
 class UnreachableException(message: String) : IOException(message)
+
+/**
+ * Tag of an action call. [started] is set once OkHttp begins to write the
+ * request: from then on the daemon may have received it, so the app never
+ * sends it again. Before that (connect refused, unknown host, a timeout
+ * before the TLS handshake ended) the next endpoint may be tried.
+ */
+class SentMark { @Volatile var started = false }
+
+object SentListener : EventListener() {
+    override fun requestHeadersStart(call: Call) { call.request().tag(SentMark::class.java)?.started = true }
+}
 
 val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 private val JSON = "application/json".toMediaType()
@@ -51,7 +65,8 @@ object Clients {
 /** The daemon's API (TDD section 3.4) with the phone-side timeouts of decision 5. */
 class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKeyEntry) {
     private val calls = Clients.base(pin, entry).build()
-    private val actions = calls.newBuilder().retryOnConnectionFailure(false).build()
+    /** Actions: 150 s to read, because the daemon waits for the Mac to go quiet and for hc to press the key. */
+    private val actions = calls.newBuilder().retryOnConnectionFailure(false).readTimeout(150, TimeUnit.SECONDS).eventListener(SentListener).build()
     private val sse = calls.newBuilder().readTimeout(30, TimeUnit.SECONDS).build()
     private val stream = calls.newBuilder().readTimeout(0, TimeUnit.SECONDS).build()
 
@@ -95,9 +110,6 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
     private inline fun <reified T> get(client: OkHttpClient, url: String): T =
         parse(client.newCall(Request.Builder().url(url).build()).execute()) { json.decodeFromString<T>(it) }
 
-    private inline fun <reified T> post(client: OkHttpClient, url: String, body: String): T =
-        parse(client.newCall(Request.Builder().url(url).post(body.toRequestBody(JSON)).build()).execute()) { json.decodeFromString<T>(it) }
-
     suspend fun hello(): Hello = withEndpoint { b ->
         val h: Hello = get(calls, "$b/v1/hello")
         store.clockOffsetMs = h.serverTimeMs - System.currentTimeMillis()
@@ -116,12 +128,35 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
     /** The Mac's clock, for UUIDv7 request ids. */
     fun now(): Long = System.currentTimeMillis() + store.clockOffsetMs
 
-    suspend fun decide(t: String, req: DecisionRequest): String = withEndpoint {
-        post<ResultBody>(actions, "$it/v1/terminals/$t/decision", json.encodeToString(DecisionRequest.serializer(), req)).result
-    }
+    suspend fun decide(t: String, req: DecisionRequest): String =
+        action("/v1/terminals/$t/decision", json.encodeToString(DecisionRequest.serializer(), req))
 
-    suspend fun message(t: String, req: MessageRequest): String = withEndpoint {
-        post<ResultBody>(actions, "$it/v1/terminals/$t/message", json.encodeToString(MessageRequest.serializer(), req)).result
+    suspend fun message(t: String, req: MessageRequest): String =
+        action("/v1/terminals/$t/message", json.encodeToString(MessageRequest.serializer(), req))
+
+    /**
+     * Posts one action. The next endpoint is tried only while the request was
+     * never sent (see [SentMark]). After that there is no retry of any kind: the
+     * failure is thrown as it is, and the phone shows "Outcome unknown".
+     */
+    private suspend fun action(path: String, body: String): String = withContext(Dispatchers.IO) {
+        var lastErr: IOException? = null
+        for (host in candidates()) {
+            val mark = SentMark()
+            try {
+                val req = Request.Builder().url("${base(host)}$path").post(body.toRequestBody(JSON)).tag(SentMark::class.java, mark).build()
+                val out = parse(actions.newCall(req).execute()) { json.decodeFromString(ResultBody.serializer(), it).result }
+                store.lastGood = host
+                return@withContext out
+            } catch (e: ApiException) {
+                store.lastGood = host
+                throw e
+            } catch (e: IOException) {
+                if (mark.started) throw e
+                lastErr = e
+            }
+        }
+        throw UnreachableException(lastErr?.message ?: "No endpoint is reachable")
     }
 
     /** The SSE stream. The caller reads the body and closes it. */
