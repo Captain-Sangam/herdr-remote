@@ -47,6 +47,7 @@ type Daemon struct {
 	adminLn    net.Listener
 	pairedPort int
 	state      *state
+	live       *liveManager
 	ctx        context.Context
 	cancel     context.CancelFunc
 }
@@ -86,6 +87,8 @@ func newDaemon(dir string, r *runner, pairedAddr, enrollAddr string) (*Daemon, e
 	d.pair = newPairing(d)
 	d.conns.init()
 	d.state = newState(d)
+	d.live = newLiveManager(d)
+	d.state.onSize = d.live.endTerminal
 	d.ctx, d.cancel = context.WithCancel(context.Background())
 	d.routes()
 	return d, nil
@@ -184,8 +187,8 @@ func (d *Daemon) revoke(id string) error {
 	return d.audit.write(auditLine{Action: "revoke", DeviceID: dev.ID})
 }
 
-// onRevoke lets later steps end a device's streams.
-func (d *Daemon) onRevoke(dev Device) {}
+// onRevoke ends the live views of a revoked device; its connections are already closed.
+func (d *Daemon) onRevoke(dev Device) { d.live.endDevice(dev.ID) }
 
 // connRegistry tracks open paired connections by client key, so a revoke can close them.
 type connRegistry struct {
