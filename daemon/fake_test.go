@@ -412,23 +412,6 @@ func (f *fake) emitEvent(typ, terminal string, seq int64, data string) {
 	f.emit(fmt.Sprintf(`{"jsonrpc":"2.0","method":"event","params":{"data":%s,"seq":%d,"terminal":%q,"type":%q}}`, data, seq, terminal, typ))
 }
 
-func splitLines(b []byte) [][]byte {
-	var out [][]byte
-	start := 0
-	for i, c := range b {
-		if c == '\n' {
-			if i > start {
-				out = append(out, b[start:i])
-			}
-			start = i + 1
-		}
-	}
-	if start < len(b) {
-		out = append(out, b[start:])
-	}
-	return out
-}
-
 func testCtx(t *testing.T) context.Context {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	t.Cleanup(cancel)

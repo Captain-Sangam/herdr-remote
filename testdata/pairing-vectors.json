@@ -1,0 +1,30 @@
+{
+ "note": "code = first 4 bytes of SHA-256(server SPKI DER || client SPKI DER), big-endian, mod 1000000, 6 digits",
+ "vectors": [
+  {
+   "server_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEiJbkyJFZ57b-wkoZy7jPYB0TuAl0Z3OmZywX7UofA979aySbif_dJCXS_bFOZFj7ht1yY-DoUuysyQliWyx9lA",
+   "client_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEzNFHPgyhSu1qds634yT48VJHdwtCbrPD2kOKDCNUTKuJ41FxFIBo7GV7wrFTHQNPUhZ9PRtgXIBLOqYWi_2CZQ",
+   "code": "610712"
+  },
+  {
+   "server_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE3w3A8Jf0qQ3Bg9PJ-YBApStoRa4VqB0Je6ODwwdYO0jSNn06qCHwnTmt7ulaw3xhp-livJNguZLc4HCLYK9EIw",
+   "client_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsAb40vaT5iRCWMR1xB6Qnzq0yC4y3-NOUwHYJws46vKiRxu-sDJHUCYHd-69N9PV0Jpc77cyUkZgMPAEI7vNaQ",
+   "code": "987653"
+  },
+  {
+   "server_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEVfo80J5AVxH1bF8Y77fPULzRTCIfrdxMl437O9EvOrr2E6O483nfLrwk3ZcOY9RCCbDYiqMYjosUZhhTqE7g1g",
+   "client_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEhLyCltnTgoWwWgk2elHk56qr53SZ2yZ5KlUdetd6B7YBz4yqR45gFo8MN3MDrmv3ho_o9eE2Izi06-7oQY_4Lw",
+   "code": "329283"
+  },
+  {
+   "server_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEy7GoVfblmNHCrk_MMOhO9dMqqSP2arb7QbAxfO86BJTN1nW66muL-2-aovTDnS_nQkNtzzV8-3QIoCWa2M2OAw",
+   "client_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBAwdKZtXZCezMhq7lx076QSpViDSuIp4dZhF2tlBsWoitEX-IGLCjHabKPxDjkY8SDgAKFn7WB29pc94i9B_mg",
+   "code": "338616"
+  },
+  {
+   "server_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEg-DKDEaHm5y2uIoVWS0C45-SAFdfRLxJOOaoaud4kvr-_86QdfNd97t4z6O6kD1NhNTPC4NZpmjwG-54BViIPA",
+   "client_spki_b64url": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfR0prMP8teioG_yD4L0APT89nxJg3tl15irHsgMjBM0ZgK_8s85_R7Kxx1vrvsSRbQ3DVZIYB1RIdhSGeaToTg",
+   "code": "000134"
+  }
+ ]
+}
