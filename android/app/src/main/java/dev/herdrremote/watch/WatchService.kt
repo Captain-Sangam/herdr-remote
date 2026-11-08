@@ -83,7 +83,7 @@ class WatchService : Service() {
             .setContentIntent(open(null))
             .build()
 
-    /** Private: the tab name and the kind. Public: a generic line. Never the command. */
+    /** The same generic line in the private and the public version: the tab name shows only inside the app. */
     private fun blocked(a: Agent): Notification {
         val public = NotificationCompat.Builder(this, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
@@ -91,8 +91,7 @@ class WatchService : Service() {
             .build()
         return NotificationCompat.Builder(this, CHANNEL_ALERTS)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle(a.label)
-            .setContentText(a.kind ?: "blocked")
+            .setContentTitle("An agent needs attention")
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(public)
             .setAutoCancel(true)
