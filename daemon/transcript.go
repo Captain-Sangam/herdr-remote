@@ -468,12 +468,19 @@ func (tr *transcripts) read(ctx context.Context, term *Terminal, cursorStr strin
 		}
 		cur = &c
 	}
-	if path := tr.claudeFile(term); path != "" {
-		return tr.filePage("claude", path, cur, claudeItems)
+	source, path, parse := "", "", claudeItems
+	if p := tr.claudeFile(term); p != "" {
+		source, path = "claude", p
+	} else if p := tr.codexFile(ctx, term); p != "" {
+		source, path, parse = "codex", p, codexItems
 	}
-	if path := tr.codexFile(ctx, term); path != "" {
-		return tr.filePage("codex", path, cur, codexItems)
+	if path != "" {
+		if pg := tr.filePage(source, path, cur, parse); pg != nil {
+			return pg, nil
+		}
 	}
+	// No source, a file that cannot be read, or one with no record that parses:
+	// terminal text. A cursor then belongs to another source: the phone starts again from the end.
 	if cur != nil {
 		return nil, errCursor
 	}
@@ -488,16 +495,34 @@ func (tr *transcripts) read(ctx context.Context, term *Terminal, cursorStr strin
 	return pg, nil
 }
 
-func (tr *transcripts) filePage(source, path string, cur *cursor, parse func([]byte) []transcriptItem) (*transcriptPage, error) {
-	recs, next, err := tr.page(path, cur)
-	if err != nil {
-		return nil, err
+// filePage returns one page of the file, or nil when the file cannot be read
+// or gives no record that parses, so the caller falls back to terminal text.
+// The first request (no cursor) pages back until it has an item or reaches
+// the start of the file. A later page with no item keeps its cursor.
+func (tr *transcripts) filePage(source, path string, cur *cursor, parse func([]byte) []transcriptItem) *transcriptPage {
+	first := cur == nil
+	pg := &transcriptPage{Source: source, Items: []transcriptItem{}}
+	for {
+		recs, next, err := tr.page(path, cur)
+		if err != nil {
+			return nil
+		}
+		for _, rec := range recs {
+			pg.Items = append(pg.Items, parse(rec)...)
+		}
+		pg.NextCursor = next
+		if !first || len(pg.Items) > 0 {
+			return pg
+		}
+		if next == "" {
+			return nil
+		}
+		c, err := decodeCursor(next)
+		if err != nil {
+			return nil
+		}
+		cur = &c
 	}
-	pg := &transcriptPage{Source: source, Items: []transcriptItem{}, NextCursor: next}
-	for _, rec := range recs {
-		pg.Items = append(pg.Items, parse(rec)...)
-	}
-	return pg, nil
 }
 
 func (d *Daemon) handleTranscript(w http.ResponseWriter, r *http.Request) {

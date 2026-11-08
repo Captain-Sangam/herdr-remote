@@ -414,3 +414,56 @@ func TestTranscriptNoSessionsFileFallsBack(t *testing.T) {
 		t.Fatalf("missing terminal: %d", st)
 	}
 }
+
+// A file that cannot be read, or one with no record that parses, falls back to
+// terminal text. The first request pages back past records that give no item;
+// a later page with no item keeps its cursor.
+func TestTranscriptFallsBackAndPagesPastEmptyPages(t *testing.T) {
+	f := setupTranscripts(t)
+	f.bindClaude(t, 4242, "sid-e")
+	path := f.claudeFile("sid-e")
+	att := `{"type":"attachment","attachment":{"x":1}}`
+	// Only metadata records: terminal text, no cursor.
+	writeLines(t, path, []string{att, att}, true)
+	st, pg, _ := f.get(t, "/v1/terminals/t1/transcript")
+	if st != 200 || pg.Source != "terminal" || len(pg.Items) != 1 || pg.Items[0].Text != "screen of t1" || pg.NextCursor != "" {
+		t.Fatalf("metadata only: %d %+v", st, pg)
+	}
+	// An unreadable file: terminal text.
+	writeLines(t, path, []string{claudeUser("hidden")}, true)
+	os.Chmod(path, 0)
+	st, pg, _ = f.get(t, "/v1/terminals/t1/transcript")
+	os.Chmod(path, 0o600)
+	if st != 200 || pg.Source != "terminal" || len(pg.Items) != 1 || pg.Items[0].Text != "screen of t1" {
+		t.Fatalf("unreadable: %d %+v", st, pg)
+	}
+	// The last page holds only metadata: the first request pages back to an item.
+	f.d.transcripts.pageSize = 120 // one record of 96 bytes, or two of 42, per page
+	writeLines(t, path, []string{claudeUser("one"), att, att}, true)
+	st, pg, _ = f.get(t, "/v1/terminals/t1/transcript")
+	if st != 200 || pg.Source != "claude" || len(pg.Items) != 1 || pg.Items[0].Text != "one" || pg.NextCursor != "" {
+		t.Fatalf("empty last page: %d %+v", st, pg)
+	}
+	// A later page with no item keeps its cursor.
+	writeLines(t, path, []string{claudeUser("one"), att, att, claudeUser("two")}, true)
+	st, pg, _ = f.get(t, "/v1/terminals/t1/transcript")
+	if st != 200 || len(pg.Items) != 1 || pg.Items[0].Text != "two" || pg.NextCursor == "" {
+		t.Fatalf("last page: %d %+v", st, pg)
+	}
+	st, pg, _ = f.get(t, "/v1/terminals/t1/transcript?cursor="+pg.NextCursor)
+	if st != 200 || len(pg.Items) != 0 || pg.NextCursor == "" {
+		t.Fatalf("middle page: %d %+v", st, pg)
+	}
+	cur := pg.NextCursor
+	st, pg, _ = f.get(t, "/v1/terminals/t1/transcript?cursor="+cur)
+	if st != 200 || len(pg.Items) != 1 || pg.Items[0].Text != "one" || pg.NextCursor != "" {
+		t.Fatalf("first page: %d %+v", st, pg)
+	}
+	// A cursor into a file that cannot be read now: 409, so the phone starts again from the end.
+	os.Chmod(path, 0)
+	st, _, raw := f.get(t, "/v1/terminals/t1/transcript?cursor="+cur)
+	os.Chmod(path, 0o600)
+	if st != 409 || raw["reason"] != "cursor" {
+		t.Fatalf("cursor into an unreadable file: %d %v", st, raw)
+	}
+}
