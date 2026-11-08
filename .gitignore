@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+*.iml
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.kotlin/
+daemon/herdr-remoted
+daemon/*.test
