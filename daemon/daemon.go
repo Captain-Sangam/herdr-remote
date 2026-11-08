@@ -46,6 +46,9 @@ type Daemon struct {
 	pairedSrv  *http.Server
 	adminLn    net.Listener
 	pairedPort int
+	state      *state
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 func defaultStateDir() string {
@@ -82,6 +85,9 @@ func newDaemon(dir string, r *runner, pairedAddr, enrollAddr string) (*Daemon, e
 	d.hc = newHC(r)
 	d.pair = newPairing(d)
 	d.conns.init()
+	d.state = newState(d)
+	d.ctx, d.cancel = context.WithCancel(context.Background())
+	d.routes()
 	return d, nil
 }
 
@@ -115,10 +121,12 @@ func (d *Daemon) start() error {
 		ln.Close()
 		return err
 	}
+	go d.state.run(d.ctx)
 	return nil
 }
 
 func (d *Daemon) stop() {
+	d.cancel()
 	d.pair.cancel()
 	if d.adminLn != nil {
 		d.adminLn.Close()
