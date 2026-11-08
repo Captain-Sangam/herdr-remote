@@ -59,6 +59,8 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
                         backoff = 1000L
                         _state.update { it.copy(connected = true) }
                         reconnected.tryEmit(Unit)
+                        // Refresh the clock offset and the endpoint list beside the stream, never before it.
+                        scope.launch { runCatching { api.hello() } }
                         read(resp)
                     }
                 } catch (e: IOException) {

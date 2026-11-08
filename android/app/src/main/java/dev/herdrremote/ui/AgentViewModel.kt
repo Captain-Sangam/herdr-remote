@@ -7,6 +7,7 @@ import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.Agent
 import dev.herdrremote.net.ApiException
 import dev.herdrremote.net.DecisionRequest
+import dev.herdrremote.net.HerdrApi
 import dev.herdrremote.net.MessageRequest
 import dev.herdrremote.net.PromptView
 import dev.herdrremote.net.TranscriptItem
@@ -142,6 +143,7 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 _note.value = Texts.result(res)
             } catch (e: Exception) {
                 _note.value = Texts.actionError(e)
+                resyncIfExpired(e, api)
             }
             _busy.value = false
             refreshPrompt()
@@ -159,8 +161,14 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 onSent()
             } catch (e: Exception) {
                 _note.value = Texts.actionError(e)
+                resyncIfExpired(e, api)
             }
             _busy.value = false
         }
+    }
+
+    /** A clock that drifted gets expired_request: resync it from /v1/hello. The action is not sent again. */
+    private fun resyncIfExpired(e: Throwable, api: HerdrApi) {
+        if (e is ApiException && e.reason == "expired_request") viewModelScope.launch { runCatching { api.hello() } }
     }
 }
