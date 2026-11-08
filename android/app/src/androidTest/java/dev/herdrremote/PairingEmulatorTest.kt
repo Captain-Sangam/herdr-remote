@@ -60,6 +60,13 @@ class PairingEmulatorTest {
             fail("connected with a wrong pin")
         } catch (e: IOException) {
         }
-        store.forget()
+        if (InstrumentationRegistry.getArguments().getString("keep") == "1") {
+            // Leave the app paired and watching, for the manual checks on the emulator.
+            store.macName = "10.0.2.2"
+            store.watch = true
+            dev.herdrremote.watch.WatchService.start(context)
+        } else {
+            store.forget()
+        }
     }
 }

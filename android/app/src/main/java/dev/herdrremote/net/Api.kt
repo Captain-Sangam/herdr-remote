@@ -57,11 +57,11 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
 
     private fun base(host: String) = "https://$host:${store.port}"
 
-    /** The last endpoint that worked first, then the others in order. */
+    /** The last endpoint that worked first (even if /v1/hello no longer lists it), then the others in order. */
     private fun candidates(): List<String> {
         val all = store.endpoints
         val last = store.lastGood
-        return if (last != null && last in all) listOf(last) + all.filter { it != last } else all
+        return if (last != null) listOf(last) + all.filter { it != last } else all
     }
 
     private suspend fun <T> withEndpoint(block: (String) -> T): T = withContext(Dispatchers.IO) {

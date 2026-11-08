@@ -25,6 +25,7 @@ function hrOpen(cols, rows) {
   document.getElementById('vp').content = 'width=' + w + ', user-scalable=yes';
 }
 function hrWrite(b64) {
+  if (!term) { hr.written(0); return; }
   const bin = atob(b64);
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);

@@ -16,6 +16,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.HerdrApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,8 +36,10 @@ const val CHUNK = 64 * 1024
 const val MAX_PENDING = 1024 * 1024
 
 /** Serves only the bundled assets. Every other request gets 403 and no navigation leaves the page. */
-class AssetOnlyClient(context: Context) : WebViewClient() {
+class AssetOnlyClient(context: Context, private val onReady: () -> Unit = {}) : WebViewClient() {
     private val loader = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context)).build()
+
+    override fun onPageFinished(view: WebView?, url: String?) { onReady() }
 
     fun intercept(url: android.net.Uri): WebResourceResponse =
         loader.shouldInterceptRequest(url) ?: WebResourceResponse("text/plain", "utf-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(ByteArray(0)))
@@ -56,6 +59,8 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
     private val acks = Channel<Int>(Channel.UNLIMITED)
     private var job: Job? = null
     @Volatile private var generation = 0
+    /** Completed once live.html has loaded; nothing is written before that. */
+    val ready = CompletableDeferred<Unit>()
 
     inner class Bridge {
         /** The only thing the page ever says: how many bytes xterm.js has drawn. */
@@ -79,6 +84,7 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
 
     private suspend fun run(gen: Int) {
         val api = app.api() ?: return
+        ready.await()
         var backoff = 500L
         while (scope.isActive && gen == generation) {
             try {
@@ -143,8 +149,8 @@ fun LiveView(app: HerdrRemoteApp, address: String, modifier: Modifier = Modifier
                 settings.displayZoomControls = false
                 settings.useWideViewPort = true
                 settings.loadWithOverviewMode = true
-                webViewClient = AssetOnlyClient(context)
                 val feed = LiveFeed(app, address, this)
+                webViewClient = AssetOnlyClient(context) { feed.ready.complete(Unit) }
                 addJavascriptInterface(feed.Bridge(), "hr")
                 tag = feed
                 loadUrl(LIVE_PAGE)
