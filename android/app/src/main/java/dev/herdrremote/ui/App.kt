@@ -89,10 +89,3 @@ fun Header(title: String, onBack: (() -> Unit)? = null, action: (@Composable () 
     }
 }
 
-@Composable
-fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize()) {
-        Header(address, onBack = onBack)
-        Text("The agent screen comes in the next step.", Modifier.padding(16.dp))
-    }
-}
