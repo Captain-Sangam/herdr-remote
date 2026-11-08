@@ -618,3 +618,49 @@ func TestMessageRefusedTargets(t *testing.T) {
 		t.Fatal("blocked refusal not audited")
 	}
 }
+
+// hc holds a key while someone types at the Mac and presses it when the Mac is
+// quiet. The daemon waits long enough for that, so the idle check after the key runs.
+func TestQueuedKeyGetsTheIdleCheck(t *testing.T) {
+	f := setupActions(t)
+	if f.d.actions.keyWait != 120*time.Second {
+		t.Fatalf("key wait %v", f.d.actions.keyWait)
+	}
+	ioregs := func() int {
+		n := 0
+		for _, c := range f.d.f.calls() {
+			if c[0] == "-c" {
+				n++
+			}
+		}
+		return n
+	}
+	f.d.f.setKeysDelay(500 * time.Millisecond)
+	f.d.f.onKeys("t1", `{"status":{"app":"claude-code","state":"done"},"turn":2}`)
+	// A wait shorter than hc's delivery: outcome_unknown, and no idle check after the key.
+	f.d.actions.keyWait = 100 * time.Millisecond
+	v := f.prompt(t, "t1")
+	before := ioregs()
+	if st, res := f.decide(t, "t1", uuid7(time.Now()), "approve", v.Turn, v.PromptHash); st != 200 || res["result"] != "outcome_unknown" {
+		t.Fatalf("short wait: %d %v", st, res)
+	}
+	if n := ioregs() - before; n != 1 {
+		t.Fatalf("%d idle reads with a short wait", n)
+	}
+	// The full wait covers the queued key: the idle check runs and the result is applied.
+	time.Sleep(600 * time.Millisecond)
+	f.d.f.setTerminal(claudeBlocked(3))
+	f.d.f.onKeys("t1", `{"status":{"app":"claude-code","state":"done"},"turn":4}`)
+	f.d.actions.keyWait = keyWaitTime
+	v = f.prompt(t, "t1")
+	before = ioregs()
+	if st, res := f.decide(t, "t1", uuid7(time.Now()), "approve", v.Turn, v.PromptHash); st != 200 || res["result"] != "applied" {
+		t.Fatalf("full wait: %d %v", st, res)
+	}
+	if n := ioregs() - before; n != 2 {
+		t.Fatalf("%d idle reads with the full wait", n)
+	}
+	if n := len(f.keys()); n != 2 {
+		t.Fatalf("%d keys", n)
+	}
+}

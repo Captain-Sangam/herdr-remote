@@ -19,6 +19,7 @@ const (
 	requestRetention = 10 * time.Minute // and remembered this long
 	messageLimit     = 4000
 	settleTime       = 3 * time.Second
+	keyWaitTime      = 120 * time.Second // hc holds a key while someone types at the Mac
 )
 
 type marker struct {
@@ -47,11 +48,12 @@ type actions struct {
 	locks    map[string]*sync.Mutex
 	rate     map[string][]time.Time
 	settle   time.Duration
-	perSec   int // actions allowed per device per second
+	keyWait  time.Duration // how long to wait for hc's reply to terminal.keys
+	perSec   int           // actions allowed per device per second
 }
 
 func newActions(d *Daemon) *actions {
-	a := &actions{d: d, reqs: map[string]*reqEntry{}, consumed: map[string]marker{}, locks: map[string]*sync.Mutex{}, rate: map[string][]time.Time{}, settle: settleTime, perSec: 2}
+	a := &actions{d: d, reqs: map[string]*reqEntry{}, consumed: map[string]marker{}, locks: map[string]*sync.Mutex{}, rate: map[string][]time.Time{}, settle: settleTime, keyWait: keyWaitTime, perSec: 2}
 	a.rebuild()
 	return a
 }
@@ -438,7 +440,9 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// From here on the phone may give up, but the key and the result still land.
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	// hc holds the key while someone types at the Mac, so the wait covers that
+	// queue and the idle check after the key runs when hc delivers it.
+	ctx, cancel := context.WithTimeout(context.Background(), a.keyWait)
 	defer cancel()
 	result := "outcome_unknown"
 	if _, err := d.hc.Keys(ctx, t, key); err == nil {
