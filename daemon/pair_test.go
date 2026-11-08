@@ -133,7 +133,7 @@ func (d *testDaemon) openPair(t *testing.T) qrFields {
 		t.Fatalf("matrix %d x %d", len(rows), len(rows[0]))
 	}
 	m := qrRe.FindStringSubmatch(d.pair.qrText())
-	if m == nil {
+	if m == nil || res["text"] != d.pair.qrText() {
 		t.Fatalf("qr text %q", d.pair.qrText())
 	}
 	port, _ := strconv.Atoi(m[3])

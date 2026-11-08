@@ -91,12 +91,14 @@ func (p *pairing) open() (map[string]any, error) {
 	go w.srv.ServeTLS(ln, "", "")
 	w.timer = time.AfterFunc(p.window, func() { p.expire(w) })
 	p.win = w
-	matrix, err := qrMatrix(p.qrTextLocked(w))
+	text := p.qrTextLocked(w)
+	matrix, err := qrMatrix(text)
 	if err != nil {
 		p.closeWindowLocked(pairNone)
 		return nil, err
 	}
-	return map[string]any{"matrix": matrix, "expires_at": w.expires.Unix()}, nil
+	// text is the same content as the matrix; the emulator and the manual checks enter it by hand.
+	return map[string]any{"matrix": matrix, "expires_at": w.expires.Unix(), "text": text}, nil
 }
 
 func (p *pairing) qrTextLocked(w *pairWindow) string {

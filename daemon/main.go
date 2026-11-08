@@ -106,7 +106,9 @@ func serve(dir string) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		log.Fatal(err)
 	}
-	if w, err := openRotating(filepath.Join(dir, "daemon.log")); err == nil {
+	logPath := filepath.Join(dir, "daemon.log")
+	if w, err := openRotating(logPath); err == nil {
+		os.Chmod(logPath, 0o600) // launchd creates it with the default mode
 		log.SetOutput(w)
 	}
 	r := &runner{progs: findPrograms()}
