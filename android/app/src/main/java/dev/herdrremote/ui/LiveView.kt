@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.Call
 import java.io.ByteArrayInputStream
 import java.io.IOException
 
@@ -52,12 +53,14 @@ class AssetOnlyClient(context: Context, private val onReady: () -> Unit = {}) : 
  * The live terminal: xterm.js at the terminal's own size, fed from
  * /v1/terminals/{t}/live with the flow control of decision 8. It reopens the
  * stream when it ends (a resize on the Mac), on an SSE reconnect, and when
- * more than 1 MiB is waiting.
+ * more than 1 MiB is waiting. stop() and reopen() cancel the stream's call,
+ * so the blocking read ends, the response closes and the Mac's attach ends.
  */
 class LiveFeed(private val app: HerdrRemoteApp, private val address: String, private val web: WebView) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val acks = Channel<Int>(Channel.UNLIMITED)
     private var job: Job? = null
+    private var call: Call? = null
     @Volatile private var generation = 0
     /** Completed once live.html has loaded; nothing is written before that. */
     val ready = CompletableDeferred<Unit>()
@@ -73,14 +76,24 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
         reopen()
     }
 
-    fun stop() { scope.cancel() }
+    @Synchronized
+    fun stop() {
+        scope.cancel()
+        call?.cancel()
+    }
 
     @Synchronized
     fun reopen() {
         generation++
         job?.cancel()
+        call?.cancel()
         job = scope.launch { run(generation) }
     }
+
+    /** The stream call of this generation, or null when stop() or reopen() came first. */
+    @Synchronized
+    private fun openCall(api: HerdrApi, host: String, gen: Int): Call? =
+        if (gen != generation || !scope.isActive) null else api.live(host, address).also { call = it }
 
     private suspend fun run(gen: Int) {
         val api = app.api() ?: return
@@ -103,8 +116,9 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
 
     private suspend fun stream(api: HerdrApi, gen: Int) {
         for (host in api.hosts()) {
+            val c = openCall(api, host, gen) ?: return
             try {
-                api.live(host, address).use { resp ->
+                api.open(c).use { resp ->
                     api.markGood(host)
                     val src = resp.body?.source() ?: return
                     val buf = ByteArray(CHUNK)
@@ -126,7 +140,7 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
                 }
                 return
             } catch (e: IOException) {
-                // next host
+                if (c.isCanceled()) return // the user left, or a reopen took over: not the next host
             }
         }
         throw IOException("no endpoint")

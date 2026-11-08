@@ -160,13 +160,17 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
     }
 
     /** The SSE stream. The caller reads the body and closes it. */
-    fun events(host: String): Response = open(sse, "${base(host)}/v1/events")
+    fun events(host: String): Response = open(sse.newCall(Request.Builder().url("${base(host)}/v1/events").build()))
 
-    /** The live terminal bytes. No read timeout: an idle terminal sends nothing. */
-    fun live(host: String, t: String): Response = open(stream, "${base(host)}/v1/terminals/$t/live")
+    /**
+     * The live terminal bytes, as a call the caller runs with [open] and can
+     * cancel to end the blocking read. No read timeout: an idle terminal sends nothing.
+     */
+    fun live(host: String, t: String): Call = stream.newCall(Request.Builder().url("${base(host)}/v1/terminals/$t/live").build())
 
-    private fun open(client: OkHttpClient, url: String): Response {
-        val resp = client.newCall(Request.Builder().url(url).build()).execute()
+    /** Runs a stream call. A reply that is not 2xx becomes an ApiException. */
+    fun open(call: Call): Response {
+        val resp = call.execute()
         if (!resp.isSuccessful) parse<Unit>(resp) { }
         return resp
     }
