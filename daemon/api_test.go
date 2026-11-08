@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -397,4 +399,57 @@ func TestRevokeEndsStreams(t *testing.T) {
 	if _, err := d.client(&cert, nil).Get(d.pairedURL("/v1/agents")); err == nil {
 		t.Fatal("revoked device reconnected")
 	}
+}
+
+// A revoke whose write of devices.json fails still ends the phone's access, and
+// a retry finds the device and writes the file (decision 7, amended).
+func TestRevokeThatFailsToSaveStillRevokes(t *testing.T) {
+	d := startTestDaemon(t)
+	seedAgents(d.f)
+	cert, dev := d.pairPhone(t, "p")
+	d.waitOK(t)
+	c := d.sse(t, &cert)
+	c.nextEvent(t, 5*time.Second)
+	devices := func() string {
+		b, _ := os.ReadFile(filepath.Join(d.dir, "devices.json"))
+		return string(b)
+	}
+	// The state directory takes no new file, so the atomic write fails.
+	os.Chmod(d.dir, 0o500)
+	err := d.revoke(dev.ID)
+	os.Chmod(d.dir, 0o700)
+	if err == nil {
+		t.Fatal("revoke with an unwritable state directory succeeded")
+	}
+	if !c.ended(2 * time.Second) {
+		t.Fatal("SSE survived the failed revoke")
+	}
+	if _, err := d.client(&cert, nil).Get(d.pairedURL("/v1/agents")); err == nil {
+		t.Fatal("revoked device reconnected after the failed save")
+	}
+	if !strings.Contains(devices(), dev.ID) {
+		t.Fatal("devices.json changed without a successful write")
+	}
+	if strings.Contains(auditOf(t, d.dir), `"action":"revoke"`) {
+		t.Fatal("revoke audited before it was saved")
+	}
+	// The retry finds the device and writes the file.
+	if err := d.revoke(dev.ID); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if strings.Contains(devices(), dev.ID) {
+		t.Fatal("device still in devices.json")
+	}
+	if strings.Count(auditOf(t, d.dir), `"action":"revoke"`) != 1 {
+		t.Fatalf("audit: %s", auditOf(t, d.dir))
+	}
+	if err := d.revoke(dev.ID); err == nil {
+		t.Fatal("third revoke found the device")
+	}
+}
+
+func auditOf(t *testing.T, dir string) string {
+	t.Helper()
+	b, _ := os.ReadFile(filepath.Join(dir, "audit.log"))
+	return string(b)
 }

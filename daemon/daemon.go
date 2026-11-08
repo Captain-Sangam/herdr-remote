@@ -172,12 +172,12 @@ func deviceOf(r *http.Request) *Device {
 	return d
 }
 
-// revoke deletes a device and ends its connections.
+// revoke marks the device as revoked, so the handshake and per-request checks
+// treat it as unknown, ends its connections and live views, then writes
+// devices.json without it. A failed write keeps the mark and returns the
+// error, so a retry finds the device and writes again.
 func (d *Daemon) revoke(id string) error {
-	dev, ok, err := d.devices.remove(id)
-	if err != nil {
-		return err
-	}
+	dev, ok := d.devices.mark(id)
 	if !ok {
 		return fmt.Errorf("no device %q", id)
 	}
@@ -188,6 +188,9 @@ func (d *Daemon) revoke(id string) error {
 		d.conns.closeAll(h)
 	}
 	d.onRevoke(dev)
+	if err := d.devices.drop(id); err != nil {
+		return err
+	}
 	return d.audit.write(auditLine{Action: "revoke", DeviceID: dev.ID})
 }
 

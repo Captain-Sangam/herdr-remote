@@ -18,9 +18,10 @@ type Device struct {
 }
 
 type deviceStore struct {
-	path string
-	mu   sync.RWMutex
-	list []Device
+	path    string
+	mu      sync.RWMutex
+	list    []Device
+	revoked map[string]bool // ids whose revoke is not yet written to the file; their keys are unknown
 }
 
 func openDevices(path string) (*deviceStore, error) {
@@ -49,7 +50,7 @@ func (s *deviceStore) bySPKI(h [32]byte) *Device {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for i := range s.list {
-		if s.list[i].SPKI == key {
+		if s.list[i].SPKI == key && !s.revoked[s.list[i].ID] {
 			d := s.list[i]
 			return &d
 		}
@@ -88,16 +89,41 @@ func (s *deviceStore) add(name string, h [32]byte) (Device, error) {
 	return d, s.saveLocked()
 }
 
-func (s *deviceStore) remove(id string) (Device, bool, error) {
+// mark marks a device as revoked: from now on its key is unknown. It stays in
+// the list, so a retry after a failed write finds it, until drop writes the file.
+func (s *deviceStore) mark(id string) (Device, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for i, x := range s.list {
+	for _, x := range s.list {
 		if x.ID == id {
-			s.list = append(s.list[:i:i], s.list[i+1:]...)
-			return x, true, s.saveLocked()
+			if s.revoked == nil {
+				s.revoked = map[string]bool{}
+			}
+			s.revoked[id] = true
+			return x, true
 		}
 	}
-	return Device{}, false, nil
+	return Device{}, false
+}
+
+// drop writes the file without the device, then forgets it. A failed write
+// keeps the device in the list with its mark, so a retry writes again.
+func (s *deviceStore) drop(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	old := s.list
+	s.list = old[:0:0]
+	for _, x := range old {
+		if x.ID != id {
+			s.list = append(s.list, x)
+		}
+	}
+	if err := s.saveLocked(); err != nil {
+		s.list = old
+		return err
+	}
+	delete(s.revoked, id)
+	return nil
 }
 
 func (s *deviceStore) saveLocked() error {
