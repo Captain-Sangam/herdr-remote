@@ -49,6 +49,7 @@ type Daemon struct {
 	state       *state
 	live        *liveManager
 	transcripts *transcripts
+	actions     *actions
 	ctx         context.Context
 	cancel      context.CancelFunc
 }
@@ -90,6 +91,7 @@ func newDaemon(dir string, r *runner, pairedAddr, enrollAddr string) (*Daemon, e
 	d.state = newState(d)
 	d.live = newLiveManager(d)
 	d.transcripts = newTranscripts(d)
+	d.actions = newActions(d)
 	d.state.onSize = d.live.endTerminal
 	d.ctx, d.cancel = context.WithCancel(context.Background())
 	d.routes()
