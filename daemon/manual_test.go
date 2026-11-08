@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -14,7 +15,8 @@ import (
 // TestManualServe is the harness for the manual checks: with HR_MANUAL_DIR set it
 // runs a daemon against the real hc and herdr-app on ports 17766/17767, pairs a
 // generated phone key, writes client.crt, client.key and port into that
-// directory, and serves until a file named stop appears there.
+// directory, and serves until a file named stop appears there. HR_MANUAL_PAGE
+// sets the transcript page size in bytes.
 //
 //	HR_MANUAL_DIR=/tmp/hr go test -run TestManualServe -count=1 -timeout 3h .
 //	curl --cert $D/client.crt --key $D/client.key -k https://127.0.0.1:17766/v1/agents
@@ -33,6 +35,9 @@ func TestManualServe(t *testing.T) {
 		t.Fatal(err)
 	}
 	d.adminPath = filepath.Join(os.TempDir(), "hr-manual-admin.sock")
+	if n, err := strconv.ParseInt(os.Getenv("HR_MANUAL_PAGE"), 10, 64); err == nil && n > 0 {
+		d.transcripts.pageSize = n // small pages make the three-page check possible on a short transcript
+	}
 	if err := d.start(); err != nil {
 		t.Fatal(err)
 	}

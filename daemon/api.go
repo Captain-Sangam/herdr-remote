@@ -18,6 +18,7 @@ func (d *Daemon) routes() {
 	d.mux.HandleFunc("GET /v1/terminals/{t}", d.handleTerminal)
 	d.mux.HandleFunc("GET /v1/events", d.handleEvents)
 	d.mux.HandleFunc("GET /v1/terminals/{t}/live", d.handleLive)
+	d.mux.HandleFunc("GET /v1/terminals/{t}/transcript", d.handleTranscript)
 }
 
 func (d *Daemon) handleHello(w http.ResponseWriter, r *http.Request) {

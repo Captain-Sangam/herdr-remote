@@ -29,27 +29,28 @@ func (c config) macIdle() time.Duration {
 }
 
 type Daemon struct {
-	dir        string
-	pairedAddr string
-	enrollAddr string
-	adminPath  string
-	r          *runner
-	hc         *HC
-	cert       tls.Certificate
-	devices    *deviceStore
-	audit      *auditLog
-	pair       *pairing
-	cfg        config
-	conns      connRegistry
-	mux        *http.ServeMux
-	pairedLn   net.Listener
-	pairedSrv  *http.Server
-	adminLn    net.Listener
-	pairedPort int
-	state      *state
-	live       *liveManager
-	ctx        context.Context
-	cancel     context.CancelFunc
+	dir         string
+	pairedAddr  string
+	enrollAddr  string
+	adminPath   string
+	r           *runner
+	hc          *HC
+	cert        tls.Certificate
+	devices     *deviceStore
+	audit       *auditLog
+	pair        *pairing
+	cfg         config
+	conns       connRegistry
+	mux         *http.ServeMux
+	pairedLn    net.Listener
+	pairedSrv   *http.Server
+	adminLn     net.Listener
+	pairedPort  int
+	state       *state
+	live        *liveManager
+	transcripts *transcripts
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 func defaultStateDir() string {
@@ -88,6 +89,7 @@ func newDaemon(dir string, r *runner, pairedAddr, enrollAddr string) (*Daemon, e
 	d.conns.init()
 	d.state = newState(d)
 	d.live = newLiveManager(d)
+	d.transcripts = newTranscripts(d)
 	d.state.onSize = d.live.endTerminal
 	d.ctx, d.cancel = context.WithCancel(context.Background())
 	d.routes()
