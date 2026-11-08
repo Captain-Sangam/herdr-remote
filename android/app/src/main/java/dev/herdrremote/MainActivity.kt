@@ -54,13 +54,19 @@ class MainActivity : FragmentActivity() {
 
     private fun authenticate() {
         val auth = BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-        when (BiometricManager.from(this).canAuthenticate(auth)) {
-            BiometricManager.BIOMETRIC_SUCCESS -> {}
-            else -> {
+        val status = BiometricManager.from(this).canAuthenticate(auth)
+        when (Gate.check(status)) {
+            Gate.Check.PROMPT -> {}
+            Gate.Check.OPEN -> {
                 // No biometric and no screen lock: there is nothing to ask for.
                 gateNote = "This phone has no screen lock, so the app cannot ask for one."
                 Gate.unlock()
                 locked = false
+                return
+            }
+            Gate.Check.ERROR -> {
+                // Stay locked. The Unlock button on the locked screen tries again.
+                gateNote = "The screen lock cannot be checked right now (code $status). Tap Unlock to try again."
                 return
             }
         }

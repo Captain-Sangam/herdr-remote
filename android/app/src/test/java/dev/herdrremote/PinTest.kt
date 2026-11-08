@@ -1,7 +1,9 @@
 package dev.herdrremote
 
+import androidx.biometric.BiometricManager
 import dev.herdrremote.net.Pairing
 import dev.herdrremote.net.PinnedTrust
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -87,5 +89,18 @@ class PinTest {
         assertTrue("five minutes locks", Gate.locked)
         assertTrue(Gate.shouldLock(null, 0))
         Gate.reset()
+    }
+
+    @Test
+    fun onlyAPhoneWithNoScreenLockOpensWithoutAPrompt() {
+        assertEquals(Gate.Check.PROMPT, Gate.check(BiometricManager.BIOMETRIC_SUCCESS))
+        assertEquals(Gate.Check.OPEN, Gate.check(BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED))
+        for (s in listOf(
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE, BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE,
+            BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED, BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED,
+            BiometricManager.BIOMETRIC_STATUS_UNKNOWN, -42,
+        )) {
+            assertEquals("status $s", Gate.Check.ERROR, Gate.check(s))
+        }
     }
 }
