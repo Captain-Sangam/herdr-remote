@@ -13,9 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import dev.herdrremote.ui.HerdrRemoteUi
 import dev.herdrremote.ui.LockedScreen
 
@@ -25,25 +22,17 @@ class MainActivity : FragmentActivity() {
     private var locked by mutableStateOf(Gate.locked)
     private var gateNote by mutableStateOf<String?>(null)
 
-    private val processObserver = object : DefaultLifecycleObserver {
-        override fun onStop(owner: LifecycleOwner) { Gate.onBackground(System.currentTimeMillis()) }
-        override fun onStart(owner: LifecycleOwner) {
-            Gate.onForeground(System.currentTimeMillis())
-            locked = Gate.locked
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Nothing from this app in the recents screen or in screenshots.
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(processObserver)
         setContent {
             if (locked) LockedScreen(note = gateNote, onUnlock = { authenticate() })
             else HerdrRemoteUi(app = application as HerdrRemoteApp, initialAddress = intent.getStringExtra(EXTRA_ADDRESS))
         }
     }
 
+    /** The process observer in [HerdrRemoteApp] has run by now: Android sends its ON_START during the activity's start. */
     override fun onResume() {
         super.onResume()
         locked = Gate.locked
@@ -80,10 +69,5 @@ class MainActivity : FragmentActivity() {
             }
         })
         prompt.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("Herdr Remote").setSubtitle("Unlock to see your agents").setAllowedAuthenticators(auth).build())
-    }
-
-    override fun onDestroy() {
-        ProcessLifecycleOwner.get().lifecycle.removeObserver(processObserver)
-        super.onDestroy()
     }
 }

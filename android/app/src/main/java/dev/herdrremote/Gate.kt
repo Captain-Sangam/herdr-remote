@@ -1,6 +1,8 @@
 package dev.herdrremote
 
 import androidx.biometric.BiometricManager
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 
 /**
  * The app gate (decision 14): locked at start and after 5 minutes in the
@@ -37,4 +39,14 @@ object Gate {
 
     /** For tests. */
     fun reset() { locked = true; backgroundedAt = null }
+
+    /**
+     * The one process-lifecycle observer, owned by the application. An activity's
+     * own observer dies with the activity on a swipe from recents, before Android
+     * reports the process as stopped, so the gate would never see the background.
+     */
+    class Observer(private val now: () -> Long = System::currentTimeMillis) : DefaultLifecycleObserver {
+        override fun onStop(owner: LifecycleOwner) { onBackground(now()) }
+        override fun onStart(owner: LifecycleOwner) { onForeground(now()) }
+    }
 }

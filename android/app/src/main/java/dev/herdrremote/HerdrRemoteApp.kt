@@ -1,6 +1,7 @@
 package dev.herdrremote
 
 import android.app.Application
+import androidx.lifecycle.ProcessLifecycleOwner
 import dev.herdrremote.net.DeviceKey
 import dev.herdrremote.net.HerdrApi
 import dev.herdrremote.net.Store
@@ -16,6 +17,7 @@ class HerdrRemoteApp : Application() {
         super.onCreate()
         store = Store(this)
         instance = this
+        ProcessLifecycleOwner.get().lifecycle.addObserver(Gate.Observer())
     }
 
     /** The API for the paired Mac, or null when not paired. */
