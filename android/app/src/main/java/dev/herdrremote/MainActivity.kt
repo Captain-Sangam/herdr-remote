@@ -2,7 +2,6 @@ package dev.herdrremote
 
 import android.os.Bundle
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -17,7 +16,9 @@ import dev.herdrremote.ui.HerdrRemoteUi
 import dev.herdrremote.ui.LockedScreen
 
 class MainActivity : FragmentActivity() {
-    companion object { const val EXTRA_ADDRESS = "address" }
+    companion object {
+        const val EXTRA_ADDRESS = "address"
+    }
 
     private var locked by mutableStateOf(Gate.locked)
     private var gateNote by mutableStateOf<String?>(null)
@@ -25,14 +26,24 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Nothing from this app in the recents screen or in screenshots.
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE,
+        )
         setContent {
             if (locked) LockedScreen(note = gateNote, onUnlock = { authenticate() })
-            else HerdrRemoteUi(app = application as HerdrRemoteApp, initialAddress = intent.getStringExtra(EXTRA_ADDRESS))
+            else
+                HerdrRemoteUi(
+                    app = application as HerdrRemoteApp,
+                    initialAddress = intent.getStringExtra(EXTRA_ADDRESS),
+                )
         }
     }
 
-    /** The process observer in [HerdrRemoteApp] has run by now: Android sends its ON_START during the activity's start. */
+    /**
+     * The process observer in [HerdrRemoteApp] has run by now: Android sends its ON_START during
+     * the activity's start.
+     */
     override fun onResume() {
         super.onResume()
         locked = Gate.locked
@@ -55,19 +66,34 @@ class MainActivity : FragmentActivity() {
             }
             Gate.Check.ERROR -> {
                 // Stay locked. The Unlock button on the locked screen tries again.
-                gateNote = "The screen lock cannot be checked right now (code $status). Tap Unlock to try again."
+                gateNote =
+                    "The screen lock cannot be checked right now (code $status). Tap Unlock to try again."
                 return
             }
         }
-        val prompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                Gate.unlock()
-                locked = false
-            }
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                gateNote = errString.toString()
-            }
-        })
-        prompt.authenticate(BiometricPrompt.PromptInfo.Builder().setTitle("Herdr Remote").setSubtitle("Unlock to see your agents").setAllowedAuthenticators(auth).build())
+        val prompt =
+            BiometricPrompt(
+                this,
+                ContextCompat.getMainExecutor(this),
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(
+                        result: BiometricPrompt.AuthenticationResult
+                    ) {
+                        Gate.unlock()
+                        locked = false
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        gateNote = errString.toString()
+                    }
+                },
+            )
+        prompt.authenticate(
+            BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Herdr Remote")
+                .setSubtitle("Unlock to see your agents")
+                .setAllowedAuthenticators(auth)
+                .build()
+        )
     }
 }

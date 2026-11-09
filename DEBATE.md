@@ -5,23 +5,25 @@ This file is the full record of how the design in `PRD.md` and `TDD.md` was reac
 Two stages:
 
 1. **Planning debate.** Two agents worked from the approved brief, in two rounds:
-   - Claude, model Opus 5.5 with xhigh effort, called the *Claude planner* below
-   - Codex, model GPT-6.1-Sol with xhigh effort, called the *Codex planner*.
+   - Claude, model Opus 5.5 with xhigh effort, called the _Claude planner_ below
+   - Codex, model GPT-6.1-Sol with xhigh effort, called the _Codex planner_.
 2. **Plan review.** Two fresh agents reviewed and corrected the resulting plan, in three rounds:
-   - Claude, model Fable 5.1, called the *Fable reviewer*
-   - Codex, model GPT-6-Astra, called the *Astra reviewer*.
+   - Claude, model Fable 5.1, called the _Fable reviewer_
+   - Codex, model GPT-6-Astra, called the _Astra reviewer_.
 
 All agents ran read-only in Herdr.app terminals: they could not edit files, and the orchestrator checked the repo after every round. The orchestrator wrote the brief, verified claims against the installed tools, settled the disputes, and wrote the plan and these documents.
 
 ## 0. The brief and the user's decisions
 
 **The request:**
+
 - An Android app to control Herdr sessions on the Mac.
 - Pairing by scanning a QR code that Herdr shows.
 - Screens: spaces, the agents in a space, an agents view, and per agent the chat transcript, approve actions, and a live view of the terminal "like screen sharing".
 - It must be safe and secure.
 
 **What the orchestrator found before the debate:**
+
 - Herdr.app (0.1.13) and herdr-core `hc` (0.1.18) are closed source, installed from a DMG. The design can only use their public interfaces:
   - the `hc` JSON-RPC API (`hc schema`), which also includes dangerous methods such as `machine.exec` and `file.write`
   - the `herdr-app ls` window model
@@ -29,11 +31,13 @@ All agents ran read-only in Herdr.app terminals: they could not edit files, and 
 - No Android SDK, Gradle or Tailscale on the Mac. Java 17 and Go are present.
 
 **The user's decisions, before any agent started:**
+
 1. **Reach:** a direct connection over Wi-Fi, or over Tailscale when away. No relay server.
 2. **Control:** watch, approve or deny, and send a message. No raw keyboard into the terminal.
 3. **Toolchain:** install the Android command-line tools with Homebrew, without Android Studio.
 
 **Criteria, in order:**
+
 1. Security.
 2. Works with Herdr as shipped.
 3. The smallest system.
@@ -136,6 +140,7 @@ Each agent got the orchestrator's synthesis, the verified facts, the draft, and 
 ### Claude planner (confidence 78)
 
 **Conceded:**
+
 - The PTY: a pipe is enough.
 - The `lsof` mapping, with two refinements:
   - npm-installed Codex shows `node` as the foreground process, so walk its child processes to find `codex`.
@@ -145,12 +150,14 @@ Each agent got the orchestrator's synthesis, the verified facts, the draft, and 
 - View-only questions, and the Mac-side confirmation at pairing.
 
 **Objected** to relying on the state check alone for repeated approvals:
+
 - Two phones tap Approve, or one phone retries. The first request passes the check and presses `1`.
 - The second gets the lock before Claude has reported "working", so the state, turn and hash still match, and it presses `1` again.
 - That key lands in the input box, or in a new dialog if one opens during the ~3 s quiet wait.
 - Its fix: an in-memory "pressed" marker per terminal that the check refuses, plus comparing the result of the key press.
 
 **Plan check:**
+
 - (a) Step 3's test revokes a live stream that does not exist until Step 5.
 - (b) A mod's `image()` only loads a file. An SVG QR code would therefore write the token to disk. Draw the QR with `div()` cells instead.
 - (c) The TLS handshake cannot see the request path, so unknown keys must be accepted only while pairing is open, limited to the enroll call. Enroll long-polls until Allow, and the token binds to the first key that uses it.
@@ -169,6 +176,7 @@ Each agent got the orchestrator's synthesis, the verified facts, the draft, and 
 **Objected** to the state-only check, with the same kind of sequence: the key is injected, the agent has not redrawn yet, the response is lost, and the retry passes the check. It proposed a durable action ID consumed before the key is sent, and "outcome unknown" without a second key, with a test that holds the status unchanged after the key, drops the response, retries, and asserts that only one key was pressed.
 
 **Plan check:**
+
 - The pairing design cannot work as written: a strict handshake also rejects new phones. Add a temporary listener used only for enrollment and advertised in the QR, and test that a fresh enrollment succeeds, not only that bad ones fail.
 - Define and test recovery after a resize: restart the observer for a fresh paint.
 - The biometric gate needs its own step and tests.
@@ -289,17 +297,20 @@ Each reviewer got the orchestrator's verdict on every finding from both reviewer
 **Accepted** the corrections for TLS resumption, the `exec` limit, half-open sockets, unverified prompt types, the TLS and key settings, logging, the foreground service and the QR drawing. **Withdrew** the message-tagging finding, because the orchestrator's probe refuted it.
 
 **Amended the Codex daemon-mode fix:**
+
 - As written, it still fails on this Mac. t1v (daemon mode) has two candidate rollouts after its start time. One of them belongs to t1x, which runs with `--no-daemon` in the same folder. "Several candidates" sends t1v to terminal text.
 - Fix: remove rollouts that the explicit lookups already bind to other terminals.
 - Also: the daemon closes idle rollouts, so a scan by modification time is right, and `lsof` on the daemon is not.
 
 **Amended the Mac-in-use guard:**
+
 - `HIDIdleTime` works here, but it sees only local keyboard and mouse input, and perhaps Screen Sharing (not verified). It does not see SSH, or `hc keys` from agents.
 - A mouse jiggler or any device with periodic reports would keep the Mac "in use" forever, so the phone could never approve.
 - Fix: make the threshold a setting, return the measured idle time in the refusal, and audit refusals.
 - A sleeping display is fine, because idle time only grows.
 
 **New findings:**
+
 - The audit line has no prompt hash or decision, so the consumed marker cannot be rebuilt after a restart as the plan claims. Nothing says the `dispatching` line is fsynced before the key, that a failed write refuses the action, or that the reload reads the rotated file.
 - `/v1/enroll` long-polls up to 120 s, but OkHttp's default 10 s read timeout would abort it before Allow. The planned check delayed the scan, not the Allow, so it would not catch this.
 - Opening the overlay always opened a pairing window, so revoking a lost phone also opened port 7767 for 120 s.
@@ -314,16 +325,19 @@ Its conclusion: nothing else material remained.
 **Amended the Codex daemon-mode fix:** a unique candidate is not an identity. Terminal A has had no prompt yet, so it has no rollout. Terminal B starts later in the same folder and makes one. A would show B's transcript. It required an exact binding or the terminal-text fallback.
 
 **Amended the Mac-in-use guard:**
+
 - The check ran before the lock, so a wait for the lock could make it arbitrarily stale.
 - Move it to just before the key, fail closed when the idle time cannot be read, and call it a heuristic.
 - Criterion 6 promised more than the guard delivers.
 
 **Amended the idempotency fix:**
+
 - Persist the request ID, a digest of the payload and the prompt hash before the action, and fail closed if that write fails.
 - Make sure rotation and the 10-minute window cannot forget IDs.
 - The message criterion must promise "at most once", not "exactly once".
 
 **Other amendments:**
+
 - Content-free logging must also cover the debug build that the testing section installs.
 - The transcript step said "never an error", but the plan also returns 409 for a stale cursor.
 
@@ -358,6 +372,7 @@ Its conclusion: nothing else material remained.
   - The threshold is a setting, and 0 turns the guard off.
   - An `ioreg` failure refuses.
   - The daemon rebuilds IDs and markers from both the current and the rotated audit log.
+
 - **Messages.** A fsynced line with the request ID and a SHA-256 of the text, sent at most once.
 - **Pairing and the overlay.**
   - Enrollment gets a 130 s client timeout, and a test with Allow given 60 s late.
@@ -393,6 +408,7 @@ The orchestrator wrote the corrected plan as drafts of the two final documents. 
   3. B's rollout is the only candidate, and A is the only Herdr terminal there, so the rule gives B's transcript to A.
 
   Neither `source: cli` nor an app-server lock ties a thread to a Herdr terminal. This contradicts the PRD's promise of transcripts "identified for certain".
+
 - **Not fixed: replay retention.** Request IDs were arbitrary UUIDs with no creation time that the daemon could check. After the daemon forgot an ID, it could not tell a replay from a new request. Two rotations could also drop IDs that were still valid. The PRD still promised that a message arrives "once".
 - **New, severity 7:** the PRD said every unpaired TLS connection is rejected, but the TDD needs an unpaired phone to complete TLS on the enrollment port. Built literally from the PRD, pairing is impossible.
 
@@ -404,6 +420,7 @@ The orchestrator wrote the corrected plan as drafts of the two final documents. 
   - a resumed thread has an old timestamp.
 
   Each can make it show another session's transcript.
+
 - **Herdr's launcher.** Herdr's own launcher for Codex runs plain `codex` (`shared.json`, `new-menu.agents[1].run = ["codex"]`), so daemon mode is the default for the user's agents. `hc --skill` already says Codex under hc must run with `--no-daemon`.
 - **The other findings** were checked against the drafts and are correct.
 
@@ -434,30 +451,30 @@ The orchestrator wrote the corrected plan as drafts of the two final documents. 
 
 ## 6. Summary of positions
 
-| Topic | Claude planner | Codex planner | Fable reviewer | Astra reviewer | Final |
-|---|---|---|---|---|---|
-| Live view | Stream through a PTY | 4 Hz text snapshots | Accepted the stream | Flow control needed | Stream through a pipe, with flow control |
-| Claude approve key | `1` | `enter` when Yes is selected | Accepted | Accepted | `1`, verified |
-| Enrollment | Path middleware | Mac confirmation, separate listener | Timeouts, overlay button | Per-listener checks | Separate listener, Mac Allow, 6-digit code |
-| Duplicate actions | 10-minute cache | Durable IDs | Rebuild from audit | Enforceable expiry | Audit log, UUIDv7 IDs, rate limit |
-| Codex transcript | Folder heuristic | Explicit ID or manual pick | Elimination rule: ready | Not an identity | Exact IDs only, with `--no-daemon` in setup |
-| Race with the Mac user | Not raised | Named the race | Guard is a heuristic | Guard runs last, fails closed | Idle guard, `uncertain`, accepted residual |
-| Questions | Digits 1 to 9 | Mac only | Not raised | Not raised | Mac only |
+| Topic                  | Claude planner       | Codex planner                       | Fable reviewer           | Astra reviewer                | Final                                       |
+| ---------------------- | -------------------- | ----------------------------------- | ------------------------ | ----------------------------- | ------------------------------------------- |
+| Live view              | Stream through a PTY | 4 Hz text snapshots                 | Accepted the stream      | Flow control needed           | Stream through a pipe, with flow control    |
+| Claude approve key     | `1`                  | `enter` when Yes is selected        | Accepted                 | Accepted                      | `1`, verified                               |
+| Enrollment             | Path middleware      | Mac confirmation, separate listener | Timeouts, overlay button | Per-listener checks           | Separate listener, Mac Allow, 6-digit code  |
+| Duplicate actions      | 10-minute cache      | Durable IDs                         | Rebuild from audit       | Enforceable expiry            | Audit log, UUIDv7 IDs, rate limit           |
+| Codex transcript       | Folder heuristic     | Explicit ID or manual pick          | Elimination rule: ready  | Not an identity               | Exact IDs only, with `--no-daemon` in setup |
+| Race with the Mac user | Not raised           | Named the race                      | Guard is a heuristic     | Guard runs last, fails closed | Idle guard, `uncertain`, accepted residual  |
+| Questions              | Digits 1 to 9        | Mac only                            | Not raised               | Not raised                    | Mac only                                    |
 
 ## 7. Timing
 
 All times are on 2026-11-08, IST.
 
-| Stage | Start | End | Duration |
-|---|---|---|---|
-| Brief written and approved | 01:05 | 01:13 | about 8 min |
-| Planning round 1 | 01:15 | 01:19 | 4 min 20 s |
-| Orchestrator verification (attach, approval probes) | 01:19 | 01:26 | about 7 min |
-| Planning round 2 | 01:27 | 01:30 | 3 min 10 s |
-| Plan written | 01:30 | 01:34 | about 4 min |
-| Review round 1 | 01:35 | 01:45 | 9 min 52 s |
-| Orchestrator verification (Codex daemon, edit prompts, tagging) | 01:45 | 01:52 | about 7 min |
-| Review round 2 | 01:53 | 01:57 | 4 min 23 s |
-| Drafts of PRD and TDD | 01:58 | 02:03 | about 5 min |
-| Review round 3 | 02:04 | 02:08 | 4 min 36 s |
-| Final fixes and publication | 02:08 | 02:20 | about 12 min |
+| Stage                                                           | Start | End   | Duration     |
+| --------------------------------------------------------------- | ----- | ----- | ------------ |
+| Brief written and approved                                      | 01:05 | 01:13 | about 8 min  |
+| Planning round 1                                                | 01:15 | 01:19 | 4 min 20 s   |
+| Orchestrator verification (attach, approval probes)             | 01:19 | 01:26 | about 7 min  |
+| Planning round 2                                                | 01:27 | 01:30 | 3 min 10 s   |
+| Plan written                                                    | 01:30 | 01:34 | about 4 min  |
+| Review round 1                                                  | 01:35 | 01:45 | 9 min 52 s   |
+| Orchestrator verification (Codex daemon, edit prompts, tagging) | 01:45 | 01:52 | about 7 min  |
+| Review round 2                                                  | 01:53 | 01:57 | 4 min 23 s   |
+| Drafts of PRD and TDD                                           | 01:58 | 02:03 | about 5 min  |
+| Review round 3                                                  | 02:04 | 02:08 | 4 min 36 s   |
+| Final fixes and publication                                     | 02:08 | 02:20 | about 12 min |

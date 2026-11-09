@@ -14,9 +14,9 @@ import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509TrustManager
 
 /**
- * Accepts only a leaf certificate whose SPKI SHA-256 equals the pin. Names and
- * addresses play no part, so LAN and Tailscale endpoints work the same way.
- * It is both the trust manager and the hostname verifier (TDD section 3.7).
+ * Accepts only a leaf certificate whose SPKI SHA-256 equals the pin. Names and addresses play no
+ * part, so LAN and Tailscale endpoints work the same way. It is both the trust manager and the
+ * hostname verifier (TDD section 3.7).
  */
 class PinnedTrust(private val pin: String) : X509TrustManager, HostnameVerifier {
     fun matches(chain: Array<out Certificate>?): Boolean {
@@ -36,17 +36,46 @@ class PinnedTrust(private val pin: String) : X509TrustManager, HostnameVerifier 
     override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
 
     override fun verify(hostname: String?, session: SSLSession?): Boolean =
-        try { matches(session?.peerCertificates) } catch (e: Exception) { false }
+        try {
+            matches(session?.peerCertificates)
+        } catch (e: Exception) {
+            false
+        }
 }
 
 /** Hands the TLS stack the Keystore key: the private key never leaves the Keystore. */
-class DeviceKeyManager(private val alias: String, private val entry: KeyStore.PrivateKeyEntry) : X509ExtendedKeyManager() {
-    override fun chooseClientAlias(keyType: Array<out String>?, issuers: Array<out Principal>?, socket: Socket?): String = alias
-    override fun chooseEngineClientAlias(keyType: Array<out String>?, issuers: Array<out Principal>?, engine: javax.net.ssl.SSLEngine?): String = alias
-    override fun getClientAliases(keyType: String?, issuers: Array<out Principal>?): Array<String> = arrayOf(alias)
+class DeviceKeyManager(private val alias: String, private val entry: KeyStore.PrivateKeyEntry) :
+    X509ExtendedKeyManager() {
+    override fun chooseClientAlias(
+        keyType: Array<out String>?,
+        issuers: Array<out Principal>?,
+        socket: Socket?,
+    ): String = alias
+
+    override fun chooseEngineClientAlias(
+        keyType: Array<out String>?,
+        issuers: Array<out Principal>?,
+        engine: javax.net.ssl.SSLEngine?,
+    ): String = alias
+
+    override fun getClientAliases(keyType: String?, issuers: Array<out Principal>?): Array<String> =
+        arrayOf(alias)
+
     override fun getCertificateChain(alias: String?): Array<X509Certificate>? =
-        if (alias == this.alias) entry.certificateChain.map { it as X509Certificate }.toTypedArray() else null
-    override fun getPrivateKey(alias: String?): PrivateKey? = if (alias == this.alias) entry.privateKey else null
-    override fun chooseServerAlias(keyType: String?, issuers: Array<out Principal>?, socket: Socket?): String? = null
-    override fun getServerAliases(keyType: String?, issuers: Array<out Principal>?): Array<String>? = null
+        if (alias == this.alias) entry.certificateChain.map { it as X509Certificate }.toTypedArray()
+        else null
+
+    override fun getPrivateKey(alias: String?): PrivateKey? =
+        if (alias == this.alias) entry.privateKey else null
+
+    override fun chooseServerAlias(
+        keyType: String?,
+        issuers: Array<out Principal>?,
+        socket: Socket?,
+    ): String? = null
+
+    override fun getServerAliases(
+        keyType: String?,
+        issuers: Array<out Principal>?,
+    ): Array<String>? = null
 }

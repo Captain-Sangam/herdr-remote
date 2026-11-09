@@ -17,7 +17,7 @@ if ! avdmanager list avd 2>/dev/null | grep -q 'Name: herdr-remote$'; then
   echo no | avdmanager create avd -n herdr-remote -k "$IMAGE" -d pixel_6
 fi
 
-printf 'sdk.dir=%s\n' "$SDK" > "$(dirname "$0")/../android/local.properties"
+printf 'sdk.dir=%s\n' "$SDK" >"$(dirname "$0")/../android/local.properties"
 
 echo "Done. For adb and the emulator on your PATH:"
 echo "  export ANDROID_HOME=$SDK"

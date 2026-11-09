@@ -27,7 +27,8 @@ export default class HerdrRemote extends View {
       for (;;) {
         const c = await nextCommand();
         if (c === "pair") this.startPair(cx);
-        else if (c === "allow" || c === "deny" || c === "cancel") this.decide(cx, c);
+        else if (c === "allow" || c === "deny" || c === "cancel")
+          this.decide(cx, c);
         else if (c === "focus") this.handle.focus();
       }
     });
@@ -35,7 +36,10 @@ export default class HerdrRemote extends View {
 
   async call(args) {
     const r = await exec(DAEMON, [...args, "--json"]);
-    if (r.code !== 0) throw new Error((r.stderr || r.stdout).trim() || `${args.join(" ")} failed`);
+    if (r.code !== 0)
+      throw new Error(
+        (r.stderr || r.stdout).trim() || `${args.join(" ")} failed`,
+      );
     return JSON.parse(r.stdout);
   }
 
@@ -134,7 +138,10 @@ export default class HerdrRemote extends View {
 
   // A closed overlay cancels any window it opened.
   async close(_cx) {
-    const open = this.pair !== null || this.status.state === "open" || this.status.state === "pending";
+    const open =
+      this.pair !== null ||
+      this.status.state === "open" ||
+      this.status.state === "pending";
     this.gen++;
     if (open) await exec(DAEMON, ["pair", "cancel"]);
   }
@@ -150,7 +157,7 @@ export default class HerdrRemote extends View {
       .children(
         rows.map((row) => {
           const runs = [];
-          for (let x = 0; x < row.length; ) {
+          for (let x = 0; x < row.length;) {
             let len = 1;
             while (x + len < row.length && row[x + len] === row[x]) len++;
             runs.push({ dark: row[x] === "1", len });
@@ -159,7 +166,15 @@ export default class HerdrRemote extends View {
           return h_flex()
             .h(cell)
             .flex_none()
-            .children(runs.map((r) => div().w(r.len * cell).h(cell).flex_none().bg(r.dark ? "#000000" : "#ffffff")));
+            .children(
+              runs.map((r) =>
+                div()
+                  .w(r.len * cell)
+                  .h(cell)
+                  .flex_none()
+                  .bg(r.dark ? "#000000" : "#ffffff"),
+              ),
+            );
         }),
       );
   }
@@ -188,28 +203,70 @@ export default class HerdrRemote extends View {
       return v_flex()
         .gap(10)
         .items_center()
-        .child(div().text_color(t.muted).child("Scan this with the Herdr Remote app"))
+        .child(
+          div()
+            .text_color(t.muted)
+            .child("Scan this with the Herdr Remote app"),
+        )
         .child(this.qr())
         .child(div().text_color(t.dim).text_size(12).child(`Expires at ${at}`))
-        .child(this.button(t, "cancel", "Cancel", false, (cx) => this.decide(cx, "cancel")));
+        .child(
+          this.button(t, "cancel", "Cancel", false, (cx) =>
+            this.decide(cx, "cancel"),
+          ),
+        );
     }
     if (st.state === "pending") {
       return v_flex()
         .gap(10)
         .items_center()
-        .child(div().text_color(t.muted).child(`Phone: ${st.device_name ?? ""}`))
-        .child(div().text_size(34).font_semibold().child(st.code ?? ""))
-        .child(div().text_color(t.muted).child("Allow only if the phone shows the same code."))
+        .child(
+          div()
+            .text_color(t.muted)
+            .child(`Phone: ${st.device_name ?? ""}`),
+        )
+        .child(
+          div()
+            .text_size(34)
+            .font_semibold()
+            .child(st.code ?? ""),
+        )
+        .child(
+          div()
+            .text_color(t.muted)
+            .child("Allow only if the phone shows the same code."),
+        )
         .child(
           h_flex()
             .gap(8)
-            .child(this.button(t, "deny", "Deny", false, (cx) => this.decide(cx, "deny")))
-            .child(this.button(t, "allow", "Allow", true, (cx) => this.decide(cx, "allow"))),
+            .child(
+              this.button(t, "deny", "Deny", false, (cx) =>
+                this.decide(cx, "deny"),
+              ),
+            )
+            .child(
+              this.button(t, "allow", "Allow", true, (cx) =>
+                this.decide(cx, "allow"),
+              ),
+            ),
         );
     }
-    if (st.state === "allowed" || st.state === "denied" || st.state === "expired") {
-      const text = st.state === "allowed" ? `Paired ${st.device_name ?? "the phone"}.` : st.state === "denied" ? "Pairing denied." : "Pairing expired.";
-      return v_flex().gap(10).items_center().child(div().child(text)).child(this.button(t, "done", "Done", true, (cx) => this.done(cx)));
+    if (
+      st.state === "allowed" ||
+      st.state === "denied" ||
+      st.state === "expired"
+    ) {
+      const text =
+        st.state === "allowed"
+          ? `Paired ${st.device_name ?? "the phone"}.`
+          : st.state === "denied"
+            ? "Pairing denied."
+            : "Pairing expired.";
+      return v_flex()
+        .gap(10)
+        .items_center()
+        .child(div().child(text))
+        .child(this.button(t, "done", "Done", true, (cx) => this.done(cx)));
     }
     const list = this.devices.length
       ? this.devices.map((d) =>
@@ -219,14 +276,33 @@ export default class HerdrRemote extends View {
             .gap(8)
             .py(4)
             .child(div().flex_1().truncate().child(d.name))
-            .child(div().text_color(t.dim).text_size(12).child((d.added ?? "").slice(0, 10)))
-            .child(this.button(t, `rm-${d.id}`, "Revoke", false, (cx) => this.revoke(cx, d.id))),
+            .child(
+              div()
+                .text_color(t.dim)
+                .text_size(12)
+                .child((d.added ?? "").slice(0, 10)),
+            )
+            .child(
+              this.button(t, `rm-${d.id}`, "Revoke", false, (cx) =>
+                this.revoke(cx, d.id),
+              ),
+            ),
         )
       : [div().text_color(t.muted).child("No phones are paired.")];
     return v_flex()
       .gap(6)
       .child(div().flex_1().min_h(0).overflow_y_scrollbar().children(list))
-      .child(h_flex().justify_end().gap(8).pt(8).child(this.button(t, "pair", "Pair a phone", true, (cx) => this.startPair(cx))));
+      .child(
+        h_flex()
+          .justify_end()
+          .gap(8)
+          .pt(8)
+          .child(
+            this.button(t, "pair", "Pair a phone", true, (cx) =>
+              this.startPair(cx),
+            ),
+          ),
+      );
   }
 
   render(cx) {
@@ -249,10 +325,14 @@ export default class HerdrRemote extends View {
       .child(
         h_flex()
           .items_center()
-          .child(div().flex_1().text_size(15).font_semibold().child("Herdr Remote"))
+          .child(
+            div().flex_1().text_size(15).font_semibold().child("Herdr Remote"),
+          )
           .child(div().text_size(11).text_color(t.dim).child("Esc")),
       )
-      .when(Boolean(this.error), (el) => el.child(div().text_color(t.blocked).text_size(12).child(this.error)))
+      .when(Boolean(this.error), (el) =>
+        el.child(div().text_color(t.blocked).text_size(12).child(this.error)),
+      )
       .child(this.body(t));
   }
 }

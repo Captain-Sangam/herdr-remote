@@ -12,7 +12,8 @@ import org.junit.Test
 class GateTest {
     private class Process : LifecycleOwner {
         val registry = LifecycleRegistry.createUnsafe(this)
-        override val lifecycle: Lifecycle get() = registry
+        override val lifecycle: Lifecycle
+            get() = registry
     }
 
     @Before fun fresh() = Gate.reset()
@@ -37,7 +38,8 @@ class GateTest {
         process.registry.addObserver(Gate.Observer { now })
         process.registry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         Gate.unlock()
-        // The activity is gone (a swipe from recents); only the process reports the stop, 700 ms later.
+        // The activity is gone (a swipe from recents); only the process reports the stop, 700 ms
+        // later.
         now = 700
         process.registry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         now = 700 + Gate.LOCK_AFTER_MS

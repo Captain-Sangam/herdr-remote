@@ -11,7 +11,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReducerTest {
-    private val snapshot = """[{"address":"t1","space":"Niti","tab":"main","where":"Niti / main","app":"claude-code","state":"blocked","kind":"permission","msg":"approve Bash: touch x","turn":2,"title":"t"},
+    private val snapshot =
+        """[{"address":"t1","space":"Niti","tab":"main","where":"Niti / main","app":"claude-code","state":"blocked","kind":"permission","msg":"approve Bash: touch x","turn":2,"title":"t"},
         {"address":"t3","space":"","tab":"","where":"Email / codex","app":"codex","state":"idle","turn":5,"title":""}]"""
 
     @Test
@@ -23,7 +24,15 @@ class ReducerTest {
         assertEquals("permission", s.agents["t1"]!!.kind)
         assertEquals(1000, s.updatedAt)
 
-        s = Reducer.reduce(s, Reducer.parse("agent", """{"address":"t3","app":"codex","state":"blocked","kind":"permission","turn":6,"title":""}""")!!, 2000)
+        s =
+            Reducer.reduce(
+                s,
+                Reducer.parse(
+                    "agent",
+                    """{"address":"t3","app":"codex","state":"blocked","kind":"permission","turn":6,"title":""}""",
+                )!!,
+                2000,
+            )
         assertEquals("blocked", s.agents["t3"]!!.state)
         assertEquals(6, s.agents["t3"]!!.turn)
         assertEquals(2000, s.updatedAt)
@@ -34,7 +43,15 @@ class ReducerTest {
         assertEquals(setOf("t3"), s.agents.keys)
 
         // missed: a fresh snapshot replaces everything that was there.
-        s = Reducer.reduce(s, Reducer.parse("snapshot", """[{"address":"t9","app":"pi","state":"working","turn":1,"title":""}]""")!!, 4000)
+        s =
+            Reducer.reduce(
+                s,
+                Reducer.parse(
+                    "snapshot",
+                    """[{"address":"t9","app":"pi","state":"working","turn":1,"title":""}]""",
+                )!!,
+                4000,
+            )
         assertEquals(setOf("t9"), s.agents.keys)
         assertNull(Reducer.parse("bogus", "{}"))
     }
@@ -43,7 +60,12 @@ class ReducerTest {
     fun blockedFirstInSortedList() {
         val s = Reducer.reduce(AgentsState(), Reducer.parse("snapshot", snapshot)!!, 1)
         val t3 = s.agents["t3"]!!.copy(state = "blocked", kind = "permission")
-        val sorted = s.copy(agents = s.agents + ("t0" to Agent(address = "t0", state = "idle")) + ("t3" to t3)).sorted
+        val sorted =
+            s.copy(
+                    agents =
+                        s.agents + ("t0" to Agent(address = "t0", state = "idle")) + ("t3" to t3)
+                )
+                .sorted
         assertEquals(listOf("t3", "t1", "t0"), sorted.map { it.address })
         assertTrue(sorted.takeWhile { it.blocked }.size == 2)
     }

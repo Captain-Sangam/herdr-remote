@@ -3,6 +3,8 @@ package dev.herdrremote
 import dev.herdrremote.net.Pairing
 import dev.herdrremote.net.PairingException
 import dev.herdrremote.net.Uuid7
+import java.io.File
+import java.util.Base64
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -11,11 +13,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import java.io.File
-import java.util.Base64
 
 class PairingTest {
-    private val good = "herdr-remote://pair?v=1&pin=QRnnziLATVClCScEmJy8DsE-pPDZtEf8qE0DItxf0W4&ep=192.168.1.3,100.64.0.9,mac.tail.ts.net&p=7766&ep_port=7767&t=abcDEF123_-&exp=2000000000"
+    private val good =
+        "herdr-remote://pair?v=1&pin=QRnnziLATVClCScEmJy8DsE-pPDZtEf8qE0DItxf0W4&ep=192.168.1.3,100.64.0.9,mac.tail.ts.net&p=7766&ep_port=7767&t=abcDEF123_-&exp=2000000000"
 
     @Test
     fun parsesAllFields() {
@@ -43,21 +44,34 @@ class PairingTest {
         expectFailure(good, nowSec = 2_000_000_001, contains = "expired")
         expectFailure(good.replace("&t=abcDEF123_-", ""), contains = "incomplete")
         expectFailure(good.replace("&ep_port=7767", ""), contains = "incomplete")
-        expectFailure(good.replace("ep=192.168.1.3,100.64.0.9,mac.tail.ts.net", "ep="), contains = "incomplete")
-        expectFailure(good.replace("pin=QRnnziLATVClCScEmJy8DsE-pPDZtEf8qE0DItxf0W4", "pin="), contains = "incomplete")
+        expectFailure(
+            good.replace("ep=192.168.1.3,100.64.0.9,mac.tail.ts.net", "ep="),
+            contains = "incomplete",
+        )
+        expectFailure(
+            good.replace("pin=QRnnziLATVClCScEmJy8DsE-pPDZtEf8qE0DItxf0W4", "pin="),
+            contains = "incomplete",
+        )
         expectFailure("https://example.com/pair?v=1", contains = "not a Herdr Remote")
         expectFailure("", contains = "not a Herdr Remote")
     }
 
     @Test
     fun codeMatchesSharedVectors() {
-        val file = listOf("../../testdata/pairing-vectors.json", "../testdata/pairing-vectors.json").map(::File).first { it.exists() }
+        val file =
+            listOf("../../testdata/pairing-vectors.json", "../testdata/pairing-vectors.json")
+                .map(::File)
+                .first { it.exists() }
         val vectors = Json.parseToJsonElement(file.readText()).jsonObject["vectors"]!!.jsonArray
         assertTrue(vectors.size >= 5)
         val dec = Base64.getUrlDecoder()
         vectors.forEachIndexed { i, el ->
             val v = el.jsonObject
-            val code = Pairing.code(dec.decode(v["server_spki_b64url"]!!.jsonPrimitive.content), dec.decode(v["client_spki_b64url"]!!.jsonPrimitive.content))
+            val code =
+                Pairing.code(
+                    dec.decode(v["server_spki_b64url"]!!.jsonPrimitive.content),
+                    dec.decode(v["client_spki_b64url"]!!.jsonPrimitive.content),
+                )
             assertEquals("vector $i", v["code"]!!.jsonPrimitive.content, code)
         }
     }

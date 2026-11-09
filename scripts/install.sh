@@ -20,7 +20,7 @@ chmod 700 "$STATE"
 echo "Building $BIN"
 (cd "$REPO/daemon" && go build -o "$BIN" .)
 
-cat > "$PLIST" <<PLIST
+cat >"$PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -48,10 +48,10 @@ if [ -d "$MOD" ] && [ ! -f "$MOD/$MARKER" ]; then
   exit 1
 fi
 mkdir -p "$MOD"
-sed "s|__HERDR_REMOTED__|$BIN|g" "$REPO/mod/herdr-remote/main.js" > "$MOD/main.js.tmp"
+sed "s|__HERDR_REMOTED__|$BIN|g" "$REPO/mod/herdr-remote/main.js" >"$MOD/main.js.tmp"
 mv "$MOD/main.js.tmp" "$MOD/main.js"
 cp "$REPO/mod/herdr-remote/mod.json" "$MOD/mod.json"
-: > "$MOD/$MARKER"
+: >"$MOD/$MARKER"
 echo "Mod installed at $MOD"
 herdr-app check "$MOD"
 

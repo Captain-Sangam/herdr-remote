@@ -1,37 +1,64 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" id="vp" content="width=device-width, user-scalable=yes">
-<link rel="stylesheet" href="xterm.css">
-<style>
-  html, body { margin: 0; background: #000; }
-  #t { padding: 4px; display: inline-block; }
-</style>
-</head>
-<body>
-<div id="t"></div>
-<script src="xterm.js"></script>
-<script>
-// Watch-only: disableStdin means xterm.js never emits input, and the page has
-// no way to send any. Kotlin pushes base64 chunks with hrWrite and waits for
-// hr.written() before the next one (decision 8).
-let term = null;
-function hrOpen(cols, rows) {
-  if (term) term.dispose();
-  term = new Terminal({ cols: cols, rows: rows, scrollback: 2000, disableStdin: true, cursorBlink: false, convertEol: false, theme: { background: '#000000' } });
-  term.open(document.getElementById('t'));
-  const w = term.element.offsetWidth + 8;
-  document.getElementById('vp').content = 'width=' + w + ', user-scalable=yes';
-}
-function hrWrite(b64) {
-  if (!term) { hr.written(0); return; }
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  term.write(bytes, function () { hr.written(bytes.length); });
-}
-function hrReset() { if (term) term.reset(); }
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      id="vp"
+      content="width=device-width, user-scalable=yes"
+    />
+    <link rel="stylesheet" href="xterm.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+      }
+      #t {
+        padding: 4px;
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="t"></div>
+    <script src="xterm.js"></script>
+    <script>
+      // Watch-only: disableStdin means xterm.js never emits input, and the page has
+      // no way to send any. Kotlin pushes base64 chunks with hrWrite and waits for
+      // hr.written() before the next one (decision 8).
+      let term = null;
+      function hrOpen(cols, rows) {
+        if (term) term.dispose();
+        term = new Terminal({
+          cols: cols,
+          rows: rows,
+          scrollback: 2000,
+          disableStdin: true,
+          cursorBlink: false,
+          convertEol: false,
+          theme: { background: "#000000" },
+        });
+        term.open(document.getElementById("t"));
+        const w = term.element.offsetWidth + 8;
+        document.getElementById("vp").content =
+          "width=" + w + ", user-scalable=yes";
+      }
+      function hrWrite(b64) {
+        if (!term) {
+          hr.written(0);
+          return;
+        }
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        term.write(bytes, function () {
+          hr.written(bytes.length);
+        });
+      }
+      function hrReset() {
+        if (term) term.reset();
+      }
+    </script>
+  </body>
 </html>

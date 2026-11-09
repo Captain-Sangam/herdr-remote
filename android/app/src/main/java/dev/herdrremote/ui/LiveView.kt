@@ -9,13 +9,13 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.HerdrApi
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,34 +29,55 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
-import java.io.ByteArrayInputStream
-import java.io.IOException
 
 const val LIVE_PAGE = "https://appassets.androidplatform.net/assets/xterm/live.html"
 const val CHUNK = 64 * 1024
 const val MAX_PENDING = 1024 * 1024
 
-/** Serves only the bundled assets. Every other request gets 403 and no navigation leaves the page. */
+/**
+ * Serves only the bundled assets. Every other request gets 403 and no navigation leaves the page.
+ */
 class AssetOnlyClient(context: Context, private val onReady: () -> Unit = {}) : WebViewClient() {
-    private val loader = WebViewAssetLoader.Builder().addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context)).build()
+    private val loader =
+        WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+            .build()
 
-    override fun onPageFinished(view: WebView?, url: String?) { onReady() }
+    override fun onPageFinished(view: WebView?, url: String?) {
+        onReady()
+    }
 
     fun intercept(url: android.net.Uri): WebResourceResponse =
-        loader.shouldInterceptRequest(url) ?: WebResourceResponse("text/plain", "utf-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(ByteArray(0)))
+        loader.shouldInterceptRequest(url)
+            ?: WebResourceResponse(
+                "text/plain",
+                "utf-8",
+                403,
+                "Blocked",
+                emptyMap(),
+                ByteArrayInputStream(ByteArray(0)),
+            )
 
-    override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest): WebResourceResponse = intercept(request.url)
-    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean = true
+    override fun shouldInterceptRequest(
+        view: WebView?,
+        request: WebResourceRequest,
+    ): WebResourceResponse = intercept(request.url)
+
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean =
+        true
 }
 
 /**
- * The live terminal: xterm.js at the terminal's own size, fed from
- * /v1/terminals/{t}/live with the flow control of decision 8. It reopens the
- * stream when it ends (a resize on the Mac), on an SSE reconnect, and when
- * more than 1 MiB is waiting. stop() and reopen() cancel the stream's call,
- * so the blocking read ends, the response closes and the Mac's attach ends.
+ * The live terminal: xterm.js at the terminal's own size, fed from /v1/terminals/{t}/live with the
+ * flow control of decision 8. It reopens the stream when it ends (a resize on the Mac), on an SSE
+ * reconnect, and when more than 1 MiB is waiting. stop() and reopen() cancel the stream's call, so
+ * the blocking read ends, the response closes and the Mac's attach ends.
  */
-class LiveFeed(private val app: HerdrRemoteApp, private val address: String, private val web: WebView) {
+class LiveFeed(
+    private val app: HerdrRemoteApp,
+    private val address: String,
+    private val web: WebView,
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val acks = Channel<Int>(Channel.UNLIMITED)
     private var job: Job? = null
@@ -68,7 +89,9 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
     inner class Bridge {
         /** The only thing the page ever says: how many bytes xterm.js has drawn. */
         @JavascriptInterface
-        fun written(n: Int) { acks.trySend(n) }
+        fun written(n: Int) {
+            acks.trySend(n)
+        }
     }
 
     fun start() {
@@ -93,7 +116,8 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
     /** The stream call of this generation, or null when stop() or reopen() came first. */
     @Synchronized
     private fun openCall(api: HerdrApi, host: String, gen: Int): Call? =
-        if (gen != generation || !scope.isActive) null else api.live(host, address).also { call = it }
+        if (gen != generation || !scope.isActive) null
+        else api.live(host, address).also { call = it }
 
     private suspend fun run(gen: Int) {
         val api = app.api() ?: return
@@ -102,7 +126,12 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
         while (scope.isActive && gen == generation) {
             try {
                 val term = api.terminal(address)
-                withContext(Dispatchers.Main) { web.evaluateJavascript("hrOpen(${term.cols.coerceIn(2, 500)}, ${term.rows.coerceIn(2, 300)})", null) }
+                withContext(Dispatchers.Main) {
+                    web.evaluateJavascript(
+                        "hrOpen(${term.cols.coerceIn(2, 500)}, ${term.rows.coerceIn(2, 300)})",
+                        null,
+                    )
+                }
                 while (acks.tryReceive().isSuccess) {}
                 stream(api, gen)
                 backoff = 500L
@@ -133,14 +162,17 @@ class LiveFeed(private val app: HerdrRemoteApp, private val address: String, pri
                             return
                         }
                         val b64 = Base64.encodeToString(buf, 0, n, Base64.NO_WRAP)
-                        withContext(Dispatchers.Main) { web.evaluateJavascript("hrWrite('$b64')", null) }
+                        withContext(Dispatchers.Main) {
+                            web.evaluateJavascript("hrWrite('$b64')", null)
+                        }
                         val acked = withTimeoutOrNull(5_000) { acks.receive() }
                         if (acked != null) pending -= acked
                     }
                 }
                 return
             } catch (e: IOException) {
-                if (c.isCanceled()) return // the user left, or a reopen took over: not the next host
+                if (c.isCanceled())
+                    return // the user left, or a reopen took over: not the next host
             }
         }
         throw IOException("no endpoint")
@@ -171,6 +203,9 @@ fun LiveView(app: HerdrRemoteApp, address: String, modifier: Modifier = Modifier
                 feed.start()
             }
         },
-        onRelease = { web -> (web.tag as? LiveFeed)?.stop(); web.destroy() },
+        onRelease = { web ->
+            (web.tag as? LiveFeed)?.stop()
+            web.destroy()
+        },
     )
 }

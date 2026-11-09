@@ -42,12 +42,17 @@ import kotlinx.coroutines.withContext
 
 sealed class PairState {
     data object Idle : PairState()
+
     data object Connecting : PairState()
+
     data class Code(val code: String) : PairState()
+
     data class Failed(val message: String) : PairState()
 }
 
-/** Pairing (TDD section 3.3): scan or paste the code, show the 6 digits, wait for Allow on the Mac. */
+/**
+ * Pairing (TDD section 3.3): scan or paste the code, show the 6 digits, wait for Allow on the Mac.
+ */
 @Composable
 fun PairScreen(app: HerdrRemoteApp, onPaired: () -> Unit) {
     val context = LocalContext.current
@@ -57,13 +62,16 @@ fun PairScreen(app: HerdrRemoteApp, onPaired: () -> Unit) {
     var name by remember { mutableStateOf(Build.MODEL.take(64)) }
 
     fun start(text: String) {
-        val link: PairingLink = try {
-            Pairing.parse(text)
-        } catch (e: PairingException) {
-            state = PairState.Failed(e.message ?: "Bad pairing code"); return
-        }
+        val link: PairingLink =
+            try {
+                Pairing.parse(text)
+            } catch (e: PairingException) {
+                state = PairState.Failed(e.message ?: "Bad pairing code")
+                return
+            }
         if (name.isBlank() || name.length > 64) {
-            state = PairState.Failed("Give this phone a name of 1 to 64 characters"); return
+            state = PairState.Failed("Give this phone a name of 1 to 64 characters")
+            return
         }
         state = PairState.Connecting
         scope.launch {
@@ -83,44 +91,89 @@ fun PairScreen(app: HerdrRemoteApp, onPaired: () -> Unit) {
                 runCatching { app.api()?.hello() }
                 onPaired()
             } catch (e: ApiException) {
-                state = PairState.Failed(
-                    when (e.status) {
-                        403 -> if (e.error == "denied") "The Mac denied this phone." else "The Mac refused this code: ${e.error}."
-                        410 -> "The pairing window closed before Allow. Click Pair a phone again on the Mac."
-                        else -> "The Mac answered ${e.status}: ${e.error}"
-                    },
-                )
+                state =
+                    PairState.Failed(
+                        when (e.status) {
+                            403 ->
+                                if (e.error == "denied") "The Mac denied this phone."
+                                else "The Mac refused this code: ${e.error}."
+                            410 ->
+                                "The pairing window closed before Allow. Click Pair a phone again on the Mac."
+                            else -> "The Mac answered ${e.status}: ${e.error}"
+                        }
+                    )
             } catch (e: Exception) {
-                state = PairState.Failed("Could not reach the Mac: ${e.message ?: e.javaClass.simpleName}")
+                state =
+                    PairState.Failed(
+                        "Could not reach the Mac: ${e.message ?: e.javaClass.simpleName}"
+                    )
             }
         }
     }
 
     fun scan() {
-        val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
-        GmsBarcodeScanning.getClient(context, options).startScan()
-            .addOnSuccessListener { barcode -> barcode.rawValue?.let { start(it) } ?: run { state = PairState.Failed("No code was read") } }
-            .addOnFailureListener { e -> state = PairState.Failed("Scanner unavailable: ${e.message}") }
+        val options =
+            GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
+        GmsBarcodeScanning.getClient(context, options)
+            .startScan()
+            .addOnSuccessListener { barcode ->
+                barcode.rawValue?.let { start(it) }
+                    ?: run { state = PairState.Failed("No code was read") }
+            }
+            .addOnFailureListener { e ->
+                state = PairState.Failed("Scanner unavailable: ${e.message}")
+            }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Text("Pair with your Mac", style = MaterialTheme.typography.headlineSmall)
-        Text("On the Mac, open Herdr Remote and click Pair a phone. Then scan the code it shows.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            "On the Mac, open Herdr Remote and click Pair a phone. Then scan the code it shows.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         when (val s = state) {
-            is PairState.Connecting -> Row { CircularProgressIndicator(Modifier.padding(end = 12.dp)); Text("Connecting to the Mac…") }
+            is PairState.Connecting ->
+                Row {
+                    CircularProgressIndicator(Modifier.padding(end = 12.dp))
+                    Text("Connecting to the Mac…")
+                }
             is PairState.Code -> {
                 Text(s.code, style = MaterialTheme.typography.displayMedium)
-                Text("If the Mac shows the same code, click Allow there. Otherwise click Deny.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "If the Mac shows the same code, click Allow there. Otherwise click Deny.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             is PairState.Failed -> Text(s.message, color = MaterialTheme.colorScheme.error)
             PairState.Idle -> {}
         }
         if (state !is PairState.Connecting && state !is PairState.Code) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("This phone's name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("This phone's name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
             Button(onClick = { scan() }, Modifier.fillMaxWidth()) { Text("Scan the QR code") }
             Spacer(Modifier.height(8.dp))
-            OutlinedTextField(value = pasted, onValueChange = { pasted = it }, label = { Text("Or paste the pairing link") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-            OutlinedButton(onClick = { start(pasted) }, Modifier.fillMaxWidth(), enabled = pasted.isNotBlank()) { Text("Pair with the pasted link") }
+            OutlinedTextField(
+                value = pasted,
+                onValueChange = { pasted = it },
+                label = { Text("Or paste the pairing link") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+            )
+            OutlinedButton(
+                onClick = { start(pasted) },
+                Modifier.fillMaxWidth(),
+                enabled = pasted.isNotBlank(),
+            ) {
+                Text("Pair with the pasted link")
+            }
         }
     }
 }

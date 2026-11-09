@@ -36,12 +36,12 @@ The result:
 
 The repo is new and empty. Herdr is closed source. The facts below come from the installed tools on 2026-11-08:
 
-| Tool | Version |
-|---|---|
-| Herdr.app | 0.1.13 |
-| herdr-core (`hc`) | 0.1.18 |
-| Claude Code | 2.1.295 |
-| codex-cli | 0.167.0 |
+| Tool              | Version |
+| ----------------- | ------- |
+| Herdr.app         | 0.1.13  |
+| herdr-core (`hc`) | 0.1.18  |
+| Claude Code       | 2.1.295 |
+| codex-cli         | 0.167.0 |
 
 ### 2.1 herdr-core API
 
@@ -155,26 +155,26 @@ Verified with `codex --no-daemon -s read-only -a on-request`. This version rejec
 
 Each row gives the decision, the reason, and the strongest alternative that lost. `DEBATE.md` has the full argument for each one.
 
-| # | Decision | Why | Rejected alternative |
-|---|---|---|---|
-| 1 | One Go daemon, `herdr-remoted`, runs as a per-user LaunchAgent. It is the only network listener. | One static binary with a good TLS stack and simple control of subprocesses. Go is installed. | Swift: the same function with more macOS-only code. A mod as the server: mods have no isolation and a 250 ms quit budget. |
-| 2 | The daemon uses three long-lived `hc connect` subprocesses: reads, events and actions. It runs every other program through one helper that accepts only fixed program paths and fixed argument shapes, with no shell. There is no generic pass-through to hc. | The raw API includes `machine.exec` and `file.write`. Actions wait for the Mac keyboard to go quiet and must not block reads. A subscribed connection carries only notifications. | A JSON-RPC proxy with a method filter: one filter bug exposes everything. |
-| 3 | Allowed hc use:<br>- `hello`, `terminal.list`, `terminal.get`, `terminal.read`, `events.subscribe`<br>- `terminal.send` with `force: false` and no `caller`<br>- `terminal.keys` with exactly one of `["1"]`, `["y"]`, `["esc"]`, called only from the approval code<br>- `hc attach --observe`.<br>A target must match `^t[0-9a-z]+$` (no `machine/` prefix), be `live`, and have `reported: true`. | It is the minimum for the requested screens. Each check fails toward a refusal. | `terminal.interrupt` or a keyboard: out of scope, by user decision. |
-| 4 | Two TLS listeners share one P-256 self-signed server key. The phone pins its SPKI SHA-256.<br>- **Paired listener, port 7766:** always on.<br>- **Enrollment listener, port 7767:** exists only while a pairing window is open. It serves only `POST /v1/enroll`.<br>Go settings on both: `MinVersion: tls.VersionTLS13`, `ClientAuth: tls.RequireAnyClientCert`, `SessionTicketsDisabled: true`, and all client checks in `VerifyConnection`, never in `VerifyPeerCertificate`.<br>Checks per listener:<br>- **7766:** the client SPKI hash must be in the device store. Each request looks the device up again.<br>- **7767:** the client must present one well-formed P-256 certificate. The token, bound to that SPKI, is the authorization. The device store is not used. | The handshake cannot see the request path. With two listeners, the paired listener never accepts an unknown key. `VerifyConnection` runs on all handshakes, including resumptions, but `VerifyPeerCertificate` does not. Tickets off stop a revoked phone that tries to resume a session. A key pin makes LAN and Tailscale addresses work the same way. | One listener with path middleware: unknown keys reach the HTTP parser while pairing is open. A relay: the user ruled it out. |
-| 5 | HTTP on the TLS listeners:<br>- JSON for reads and actions<br>- Server-Sent Events (SSE) for `/v1/events`, with a comment line every 10 s<br>- a chunked `application/octet-stream` body for the live view.<br>Phone read timeouts:<br>- SSE: 30 s, then reconnect<br>- live view: none, and the phone reopens each live view when SSE reconnects<br>- `/v1/enroll`: 130 s<br>- other calls: 15 s.<br>Action calls set `retryOnConnectionFailure(false)`. The listeners use TCP keepalive (the Go default, 15 s). Go uses the standard library plus a QR encoder. | The live view is watch-only, so one-way streams are enough. The SSE keepalive gives a liveness signal for the whole connection. An idle terminal sends no bytes, so the live view cannot have a read timeout. | WebSocket: needs a Go library and adds nothing here. No SSE timeout: a dead socket after a network change is never found. |
-| 6 | Pairing: see section 3.3. The overlay opens to the device list. Only **Pair a phone** opens a 120 s window and port 7767. The QR is drawn with run-length `div()` rows, with no file on disk and no countdown redraw. The phone confirms a 6-digit code, and the user clicks Allow on the Mac. | A leaked QR (a screen share, a photo) alone enrolls nothing. `exec` has a 30 s limit, so the overlay polls short status calls. A revoke must not open the enrollment port. | A token only: a QR seen on a screen share is enough. A hidden SVG file: avoids the mod reload but writes the token to disk. |
-| 7 | Revocation: `herdr-remoted devices rm <id>`, or Revoke in the overlay, deletes the device, closes its connections and ends its live-view subprocesses. | A lost phone loses access at once, with its open streams. | Certificate expiry only: too slow. |
-| 8 | Live view: section 3.4 gives the endpoint. The phone shows xterm.js in a locked-down WebView at the terminal's own `cols` and `rows`, scaled to the screen width, with pinch zoom.<br>- Flow control: base64 chunks of at most 64 KiB. Each chunk waits for the xterm.js `write` callback. At more than 1 MiB pending, Kotlin drops the queue and reopens the stream.<br>- On a `size` event, the daemon ends the live streams of that terminal. The phone reopens one for a fresh paint.<br>- A device can have at most 2 live views. | Verified: the stream is colored and incremental, with no PTY and no protocol decode. A fresh paint from `attach` makes it safe to drop a backlog. | `terminal.read` at 4 Hz: plain text and 250 ms steps. Unbounded writes: xterm.js drops data past its buffer limit. |
-| 9 | Transcripts: section 3.6 gives the three sources, in order: the Claude sessions file, the open rollout file of a Codex with `--no-daemon`, and terminal text. A Codex in daemon mode shows terminal text, with the hint "Start Codex with `--no-daemon` for the full transcript". Pages are aligned to records, and cursors are tied to the file. | Each source is an exact identity, verified on live agents. A wrong transcript is worse than terminal text, because the user reads it before an approval. | A folder match for daemon-mode Codex: three review rounds found cases where it shows another session (an outside client, an exited session, a resume). Codex's `state_5.sqlite`: undocumented, needs SQLite, and has no terminal binding either. |
-| 10 | Approvals: section 3.5 gives the full guard, in this order:<br>1. only `blocked` with `permission`, for `claude-code` or `codex`.<br>2. a known request ID returns its result.<br>3. a per-terminal lock.<br>4. the same turn, prompt hash and option markers.<br>5. a consumed marker.<br>6. the Mac-in-use guard.<br>7. a fsynced audit line.<br>8. exactly one key. | The keys and markers were verified on command and file-edit prompts for both agents. `1` selects Yes at any cursor position. `esc` is the only deny that does not depend on option order. The marker and request IDs stop retries and second phones, and the audit log keeps them through a restart. The idle guard closes the main path to the race. | A separate durable store: the audit log already is one. `enter` on a selected Yes: depends on the cursor. No guard: a key could approve a prompt that nobody saw. |
-| 11 | Questions (`kind: question`), `auth` prompts, Pi and unknown apps are view-only. The phone says "Answer this on the Mac". | The user scoped control to approve, deny and message. Question menus differ, so a digit can pick the wrong answer. | Digits 1 to 9: one wrong parse answers for the user. |
-| 12 | Messages: `POST /message {request_id, text}` calls `terminal.send` with `force: false` and no `caller`, so the text arrives as a plain prompt.<br>- Targets: live terminals with `reported: true`.<br>- The daemon removes C0 and C1 control characters, but keeps `\n` and `\t`. The limit is 4000 characters.<br>- A fsynced `dispatching` audit line `{request_id, terminal, length}` comes first. It has the text length, never the text or a hash of it. If the write fails, the daemon returns 503 and sends nothing.<br>- Delivery is at most once for each `request_id`.<br>- A blocked agent refuses the message. | It matches the scope. The filter stops input that tries to break out of the paste. The request ID stops a retry that sends the prompt twice. A `caller` would tag the text as a report from another agent. | Raw keys: out of scope. |
-| 13 | Background alerts: an opt-in foreground service holds `/v1/events`. Section 3.7 lists the manifest. It shows one notification for each blocked episode (terminal, turn, `msg`). After a reconnect, the snapshot shows agents that are still blocked. Alerts come only while the service runs and is connected. | No relay or push service, by user decision. `specialUse` is not on the Android 15 list of types that `BOOT_COMPLETED` cannot start. | FCM: needs a server and Google credentials. `dataSync`: limited to 6 hours a day on Android 15. |
-| 14 | Phone key and privacy: section 3.7 gives the key parameters. The key is not bound to an unlocked device. The app asks for BiometricPrompt after 5 minutes in the background, sets `FLAG_SECURE`, and uses private notifications. Transcripts and terminal bytes stay in memory. No build logs content. Notifications have no action buttons. | A key bound to an unlocked device makes each handshake fail while the phone is locked, which stops alerts. The gate, `FLAG_SECURE` and private notifications keep project data off the lock screen and out of recents. | `setUnlockedDeviceRequired`: stops background alerts. Full text in notifications: shows commands on the lock screen. |
-| 15 | Android stack: Kotlin and Jetpack Compose, minSdk 31, targetSdk 35. OkHttp for TLS, SSE and streams. kotlinx.serialization. Google Play services code scanner (no camera permission). androidx.biometric. xterm.js 5.x as a bundled asset. One activity, ViewModels, no DI framework. | The smallest standard stack. | Termux terminal-view: a JitPack dependency and more glue code. React Native or Flutter: more toolchain. |
-| 16 | Spaces and agents:<br>- `/v1/spaces` runs `herdr-app ls` on each request, and also on created, removed and labels events. It drops spaces whose `machine` is set.<br>- An agent is a live local terminal with `reported: true`. Its space comes from `herdr-app ls`, or else from its `herdr.space` label.<br>- If Herdr.app is not open, the API groups agents by their `where` label under "Herdr window closed". | A space rename causes no hc event. Remote machines are out of scope. | A poll timer: a refresh on request is simpler and always current. |
-| 17 | Logging and audit: section 3.6 gives the formats. `audit.log` records every pairing event, revocation, decision, refusal and message. `dispatching` lines are fsynced before any key or send. Logs never contain tokens, codes, keys, transcript text, terminal bytes or message text. | The user needs a record of what a phone did. The audit log also keeps request IDs through a restart. | No audit: no way to see what a lost phone did. |
-| 18 | Trust boundary: processes that run as the same macOS user are trusted. They can already drive hc directly, read `server.key` and `devices.json`, or run `herdr-remoted pair allow`. File modes cannot stop them. The design protects against the network (LAN and tailnet), leaked QR codes, lost phones, second phones, replays, and hostile bytes in terminal output or transcripts. | File permissions cannot separate processes of one user. A clear statement prevents false assurance. | A separate macOS user or a Keychain-protected key: real isolation, but much more setup, and agents can still drive hc. |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Why                                                                                                                                                                                                                                                                                                                                                      | Rejected alternative                                                                                                                                                                                                                             |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | One Go daemon, `herdr-remoted`, runs as a per-user LaunchAgent. It is the only network listener.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | One static binary with a good TLS stack and simple control of subprocesses. Go is installed.                                                                                                                                                                                                                                                             | Swift: the same function with more macOS-only code. A mod as the server: mods have no isolation and a 250 ms quit budget.                                                                                                                        |
+| 2   | The daemon uses three long-lived `hc connect` subprocesses: reads, events and actions. It runs every other program through one helper that accepts only fixed program paths and fixed argument shapes, with no shell. There is no generic pass-through to hc.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | The raw API includes `machine.exec` and `file.write`. Actions wait for the Mac keyboard to go quiet and must not block reads. A subscribed connection carries only notifications.                                                                                                                                                                        | A JSON-RPC proxy with a method filter: one filter bug exposes everything.                                                                                                                                                                        |
+| 3   | Allowed hc use:<br>- `hello`, `terminal.list`, `terminal.get`, `terminal.read`, `events.subscribe`<br>- `terminal.send` with `force: false` and no `caller`<br>- `terminal.keys` with exactly one of `["1"]`, `["y"]`, `["esc"]`, called only from the approval code<br>- `hc attach --observe`.<br>A target must match `^t[0-9a-z]+$` (no `machine/` prefix), be `live`, and have `reported: true`.                                                                                                                                                                                                                                                                                                                                                                           | It is the minimum for the requested screens. Each check fails toward a refusal.                                                                                                                                                                                                                                                                          | `terminal.interrupt` or a keyboard: out of scope, by user decision.                                                                                                                                                                              |
+| 4   | Two TLS listeners share one P-256 self-signed server key. The phone pins its SPKI SHA-256.<br>- **Paired listener, port 7766:** always on.<br>- **Enrollment listener, port 7767:** exists only while a pairing window is open. It serves only `POST /v1/enroll`.<br>Go settings on both: `MinVersion: tls.VersionTLS13`, `ClientAuth: tls.RequireAnyClientCert`, `SessionTicketsDisabled: true`, and all client checks in `VerifyConnection`, never in `VerifyPeerCertificate`.<br>Checks per listener:<br>- **7766:** the client SPKI hash must be in the device store. Each request looks the device up again.<br>- **7767:** the client must present one well-formed P-256 certificate. The token, bound to that SPKI, is the authorization. The device store is not used. | The handshake cannot see the request path. With two listeners, the paired listener never accepts an unknown key. `VerifyConnection` runs on all handshakes, including resumptions, but `VerifyPeerCertificate` does not. Tickets off stop a revoked phone that tries to resume a session. A key pin makes LAN and Tailscale addresses work the same way. | One listener with path middleware: unknown keys reach the HTTP parser while pairing is open. A relay: the user ruled it out.                                                                                                                     |
+| 5   | HTTP on the TLS listeners:<br>- JSON for reads and actions<br>- Server-Sent Events (SSE) for `/v1/events`, with a comment line every 10 s<br>- a chunked `application/octet-stream` body for the live view.<br>Phone read timeouts:<br>- SSE: 30 s, then reconnect<br>- live view: none, and the phone reopens each live view when SSE reconnects<br>- `/v1/enroll`: 130 s<br>- other calls: 15 s.<br>Action calls set `retryOnConnectionFailure(false)`. The listeners use TCP keepalive (the Go default, 15 s). Go uses the standard library plus a QR encoder.                                                                                                                                                                                                              | The live view is watch-only, so one-way streams are enough. The SSE keepalive gives a liveness signal for the whole connection. An idle terminal sends no bytes, so the live view cannot have a read timeout.                                                                                                                                            | WebSocket: needs a Go library and adds nothing here. No SSE timeout: a dead socket after a network change is never found.                                                                                                                        |
+| 6   | Pairing: see section 3.3. The overlay opens to the device list. Only **Pair a phone** opens a 120 s window and port 7767. The QR is drawn with run-length `div()` rows, with no file on disk and no countdown redraw. The phone confirms a 6-digit code, and the user clicks Allow on the Mac.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | A leaked QR (a screen share, a photo) alone enrolls nothing. `exec` has a 30 s limit, so the overlay polls short status calls. A revoke must not open the enrollment port.                                                                                                                                                                               | A token only: a QR seen on a screen share is enough. A hidden SVG file: avoids the mod reload but writes the token to disk.                                                                                                                      |
+| 7   | Revocation: `herdr-remoted devices rm <id>`, or Revoke in the overlay, deletes the device, closes its connections and ends its live-view subprocesses.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | A lost phone loses access at once, with its open streams.                                                                                                                                                                                                                                                                                                | Certificate expiry only: too slow.                                                                                                                                                                                                               |
+| 8   | Live view: section 3.4 gives the endpoint. The phone shows xterm.js in a locked-down WebView at the terminal's own `cols` and `rows`, scaled to the screen width, with pinch zoom.<br>- Flow control: base64 chunks of at most 64 KiB. Each chunk waits for the xterm.js `write` callback. At more than 1 MiB pending, Kotlin drops the queue and reopens the stream.<br>- On a `size` event, the daemon ends the live streams of that terminal. The phone reopens one for a fresh paint.<br>- A device can have at most 2 live views.                                                                                                                                                                                                                                         | Verified: the stream is colored and incremental, with no PTY and no protocol decode. A fresh paint from `attach` makes it safe to drop a backlog.                                                                                                                                                                                                        | `terminal.read` at 4 Hz: plain text and 250 ms steps. Unbounded writes: xterm.js drops data past its buffer limit.                                                                                                                               |
+| 9   | Transcripts: section 3.6 gives the three sources, in order: the Claude sessions file, the open rollout file of a Codex with `--no-daemon`, and terminal text. A Codex in daemon mode shows terminal text, with the hint "Start Codex with `--no-daemon` for the full transcript". Pages are aligned to records, and cursors are tied to the file.                                                                                                                                                                                                                                                                                                                                                                                                                              | Each source is an exact identity, verified on live agents. A wrong transcript is worse than terminal text, because the user reads it before an approval.                                                                                                                                                                                                 | A folder match for daemon-mode Codex: three review rounds found cases where it shows another session (an outside client, an exited session, a resume). Codex's `state_5.sqlite`: undocumented, needs SQLite, and has no terminal binding either. |
+| 10  | Approvals: section 3.5 gives the full guard, in this order:<br>1. only `blocked` with `permission`, for `claude-code` or `codex`.<br>2. a known request ID returns its result.<br>3. a per-terminal lock.<br>4. the same turn, prompt hash and option markers.<br>5. a consumed marker.<br>6. the Mac-in-use guard.<br>7. a fsynced audit line.<br>8. exactly one key.                                                                                                                                                                                                                                                                                                                                                                                                         | The keys and markers were verified on command and file-edit prompts for both agents. `1` selects Yes at any cursor position. `esc` is the only deny that does not depend on option order. The marker and request IDs stop retries and second phones, and the audit log keeps them through a restart. The idle guard closes the main path to the race.    | A separate durable store: the audit log already is one. `enter` on a selected Yes: depends on the cursor. No guard: a key could approve a prompt that nobody saw.                                                                                |
+| 11  | Questions (`kind: question`), `auth` prompts, Pi and unknown apps are view-only. The phone says "Answer this on the Mac".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | The user scoped control to approve, deny and message. Question menus differ, so a digit can pick the wrong answer.                                                                                                                                                                                                                                       | Digits 1 to 9: one wrong parse answers for the user.                                                                                                                                                                                             |
+| 12  | Messages: `POST /message {request_id, text}` calls `terminal.send` with `force: false` and no `caller`, so the text arrives as a plain prompt.<br>- Targets: live terminals with `reported: true`.<br>- The daemon removes C0 and C1 control characters, but keeps `\n` and `\t`. The limit is 4000 characters.<br>- A fsynced `dispatching` audit line `{request_id, terminal, length}` comes first. It has the text length, never the text or a hash of it. If the write fails, the daemon returns 503 and sends nothing.<br>- Delivery is at most once for each `request_id`.<br>- A blocked agent refuses the message.                                                                                                                                                     | It matches the scope. The filter stops input that tries to break out of the paste. The request ID stops a retry that sends the prompt twice. A `caller` would tag the text as a report from another agent.                                                                                                                                               | Raw keys: out of scope.                                                                                                                                                                                                                          |
+| 13  | Background alerts: an opt-in foreground service holds `/v1/events`. Section 3.7 lists the manifest. It shows one notification for each blocked episode (terminal, turn, `msg`). After a reconnect, the snapshot shows agents that are still blocked. Alerts come only while the service runs and is connected.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | No relay or push service, by user decision. `specialUse` is not on the Android 15 list of types that `BOOT_COMPLETED` cannot start.                                                                                                                                                                                                                      | FCM: needs a server and Google credentials. `dataSync`: limited to 6 hours a day on Android 15.                                                                                                                                                  |
+| 14  | Phone key and privacy: section 3.7 gives the key parameters. The key is not bound to an unlocked device. The app asks for BiometricPrompt after 5 minutes in the background, sets `FLAG_SECURE`, and uses private notifications. Transcripts and terminal bytes stay in memory. No build logs content. Notifications have no action buttons.                                                                                                                                                                                                                                                                                                                                                                                                                                   | A key bound to an unlocked device makes each handshake fail while the phone is locked, which stops alerts. The gate, `FLAG_SECURE` and private notifications keep project data off the lock screen and out of recents.                                                                                                                                   | `setUnlockedDeviceRequired`: stops background alerts. Full text in notifications: shows commands on the lock screen.                                                                                                                             |
+| 15  | Android stack: Kotlin and Jetpack Compose, minSdk 31, targetSdk 35. OkHttp for TLS, SSE and streams. kotlinx.serialization. Google Play services code scanner (no camera permission). androidx.biometric. xterm.js 5.x as a bundled asset. One activity, ViewModels, no DI framework.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | The smallest standard stack.                                                                                                                                                                                                                                                                                                                             | Termux terminal-view: a JitPack dependency and more glue code. React Native or Flutter: more toolchain.                                                                                                                                          |
+| 16  | Spaces and agents:<br>- `/v1/spaces` runs `herdr-app ls` on each request, and also on created, removed and labels events. It drops spaces whose `machine` is set.<br>- An agent is a live local terminal with `reported: true`. Its space comes from `herdr-app ls`, or else from its `herdr.space` label.<br>- If Herdr.app is not open, the API groups agents by their `where` label under "Herdr window closed".                                                                                                                                                                                                                                                                                                                                                            | A space rename causes no hc event. Remote machines are out of scope.                                                                                                                                                                                                                                                                                     | A poll timer: a refresh on request is simpler and always current.                                                                                                                                                                                |
+| 17  | Logging and audit: section 3.6 gives the formats. `audit.log` records every pairing event, revocation, decision, refusal and message. `dispatching` lines are fsynced before any key or send. Logs never contain tokens, codes, keys, transcript text, terminal bytes or message text.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | The user needs a record of what a phone did. The audit log also keeps request IDs through a restart.                                                                                                                                                                                                                                                     | No audit: no way to see what a lost phone did.                                                                                                                                                                                                   |
+| 18  | Trust boundary: processes that run as the same macOS user are trusted. They can already drive hc directly, read `server.key` and `devices.json`, or run `herdr-remoted pair allow`. File modes cannot stop them. The design protects against the network (LAN and tailnet), leaked QR codes, lost phones, second phones, replays, and hostile bytes in terminal output or transcripts.                                                                                                                                                                                                                                                                                                                                                                                         | File permissions cannot separate processes of one user. A clear statement prevents false assurance.                                                                                                                                                                                                                                                      | A separate macOS user or a Keychain-protected key: real isolation, but much more setup, and agents can still drive hc.                                                                                                                           |
 
 ### 3.2 Architecture
 
@@ -241,19 +241,19 @@ Rules:
 
 All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the table says otherwise.
 
-| Method and path | Request | Response |
-|---|---|---|
-| `POST /v1/enroll` (7767 only) | `{token, name}` | 200 `{device_id}` after Allow. 403 on Deny, a wrong token, or a token bound to another key. 410 on expiry or cancel. |
-| `GET /v1/hello` | none | `{daemon_version, server_time_ms, endpoints[]}` |
-| `GET /v1/spaces` | none | `[{id, name, agents[]}]` |
-| `GET /v1/agents` | none | `[agent]` |
-| `GET /v1/terminals/{t}` | none | `agent` plus `{cols, rows}` |
-| `GET /v1/events` | none | SSE. `snapshot` event (all agents) on connect and after `missed`. `agent` event for each change. `agent_removed {address}` when a terminal finishes, is removed, or stops being an agent. `: ka` comment every 10 s. |
-| `GET /v1/terminals/{t}/live` | none | Chunked `application/octet-stream` from `hc attach --observe --history 500`. |
-| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none | `{source, hint?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`. |
-| `GET /v1/terminals/{t}/prompt` | none | `{app, kind, msg, block, turn, prompt_hash, actionable, reason?}` |
-| `POST /v1/terminals/{t}/decision` | `{request_id, decision, turn, prompt_hash}` | `{result}`: `applied`, `sent_unconfirmed`, `uncertain` or `outcome_unknown` |
-| `POST /v1/terminals/{t}/message` | `{request_id, text}` | `{result}`: `sent` or `outcome_unknown` |
+| Method and path                                    | Request                                     | Response                                                                                                                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/enroll` (7767 only)                      | `{token, name}`                             | 200 `{device_id}` after Allow. 403 on Deny, a wrong token, or a token bound to another key. 410 on expiry or cancel.                                                                                                 |
+| `GET /v1/hello`                                    | none                                        | `{daemon_version, server_time_ms, endpoints[]}`                                                                                                                                                                      |
+| `GET /v1/spaces`                                   | none                                        | `[{id, name, agents[]}]`                                                                                                                                                                                             |
+| `GET /v1/agents`                                   | none                                        | `[agent]`                                                                                                                                                                                                            |
+| `GET /v1/terminals/{t}`                            | none                                        | `agent` plus `{cols, rows}`                                                                                                                                                                                          |
+| `GET /v1/events`                                   | none                                        | SSE. `snapshot` event (all agents) on connect and after `missed`. `agent` event for each change. `agent_removed {address}` when a terminal finishes, is removed, or stops being an agent. `: ka` comment every 10 s. |
+| `GET /v1/terminals/{t}/live`                       | none                                        | Chunked `application/octet-stream` from `hc attach --observe --history 500`.                                                                                                                                         |
+| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none                                        | `{source, hint?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`.                                                                                                                                |
+| `GET /v1/terminals/{t}/prompt`                     | none                                        | `{app, kind, msg, block, turn, prompt_hash, actionable, reason?}`                                                                                                                                                    |
+| `POST /v1/terminals/{t}/decision`                  | `{request_id, decision, turn, prompt_hash}` | `{result}`: `applied`, `sent_unconfirmed`, `uncertain` or `outcome_unknown`                                                                                                                                          |
+| `POST /v1/terminals/{t}/message`                   | `{request_id, text}`                        | `{result}`: `sent` or `outcome_unknown`                                                                                                                                                                              |
 
 - `agent` is `{address, space, tab, where, app, state, kind, msg, turn, title}`.
 - A transcript item is `{role, kind, text, ts}`. `kind` is `text`, `tool_call` or `tool_result`. Tool results are cut to 2000 characters. Thinking blocks are not sent.
@@ -261,14 +261,14 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 - `request_id` is a UUIDv7 that the phone makes for each user action. The phone sets its time from its own clock plus the offset to `server_time_ms` from `/v1/hello`, so clock skew does not matter.
 - Errors are `{error, reason}`:
 
-| Status | Use |
-|---|---|
-| 400 | Bad target, bad body, text too long. |
-| 401 | Unknown or revoked device (after the handshake). |
-| 404 | No such terminal. |
-| 409 | Guard failure. `reason` is `stale`, `changed`, `already_answered`, `mac_in_use`, `not_actionable`, `blocked`, `not_agent`, `cursor` or `expired_request`. `mac_in_use` also has `idle_ms`. |
-| 429 | More than 2 actions (decisions and messages) in one second from one device. |
-| 503 | hc unavailable, or an audit write failed. |
+| Status | Use                                                                                                                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 400    | Bad target, bad body, text too long.                                                                                                                                                       |
+| 401    | Unknown or revoked device (after the handshake).                                                                                                                                           |
+| 404    | No such terminal.                                                                                                                                                                          |
+| 409    | Guard failure. `reason` is `stale`, `changed`, `already_answered`, `mac_in_use`, `not_actionable`, `blocked`, `not_agent`, `cursor` or `expired_request`. `mac_in_use` also has `idle_ms`. |
+| 429    | More than 2 actions (decisions and messages) in one second from one device.                                                                                                                |
+| 503    | hc unavailable, or an audit write failed.                                                                                                                                                  |
 
 ### 3.5 Approval guard
 
@@ -316,35 +316,36 @@ The rules, in order:
    - If not, the daemon reads the status for up to 3 s. The result is `applied` if the status or turn moved, or `sent_unconfirmed` if not.
 9. The daemon appends the result line. It never presses a key again for that request.
 10. Retention:
-   - The daemon keeps every accepted request ID for 10 minutes. That is longer than the 5-minute window in which an ID is valid, so it never forgets an ID that it could still accept.
-   - It keeps the consumed marker of a terminal until the terminal's turn changes or the terminal ends.
-   - On start, it rebuilds both from the last 10 minutes of `audit.log` and `audit.log.1`.
-   - The rate limit (2 actions a second for each device) keeps 10 minutes of audit lines far below the 10 MiB rotation size, so a rotation cannot drop a valid ID.
+
+- The daemon keeps every accepted request ID for 10 minutes. That is longer than the 5-minute window in which an ID is valid, so it never forgets an ID that it could still accept.
+- It keeps the consumed marker of a terminal until the terminal's turn changes or the terminal ends.
+- On start, it rebuilds both from the last 10 minutes of `audit.log` and `audit.log.1`.
+- The rate limit (2 actions a second for each device) keeps 10 minutes of audit lines far below the 10 MiB rotation size, so a rotation cannot drop a valid ID.
 
 ### 3.6 Files and formats
 
 **State directory:** `~/Library/Application Support/herdr-remote/` (mode 0700).
 
-| File | Mode | Content |
-|---|---|---|
-| `server.key` | 0600 | P-256 private key. |
-| `server.crt` | 0644 | Self-signed, valid for ten years, subject `CN=herdr-remoted`. |
+| File           | Mode | Content                                                                               |
+| -------------- | ---- | ------------------------------------------------------------------------------------- |
+| `server.key`   | 0600 | P-256 private key.                                                                    |
+| `server.crt`   | 0644 | Self-signed, valid for ten years, subject `CN=herdr-remoted`.                         |
 | `devices.json` | 0600 | `[{id, name, spki_sha256, added}]`, written atomically (temporary file, then rename). |
-| `admin.sock` | 0600 | Socket for the CLI commands. |
-| `audit.log` | 0600 | JSON lines. Rotates at 10 MiB to `audit.log.1`. |
-| `daemon.log` | 0600 | LaunchAgent stdout and stderr. Rotates at 10 MiB. |
-| `config.json` | 0600 | Optional. `{"mac_idle_seconds": 10}`. |
+| `admin.sock`   | 0600 | Socket for the CLI commands.                                                          |
+| `audit.log`    | 0600 | JSON lines. Rotates at 10 MiB to `audit.log.1`.                                       |
+| `daemon.log`   | 0600 | LaunchAgent stdout and stderr. Rotates at 10 MiB.                                     |
+| `config.json`  | 0600 | Optional. `{"mac_idle_seconds": 10}`.                                                 |
 
 **CLI commands** (through `admin.sock`, each returns within 1 s):
 
-| Command | Result |
-|---|---|
-| `herdr-remoted serve` | Runs the daemon. The LaunchAgent uses it. |
-| `pair --json` | Opens a window. Returns `{matrix, expires_at}`. |
-| `pair status --json` | `{state, device_name?, code?}`. `state` is `none`, `open`, `pending`, `allowed`, `denied` or `expired`. |
-| `pair allow`, `pair deny`, `pair cancel` | Changes the window state. |
-| `devices ls --json` | `[{id, name, added}]` |
-| `devices rm <id>` | Revokes the device. |
+| Command                                  | Result                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `herdr-remoted serve`                    | Runs the daemon. The LaunchAgent uses it.                                                               |
+| `pair --json`                            | Opens a window. Returns `{matrix, expires_at}`.                                                         |
+| `pair status --json`                     | `{state, device_name?, code?}`. `state` is `none`, `open`, `pending`, `allowed`, `denied` or `expired`. |
+| `pair allow`, `pair deny`, `pair cancel` | Changes the window state.                                                                               |
+| `devices ls --json`                      | `[{id, name, added}]`                                                                                   |
+| `devices rm <id>`                        | Revokes the device.                                                                                     |
 
 **Audit line:** `{ts, device_id, action, state, terminal, turn, request_id, decision, prompt_hash, length, idle_ms, result}`, with only the fields that apply.
 
@@ -371,14 +372,14 @@ The rules, in order:
 
 **Screens:**
 
-| Screen | Content |
-|---|---|
-| Pair | Code scanner, 6-digit code, wait for Allow. |
-| Spaces | Spaces with agent counts and the most urgent status. |
-| Space | Agents in the space, with status and tab name. |
-| All agents | Every agent. Blocked agents first. |
-| Agent | Tabs: Transcript, Live. A prompt card with Approve and Deny when actionable. A message box. |
-| Settings | Paired Mac, background watching, Forget this Mac. |
+| Screen     | Content                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| Pair       | Code scanner, 6-digit code, wait for Allow.                                                 |
+| Spaces     | Spaces with agent counts and the most urgent status.                                        |
+| Space      | Agents in the space, with status and tab name.                                              |
+| All agents | Every agent. Blocked agents first.                                                          |
+| Agent      | Tabs: Transcript, Live. A prompt card with Approve and Deny when actionable. A message box. |
+| Settings   | Paired Mac, background watching, Forget this Mac.                                           |
 
 **Key (Android Keystore):** P-256, `PURPOSE_SIGN`, digests `SHA256` and `NONE`, `setUserAuthenticationRequired(false)`, not bound to an unlocked device. The chain is the self-signed certificate that Keystore makes.
 
@@ -472,21 +473,21 @@ The rules, in order:
 
 **Failure cases to handle (no others):**
 
-| Case | Behaviour |
-|---|---|
-| hc unavailable | The daemon returns 503 and reconnects. The phone shows the last data with its age. |
-| `missed` event | The daemon takes a fresh snapshot. |
-| Herdr.app closed | Agents are grouped by `where`. |
-| Transcript missing or bad | The next source, ending at terminal text. |
-| Endpoint unreachable | The phone tries the next endpoint and remembers the last good one. |
-| Size change | The live stream starts again. |
-| Device revoked during a stream | The daemon closes the stream. |
-| Guard failure, or Mac in use | 409 with a reason. |
-| Audit write failure | 503, no key, no send. |
-| SSE silent for 30 s | The phone reconnects and reopens live views. |
-| Live backlog over 1 MiB | The phone reopens the stream. |
-| Transcript cursor for another file | 409, and the phone starts from the end. |
-| Notifications denied | Background watching stays off, with an explanation. |
+| Case                               | Behaviour                                                                          |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| hc unavailable                     | The daemon returns 503 and reconnects. The phone shows the last data with its age. |
+| `missed` event                     | The daemon takes a fresh snapshot.                                                 |
+| Herdr.app closed                   | Agents are grouped by `where`.                                                     |
+| Transcript missing or bad          | The next source, ending at terminal text.                                          |
+| Endpoint unreachable               | The phone tries the next endpoint and remembers the last good one.                 |
+| Size change                        | The live stream starts again.                                                      |
+| Device revoked during a stream     | The daemon closes the stream.                                                      |
+| Guard failure, or Mac in use       | 409 with a reason.                                                                 |
+| Audit write failure                | 503, no key, no send.                                                              |
+| SSE silent for 30 s                | The phone reconnects and reopens live views.                                       |
+| Live backlog over 1 MiB            | The phone reopens the stream.                                                      |
+| Transcript cursor for another file | 409, and the phone starts from the end.                                            |
+| Notifications denied               | Background watching stays off, with an explanation.                                |
 
 ## 5. Implementation plan
 
@@ -510,6 +511,7 @@ flowchart TD
 ```
 
 **Step 1. Toolchain and skeleton.**
+
 - **Change:**
   - `scripts/setup-android.sh`:
     1. `brew install --cask android-commandlinetools` and `brew install gradle`.
@@ -526,6 +528,7 @@ flowchart TD
 - **Check:** `go version`. `adb version`. `cd android && ./gradlew assembleDebug` builds an empty Compose app.
 
 **Step 2. Subprocess helper, hc client, event fixtures.**
+
 - **Change:**
   - `daemon/run.go`: the only way the daemon starts a process. It accepts only `hc`, `herdr-app`, `lsof`, `ps`, `ioreg` and `tailscale`, at absolute paths found at start. It uses fixed argument shapes, no shell and a timeout.
   - `daemon/hc.go`: three `hc connect` connections (reads, events, actions) with JSON-RPC lines. Typed functions only:
@@ -534,6 +537,7 @@ flowchart TD
     - `Keys(t, k)`, where `k` is `1`, `y` or `esc`.
 
     The client checks targets as in decision 3 and reconnects with backoff.
+
   - `daemon/idle.go`: `MacIdle()` parses `HIDIdleTime` from `ioreg -c IOHIDSystem -d 4`.
   - Event fixtures: run `hc events --json` while a probe agent goes from working to blocked to idle. Save the output as `daemon/testdata/events-*.jsonl`. Write the event structs from these files.
 - **Implements:** decisions 2, 3 and 10 (idle).
@@ -551,6 +555,7 @@ flowchart TD
   A parser test covers `MacIdle`.
 
 **Step 3. Identity, device store, pairing, admin socket, audit log.**
+
 - **Change:**
   - `daemon/tls.go`, `daemon/devices.go`, `daemon/pair.go`, `daemon/admin.go`, `daemon/audit.go`.
   - The state directory and files in section 3.6.
@@ -566,6 +571,7 @@ flowchart TD
   - No secret is logged.
 
   Each fails toward a refusal.
+
 - **Verified today:** nothing exists.
 - **Depends on:** step 2.
 - **Check:** Go tests:
@@ -582,6 +588,7 @@ flowchart TD
   Also: `openssl s_client -connect 127.0.0.1:7766` without a certificate fails.
 
 **Step 4. Read API and events.**
+
 - **Change:** `daemon/api.go` and `daemon/state.go`, with the read endpoints and SSE in section 3.4 and the errors in section 3.4. State follows decision 16.
 - **Implements:** decisions 5 and 16.
 - **Invariant:**
@@ -593,6 +600,7 @@ flowchart TD
 - **Check:** Go tests with the fake hc and the step 2 fixtures (snapshot, status change, missed). A test that a renamed space shows on the next `/v1/spaces`. A test that SSE sends `: ka` within 11 s on an idle system. A test that a finished terminal causes `agent_removed`. Manual: `curl --cert … --key … -k https://127.0.0.1:7766/v1/agents`.
 
 **Step 5. Live stream.**
+
 - **Change:** `daemon/live.go`. `GET /v1/terminals/{t}/live` runs `hc attach --observe --history 500 <t>` through the helper. It copies stdout and flushes each read. A device has at most 2 streams. A stream ends on a client disconnect, on a `size` event for `t`, or on a revoke.
 - **Implements:** decisions 7 and 8.
 - **Invariant:** the phone never writes to the terminal. Each stream that ends kills its subprocess.
@@ -601,6 +609,7 @@ flowchart TD
 - **Check:** Go tests: the subprocess count goes back to zero after a disconnect, after a size event, and after `devices rm`, within 2 s. Manual: `curl -N` shows bytes.
 
 **Step 6. Transcripts.**
+
 - **Change:** `daemon/transcript.go`, with the three sources and the rules in section 3.6, and the transcript endpoint in section 3.4.
 - **Implements:** decision 9.
 - **Invariant:** the daemon reads only files whose real path is under the two roots. A source that cannot resolve passes to the next one, which ends at terminal text. The only error is 409 for a cursor of a different file.
@@ -619,6 +628,7 @@ flowchart TD
   - no sessions file, which falls back to terminal text.
 
 **Step 7. Approvals and messages.**
+
 - **Change:** `daemon/actions.go`, with the prompt, decision and message endpoints in section 3.4, the guard in section 3.5, and decision 12. The daemon rebuilds request IDs and markers from the audit log on start.
 - **Implements:** decisions 10, 11, 12 and 17.
 - **Invariant:** the daemon presses a key only after every guard passes. It presses at most once for each `{turn, prompt_hash}` and each `request_id`, also after a restart. Otherwise it returns 409 and presses no key.
@@ -642,6 +652,7 @@ flowchart TD
   Manual: the probes in section 6.
 
 **Step 8. Herdr mod and install.**
+
 - **Change:**
   - `mod/herdr-remote/mod.json` and `main.js`, as in section 3.8.
   - `scripts/install.sh`:
@@ -664,6 +675,7 @@ flowchart TD
   - `launchctl print gui/$(id -u)/dev.herdr-remote` shows the daemon running.
 
 **Step 9. Android pairing, connection and app gate.**
+
 - **Change:** in `android/app/src/main/`: the Keystore key, TLS client and endpoint fallback in section 3.7, the Pair screen, the BiometricPrompt gate and `FLAG_SECURE`.
 - **Implements:** decisions 4, 6, 14 and 15.
 - **Invariant:**
@@ -677,6 +689,7 @@ flowchart TD
   - Gate test: with the clock moved past 5 minutes, the gate shows. An action before unlock is refused.
 
 **Step 10. Android lists, events and background service.**
+
 - **Change:** the Spaces, Space and All agents screens. The SSE client (30 s read timeout) and reducer. A banner that shows the age of stale data. The service, manifest and receivers in section 3.7. Private notifications, one for each blocked episode.
 - **Implements:** decisions 5, 13, 14 and 16.
 - **Invariant:** a stale view shows its age. There is one notification for each blocked episode.
@@ -691,6 +704,7 @@ flowchart TD
     - Turn Wi-Fi off and on, and check that the view recovers within 40 s.
 
 **Step 11. Android agent screen.**
+
 - **Change:**
   - The Transcript tab, with pages back.
   - The Live tab: the WebView in section 3.7, xterm.js at `cols` and `rows`, the flow control in decision 8, and a reopen on a `size` event or an SSE reconnect.
@@ -706,27 +720,28 @@ flowchart TD
   - Manual: run `yes | head -c 50000000` in a watched terminal, and check that the view keeps up or reopens without a freeze.
 
 **Step 12. End-to-end acceptance.**
+
 - **Change:** none. Run criteria 1 to 13 on the emulator and on a real phone, with Tailscale over cellular.
 - **Depends on:** steps 1 to 11. Tailscale on the Mac and the phone.
 - **Check:** section 6.
 
 ## 6. Testing strategy
 
-| Criterion | Check |
-|---|---|
-| 1 | Step 3 Go tests. `openssl s_client -connect 127.0.0.1:7766` without a certificate fails. `nc -z 127.0.0.1 7767` fails outside a window. `launchctl print` after a reboot. |
-| 2 | Step 3 Go tests. Manual pairing: with Allow, with Deny, with a timeout, with 60 s before the scan, and with 60 s before Allow. |
-| 3 | Step 4 Go tests. Manual: change the status of an agent and time it on the phone. |
-| 4 | Step 6 Go tests. Manual: a Claude agent. A `codex --no-daemon` agent. A plain `codex` agent (terminal text and the hint). An agent before its first prompt (terminal text). |
-| 5 | Step 5 Go tests. Step 11 manual: resize, heavy output, network change. |
-| 6 | Step 7 Go tests. Manual with the probes below. Approve and deny each prompt type. Answer one on the Mac first, then tap on the phone. Tap while you type on the Mac (`mac_in_use`). |
-| 7 | Step 7 Go tests. Manual: send a message to an idle probe, and check that the prompt has no `<hc` tag. |
-| 8 | Step 10 manual checks, with the reboot. |
-| 9 | Step 3 resumption test and step 5 Go test. Manual: revoke during a live view. |
-| 10 | Manual over Tailscale on cellular. |
-| 11 | Step 9 gate test. |
-| 12 | Step 10 lock-screen check. Manual recents check. |
-| 13 | Step 3 audit test. Manual `grep` of `audit.log` and `daemon.log` after the full run. |
+| Criterion | Check                                                                                                                                                                               |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1         | Step 3 Go tests. `openssl s_client -connect 127.0.0.1:7766` without a certificate fails. `nc -z 127.0.0.1 7767` fails outside a window. `launchctl print` after a reboot.           |
+| 2         | Step 3 Go tests. Manual pairing: with Allow, with Deny, with a timeout, with 60 s before the scan, and with 60 s before Allow.                                                      |
+| 3         | Step 4 Go tests. Manual: change the status of an agent and time it on the phone.                                                                                                    |
+| 4         | Step 6 Go tests. Manual: a Claude agent. A `codex --no-daemon` agent. A plain `codex` agent (terminal text and the hint). An agent before its first prompt (terminal text).         |
+| 5         | Step 5 Go tests. Step 11 manual: resize, heavy output, network change.                                                                                                              |
+| 6         | Step 7 Go tests. Manual with the probes below. Approve and deny each prompt type. Answer one on the Mac first, then tap on the phone. Tap while you type on the Mac (`mac_in_use`). |
+| 7         | Step 7 Go tests. Manual: send a message to an idle probe, and check that the prompt has no `<hc` tag.                                                                               |
+| 8         | Step 10 manual checks, with the reboot.                                                                                                                                             |
+| 9         | Step 3 resumption test and step 5 Go test. Manual: revoke during a live view.                                                                                                       |
+| 10        | Manual over Tailscale on cellular.                                                                                                                                                  |
+| 11        | Step 9 gate test.                                                                                                                                                                   |
+| 12        | Step 10 lock-screen check. Manual recents check.                                                                                                                                    |
+| 13        | Step 3 audit test. Manual `grep` of `audit.log` and `daemon.log` after the full run.                                                                                                |
 
 **Probe agents.** Use a scratch folder. Remove each probe after use with `hc kill` and `hc rm`.
 
@@ -930,18 +945,18 @@ Two code reviews checked the implementation, and their fixes are on `main` up to
 
 **Closing check against section 4, at `fca5008`:**
 
-| Criterion | Verdict |
-|---|---|
-| 1 | Delivered. Rerun `scripts/install.sh`, because the installed daemon is older than the fixes. |
-| 2 | Delivered in code and tests. Allow with a real phone is not verified. |
-| 3 | Delivered, verified on the emulator. |
-| 4 | Delivered, with the fallback fix. |
-| 5 | Delivered in code. Resize and heavy output are not verified. |
-| 6 | Delivered, with the long-prompt fix. |
-| 7 | Delivered (at most once, "Outcome unknown"). |
-| 8 | Delivered on the emulator. Not verified on a real phone. |
-| 9 | Delivered, with the revoke fix. |
-| 10 | Not verified (no Tailscale). |
-| 11 | Delivered, with the app-lock fix. Verified on the emulator after a swipe from recents. |
-| 12 | Delivered in code. The lock screen and recents on a real phone are not verified. |
-| 13 | Delivered. |
+| Criterion | Verdict                                                                                      |
+| --------- | -------------------------------------------------------------------------------------------- |
+| 1         | Delivered. Rerun `scripts/install.sh`, because the installed daemon is older than the fixes. |
+| 2         | Delivered in code and tests. Allow with a real phone is not verified.                        |
+| 3         | Delivered, verified on the emulator.                                                         |
+| 4         | Delivered, with the fallback fix.                                                            |
+| 5         | Delivered in code. Resize and heavy output are not verified.                                 |
+| 6         | Delivered, with the long-prompt fix.                                                         |
+| 7         | Delivered (at most once, "Outcome unknown").                                                 |
+| 8         | Delivered on the emulator. Not verified on a real phone.                                     |
+| 9         | Delivered, with the revoke fix.                                                              |
+| 10        | Not verified (no Tailscale).                                                                 |
+| 11        | Delivered, with the app-lock fix. Verified on the emulator after a swipe from recents.       |
+| 12        | Delivered in code. The lock screen and recents on a real phone are not verified.             |
+| 13        | Delivered.                                                                                   |

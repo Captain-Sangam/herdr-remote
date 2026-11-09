@@ -1,1 +1,5 @@
-{ "place": "none", "title": "Herdr Remote", "overlay": { "kind": "dialog", "width": 440, "height": 600 } }
+{
+  "place": "none",
+  "title": "Herdr Remote",
+  "overlay": { "kind": "dialog", "width": 440, "height": 600 }
+}

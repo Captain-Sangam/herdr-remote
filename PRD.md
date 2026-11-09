@@ -31,13 +31,13 @@ herdr-remote is an Android app that controls the Herdr.app sessions on one Mac.
 
 **Goal:** the user can keep agents moving from the phone, safely.
 
-| Measure | Target |
-|---|---|
-| Time from an agent block to a phone notification | 5 s or less, while background watching is on and connected |
-| Time from a status change on the Mac to the phone screen | 2 s or less |
-| Live terminal delay on the LAN | about 1 s or less |
-| Unpaired or revoked devices that pass the TLS handshake on the API port | none |
-| Phone actions without an audit line | none |
+| Measure                                                                 | Target                                                     |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Time from an agent block to a phone notification                        | 5 s or less, while background watching is on and connected |
+| Time from a status change on the Mac to the phone screen                | 2 s or less                                                |
+| Live terminal delay on the LAN                                          | about 1 s or less                                          |
+| Unpaired or revoked devices that pass the TLS handshake on the API port | none                                                       |
+| Phone actions without an audit line                                     | none                                                       |
 
 ## 4. User
 
@@ -131,53 +131,53 @@ flowchart TD
 
 ## 7. Functional requirements
 
-| ID | Requirement |
-|---|---|
-| FR-1 | Herdr shows a pairing QR code in an overlay, only after the user clicks **Pair a phone**. |
-| FR-2 | Pairing needs a scan of the QR code and an Allow on the Mac. A QR code alone pairs nothing. |
-| FR-3 | A pairing window lasts 120 s. One QR code pairs at most one phone. |
-| FR-4 | The overlay lists the paired phones and can revoke each one. A revoke takes effect within 2 s, also for open streams. |
-| FR-5 | The app lists the Herdr spaces by name, with their agents and the status of each agent. |
-| FR-6 | The app has an All agents view, with blocked agents first. |
-| FR-7 | Status changes on the Mac show on the phone within 2 s. |
-| FR-8 | The app shows the transcript of a Claude Code agent, and of a Codex agent that runs with `--no-daemon`. For other agents it shows the terminal text, with a label. For a Codex in daemon mode, it also shows a hint to start Codex with `--no-daemon`. The app never guesses which transcript belongs to an agent. |
-| FR-9 | The app shows a live, colored, read-only view of the terminal of an agent. |
-| FR-10 | The user can approve or deny a permission prompt from Claude Code or Codex. This covers commands and file edits. |
-| FR-11 | The app refuses an approval, and gives the reason, in these cases: the prompt changed, someone already answered it, or someone uses the Mac keyboard or mouse at that time. |
-| FR-12 | Agent questions, login prompts and other agents' prompts are view-only. The app says "Answer this on the Mac". |
-| FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself. |
-| FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode. Watching starts again after a reboot or an app update. |
-| FR-15 | The phone connects over the LAN or over Tailscale, with the same pairing. |
+| ID    | Requirement                                                                                                                                                                                                                                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1  | Herdr shows a pairing QR code in an overlay, only after the user clicks **Pair a phone**.                                                                                                                                                                                                                          |
+| FR-2  | Pairing needs a scan of the QR code and an Allow on the Mac. A QR code alone pairs nothing.                                                                                                                                                                                                                        |
+| FR-3  | A pairing window lasts 120 s. One QR code pairs at most one phone.                                                                                                                                                                                                                                                 |
+| FR-4  | The overlay lists the paired phones and can revoke each one. A revoke takes effect within 2 s, also for open streams.                                                                                                                                                                                              |
+| FR-5  | The app lists the Herdr spaces by name, with their agents and the status of each agent.                                                                                                                                                                                                                            |
+| FR-6  | The app has an All agents view, with blocked agents first.                                                                                                                                                                                                                                                         |
+| FR-7  | Status changes on the Mac show on the phone within 2 s.                                                                                                                                                                                                                                                            |
+| FR-8  | The app shows the transcript of a Claude Code agent, and of a Codex agent that runs with `--no-daemon`. For other agents it shows the terminal text, with a label. For a Codex in daemon mode, it also shows a hint to start Codex with `--no-daemon`. The app never guesses which transcript belongs to an agent. |
+| FR-9  | The app shows a live, colored, read-only view of the terminal of an agent.                                                                                                                                                                                                                                         |
+| FR-10 | The user can approve or deny a permission prompt from Claude Code or Codex. This covers commands and file edits.                                                                                                                                                                                                   |
+| FR-11 | The app refuses an approval, and gives the reason, in these cases: the prompt changed, someone already answered it, or someone uses the Mac keyboard or mouse at that time.                                                                                                                                        |
+| FR-12 | Agent questions, login prompts and other agents' prompts are view-only. The app says "Answer this on the Mac".                                                                                                                                                                                                     |
+| FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself.                                                                                    |
+| FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode. Watching starts again after a reboot or an app update.                                                                                                                                                  |
+| FR-15 | The phone connects over the LAN or over Tailscale, with the same pairing.                                                                                                                                                                                                                                          |
 
 ## 8. Security and privacy requirements
 
-| ID | Requirement |
-|---|---|
-| SR-1 | Only paired phones can complete a connection to the API port. The TLS handshake there rejects every other device. The enrollment port opens only during a 120 s pairing window. The user starts that window on the Mac. The port accepts only the one-time token from the QR code. |
-| SR-2 | The phone can use only the operations in FR-5 to FR-13. It cannot run commands, read or write files, or start programs on the Mac. |
-| SR-3 | The phone checks the identity of the Mac with a key pin from the QR code. It does not trust certificate names. |
-| SR-4 | The private key of the phone stays in Android Keystore and never leaves it. |
-| SR-5 | A revoked phone cannot connect again, also with a resumed TLS session. |
-| SR-6 | One user action causes at most one key press or one message. This is also true after a retry, a second phone or a daemon restart. The daemon refuses a request older than 5 minutes. |
-| SR-7 | The daemon refuses a phone approval while the Mac keyboard or mouse is in use (a setting, default 10 s). |
-| SR-8 | The daemon writes an audit line for each pairing event, revocation, decision, refusal and message. |
-| SR-9 | No log on the Mac or the phone contains tokens, pairing codes, keys, transcript text, terminal bytes or message text. |
-| SR-10 | After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything. |
-| SR-11 | The recents screen and screenshots show no app content. The lock screen shows no command or project data. |
-| SR-12 | The phone keeps transcripts and terminal data in memory only. |
-| SR-13 | The live view shows terminal bytes in a WebView that can load only bundled files and cannot send input. |
+| ID    | Requirement                                                                                                                                                                                                                                                                        |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SR-1  | Only paired phones can complete a connection to the API port. The TLS handshake there rejects every other device. The enrollment port opens only during a 120 s pairing window. The user starts that window on the Mac. The port accepts only the one-time token from the QR code. |
+| SR-2  | The phone can use only the operations in FR-5 to FR-13. It cannot run commands, read or write files, or start programs on the Mac.                                                                                                                                                 |
+| SR-3  | The phone checks the identity of the Mac with a key pin from the QR code. It does not trust certificate names.                                                                                                                                                                     |
+| SR-4  | The private key of the phone stays in Android Keystore and never leaves it.                                                                                                                                                                                                        |
+| SR-5  | A revoked phone cannot connect again, also with a resumed TLS session.                                                                                                                                                                                                             |
+| SR-6  | One user action causes at most one key press or one message. This is also true after a retry, a second phone or a daemon restart. The daemon refuses a request older than 5 minutes.                                                                                               |
+| SR-7  | The daemon refuses a phone approval while the Mac keyboard or mouse is in use (a setting, default 10 s).                                                                                                                                                                           |
+| SR-8  | The daemon writes an audit line for each pairing event, revocation, decision, refusal and message.                                                                                                                                                                                 |
+| SR-9  | No log on the Mac or the phone contains tokens, pairing codes, keys, transcript text, terminal bytes or message text.                                                                                                                                                              |
+| SR-10 | After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything.                                                                                                                                                                 |
+| SR-11 | The recents screen and screenshots show no app content. The lock screen shows no command or project data.                                                                                                                                                                          |
+| SR-12 | The phone keeps transcripts and terminal data in memory only.                                                                                                                                                                                                                      |
+| SR-13 | The live view shows terminal bytes in a WebView that can load only bundled files and cannot send input.                                                                                                                                                                            |
 
 **Trust boundary:** programs that run as the same macOS user are trusted. They can already control Herdr directly. The design protects against the network, leaked QR codes, lost phones, second phones, replays, and hostile terminal or transcript content.
 
 ## 9. Non-functional requirements
 
-| Area | Requirement |
-|---|---|
-| Compatibility | Herdr.app 0.1.13, hc 0.1.18, Claude Code 2.1.x, Codex 0.167.x. A prompt that the app does not know is view-only. |
-| Platforms | macOS on Apple silicon. Android 12 (API 31) or later, target API 35. |
-| Reliability | The daemon runs as a LaunchAgent and starts again after a reboot or a crash. The phone reconnects after a network change within 40 s. |
-| Resource use | At most 2 live views for each phone. A slow phone drops the backlog and repaints, and does not freeze. |
-| Footprint | One Go binary, one Herdr mod, one Android app. No server, no database. |
+| Area          | Requirement                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Compatibility | Herdr.app 0.1.13, hc 0.1.18, Claude Code 2.1.x, Codex 0.167.x. A prompt that the app does not know is view-only.                      |
+| Platforms     | macOS on Apple silicon. Android 12 (API 31) or later, target API 35.                                                                  |
+| Reliability   | The daemon runs as a LaunchAgent and starts again after a reboot or a crash. The phone reconnects after a network change within 40 s. |
+| Resource use  | At most 2 live views for each phone. A slow phone drops the backlog and repaints, and does not freeze.                                |
+| Footprint     | One Go binary, one Herdr mod, one Android app. No server, no database.                                                                |
 
 ## 10. Setup requirements
 
@@ -209,23 +209,23 @@ The product is done when all 13 criteria in `TDD.md` section 4 pass. They must p
 
 ## 12. Risks
 
-| Risk | Impact | Response |
-|---|---|---|
-| A phone approval lands on a different prompt (rare race) | An action is approved that nobody saw | Mac-in-use guard, prompt hash and turn checks, `uncertain` result, audit line. Accepted residual risk: the guard does not see SSH input or input from other agents. |
-| Claude Code or Codex changes its prompt text | Approve and deny stop working | The prompt becomes view-only (safe). Update the markers. |
-| Undocumented transcript files change | Transcripts stop working | Terminal text shows as the fallback. |
-| Codex runs in daemon mode, which is the default of Herdr's Codex launcher | Terminal text in place of the Codex transcript | Set Herdr's Codex launcher to `codex --no-daemon` once. The app shows a hint. |
-| The phone OS stops the background service | Missed notifications | Battery-optimization exemption, restart on reboot. Alerts come only while the service is connected. |
-| A device keeps the Mac "in use" (for example a mouse jiggler) | Approvals always refused | Set `mac_idle_seconds` to 0. |
+| Risk                                                                      | Impact                                         | Response                                                                                                                                                            |
+| ------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A phone approval lands on a different prompt (rare race)                  | An action is approved that nobody saw          | Mac-in-use guard, prompt hash and turn checks, `uncertain` result, audit line. Accepted residual risk: the guard does not see SSH input or input from other agents. |
+| Claude Code or Codex changes its prompt text                              | Approve and deny stop working                  | The prompt becomes view-only (safe). Update the markers.                                                                                                            |
+| Undocumented transcript files change                                      | Transcripts stop working                       | Terminal text shows as the fallback.                                                                                                                                |
+| Codex runs in daemon mode, which is the default of Herdr's Codex launcher | Terminal text in place of the Codex transcript | Set Herdr's Codex launcher to `codex --no-daemon` once. The app shows a hint.                                                                                       |
+| The phone OS stops the background service                                 | Missed notifications                           | Battery-optimization exemption, restart on reboot. Alerts come only while the service is connected.                                                                 |
+| A device keeps the Mac "in use" (for example a mouse jiggler)             | Approvals always refused                       | Set `mac_idle_seconds` to 0.                                                                                                                                        |
 
 ## 13. Milestones
 
-| Milestone | TDD steps | Result |
-|---|---|---|
-| M1: Daemon core | 1 to 4 | Pairing from the command line, read API, events. |
-| M2: Daemon features | 5 to 8 | Live view, transcripts, approvals, messages, mod and install. |
-| M3: Android app | 9 to 11 | Pairing, lists, background alerts, agent screen. |
-| M4: Acceptance | 12 | All 13 criteria pass on the emulator and a real phone. |
+| Milestone           | TDD steps | Result                                                        |
+| ------------------- | --------- | ------------------------------------------------------------- |
+| M1: Daemon core     | 1 to 4    | Pairing from the command line, read API, events.              |
+| M2: Daemon features | 5 to 8    | Live view, transcripts, approvals, messages, mod and install. |
+| M3: Android app     | 9 to 11   | Pairing, lists, background alerts, agent screen.              |
+| M4: Acceptance      | 12        | All 13 criteria pass on the emulator and a real phone.        |
 
 ## 14. Open questions
 

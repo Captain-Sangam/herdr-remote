@@ -2,6 +2,8 @@ package dev.herdrremote.watch
 
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.HerdrApi
+import java.io.IOException
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -16,14 +18,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Response
-import java.io.IOException
-import kotlin.coroutines.coroutineContext
 
 /**
- * Holds /v1/events: one SSE connection with a 30 s read timeout (decision 5),
- * reconnecting with backoff. Screens read [state]; the service reads [events].
- * stop() cancels the stream's call: the keepalives would otherwise hold the
- * blocking read open long after the loop was cancelled.
+ * Holds /v1/events: one SSE connection with a 30 s read timeout (decision 5), reconnecting with
+ * backoff. Screens read [state]; the service reads [events]. stop() cancels the stream's call: the
+ * keepalives would otherwise hold the blocking read open long after the loop was cancelled.
  */
 class AgentsRepository(private val app: HerdrRemoteApp) {
     private val _state = MutableStateFlow(AgentsState())
@@ -73,7 +72,8 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
                         backoff = 1000L
                         _state.update { it.copy(connected = true) }
                         reconnected.tryEmit(Unit)
-                        // Refresh the clock offset and the endpoint list beside the stream, never before it.
+                        // Refresh the clock offset and the endpoint list beside the stream, never
+                        // before it.
                         scope.launch { runCatching { api.hello() } }
                         read(resp)
                     }
@@ -108,7 +108,10 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
                 }
                 line.startsWith(":") -> {}
                 line.startsWith("event: ") -> event = line.substring(7)
-                line.startsWith("data: ") -> { if (data.isNotEmpty()) data.append('\n'); data.append(line.substring(6)) }
+                line.startsWith("data: ") -> {
+                    if (data.isNotEmpty()) data.append('\n')
+                    data.append(line.substring(6))
+                }
             }
         }
     }

@@ -18,8 +18,11 @@ data class Agent(
     val cols: Int = 0,
     val rows: Int = 0,
 ) {
-    val blocked get() = state == "blocked"
-    val label get() = tab.ifEmpty { where.ifEmpty { address } }
+    val blocked
+        get() = state == "blocked"
+
+    val label
+        get() = tab.ifEmpty { where.ifEmpty { address } }
 }
 
 @Serializable
@@ -55,11 +58,14 @@ data class Hello(
     val endpoints: List<String> = emptyList(),
 )
 
-@Serializable
-data class ResultBody(val result: String)
+@Serializable data class ResultBody(val result: String)
 
 @Serializable
-data class ErrorBody(val error: String = "", val reason: String? = null, @SerialName("idle_ms") val idleMs: Long? = null)
+data class ErrorBody(
+    val error: String = "",
+    val reason: String? = null,
+    @SerialName("idle_ms") val idleMs: Long? = null,
+)
 
 @Serializable
 data class DecisionRequest(
@@ -72,8 +78,6 @@ data class DecisionRequest(
 @Serializable
 data class MessageRequest(@SerialName("request_id") val requestId: String, val text: String)
 
-@Serializable
-data class EnrollRequest(val token: String, val name: String)
+@Serializable data class EnrollRequest(val token: String, val name: String)
 
-@Serializable
-data class EnrollResponse(@SerialName("device_id") val deviceId: String)
+@Serializable data class EnrollResponse(@SerialName("device_id") val deviceId: String)
