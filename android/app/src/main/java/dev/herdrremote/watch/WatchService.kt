@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.MainActivity
+import dev.herdrremote.R
 import dev.herdrremote.net.Agent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,7 +85,7 @@ class WatchService : Service() {
 
     private fun ongoing(n: Int, connected: Boolean = false): Notification =
         NotificationCompat.Builder(this, CHANNEL_WATCH)
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(R.drawable.ic_stat_herdr)
             .setContentTitle(
                 if (connected) "Watching $n agent${if (n == 1) "" else "s"}"
                 else "Connecting to the Mac…"
@@ -94,7 +95,7 @@ class WatchService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(
                 NotificationCompat.Builder(this, CHANNEL_WATCH)
-                    .setSmallIcon(android.R.drawable.ic_menu_view)
+                    .setSmallIcon(R.drawable.ic_stat_herdr)
                     .setContentTitle("Herdr Remote is watching")
                     .build()
             )
@@ -108,11 +109,11 @@ class WatchService : Service() {
     private fun blocked(a: Agent): Notification {
         val public =
             NotificationCompat.Builder(this, CHANNEL_ALERTS)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setSmallIcon(R.drawable.ic_stat_herdr)
                 .setContentTitle("An agent needs attention")
                 .build()
         return NotificationCompat.Builder(this, CHANNEL_ALERTS)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_stat_herdr)
             .setContentTitle("An agent needs attention")
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(public)

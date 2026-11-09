@@ -1,7 +1,6 @@
 package dev.herdrremote.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.Space
+import dev.herdrremote.ui.theme.PaneTheme
 
 sealed class Screen {
     data object Home : Screen()
@@ -40,13 +38,8 @@ sealed class Screen {
     data object Settings : Screen()
 }
 
-@Composable
-fun HerdrRemoteTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
-        content = content,
-    )
-}
+/** The Pane design system: ui/theme and DESIGN.md. */
+@Composable fun HerdrRemoteTheme(content: @Composable () -> Unit) = PaneTheme(content = content)
 
 @Composable
 fun LockedScreen(note: String?, onUnlock: () -> Unit) {

@@ -5,6 +5,7 @@
 - **Owner:** Ajay.
 - **Technical design:** `TDD.md`.
 - **Design debate:** `DEBATE.md`.
+- **Design system:** `DESIGN.md` (Pane).
 
 ## 1. Summary
 

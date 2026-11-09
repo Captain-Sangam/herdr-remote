@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>herdr-remote screen viewer</title>
+    <style>
+      /* Viewer classes use a v- prefix so they never clash with the mockup classes in mockups.css. */
+      :root {
+        --pg: #e7e8eb;
+        --pg2: #f7f7f8;
+        --pgt: #16181c;
+        --pgm: #5b616c;
+        --pgl: #d0d3d8;
+        --pga: #2b59c3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --pg: #101113;
+          --pg2: #1a1b1e;
+          --pgt: #e9eaec;
+          --pgm: #9aa0aa;
+          --pgl: #2b2e33;
+          --pga: #8ab0ff;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+        background: var(--pg);
+        color: var(--pgt);
+        font:
+          13.5px/1.4 system-ui,
+          -apple-system,
+          "Helvetica Neue",
+          sans-serif;
+        display: grid;
+        grid-template: auto 1fr / 236px 1fr;
+        --z: 0.6;
+      }
+      .v-bar {
+        grid-column: 1/3;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 18px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--pgl);
+        position: relative;
+      }
+      .v-bar a {
+        color: var(--pgt);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .v-cg {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--pgm);
+      }
+      .v-seg {
+        display: inline-flex;
+        border: 1px solid var(--pgl);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .v-seg button,
+      .v-ib {
+        all: unset;
+        cursor: pointer;
+        padding: 5px 10px;
+        color: var(--pgt);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .v-seg button[aria-pressed="true"],
+      .v-ib[aria-pressed="true"] {
+        background: var(--pgt);
+        color: var(--pg);
+      }
+      .v-seg.off {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+      .v-ib {
+        border: 1px solid var(--pgl);
+        border-radius: 8px;
+      }
+      .v-ib .ic {
+        width: 16px;
+        height: 16px;
+      }
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--pga);
+        outline-offset: 2px;
+      }
+      #pos {
+        min-width: 56px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        color: var(--pgt);
+      }
+      select {
+        font: inherit;
+        color: var(--pgt);
+        background: var(--pg2);
+        border: 1px solid var(--pgl);
+        border-radius: 8px;
+        padding: 4px 6px;
+      }
+      .v-prog {
+        position: absolute;
+        left: 0;
+        bottom: -1px;
+        height: 2px;
+        width: 100%;
+        transform-origin: left;
+        transform: scaleX(0);
+        background: var(--pga);
+      }
+      .v-prog.run {
+        animation: vprog var(--dur) linear forwards;
+      }
+      @keyframes vprog {
+        to {
+          transform: scaleX(1);
+        }
+      }
+      .v-side {
+        overflow-y: auto;
+        border-right: 1px solid var(--pgl);
+        padding: 10px 8px 16px;
+      }
+      .v-side h4 {
+        margin: 14px 10px 4px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--pgm);
+      }
+      .v-side h4:first-child {
+        margin-top: 2px;
+      }
+      .v-list button {
+        all: unset;
+        box-sizing: border-box;
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .v-list button:hover {
+        background: var(--pg2);
+      }
+      .v-n {
+        width: 18px;
+        flex: none;
+        color: var(--pgm);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .v-list button[aria-current="true"] {
+        background: var(--pgt);
+        color: var(--pg);
+      }
+      .v-list button[aria-current="true"] .v-n {
+        color: inherit;
+        opacity: 0.65;
+      }
+      .v-opts {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0 10px;
+      }
+      .v-opts label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .v-opts input[type="range"] {
+        width: 100%;
+      }
+      .v-opts label[for="size"] {
+        display: block;
+      }
+      body.scroll .v-stage {
+        overflow: auto;
+      }
+      body.scroll .v-duo {
+        flex: none;
+        align-items: flex-start;
+        padding-bottom: 16px;
+      }
+      #sizeL {
+        color: var(--pgm);
+        font-variant-numeric: tabular-nums;
+      }
+      .v-keys {
+        margin: 16px 10px 0;
+        font-size: 12px;
+        color: var(--pgm);
+        line-height: 1.9;
+      }
+      kbd {
+        font:
+          11px ui-monospace,
+          Menlo,
+          monospace;
+        border: 1px solid var(--pgl);
+        border-radius: 4px;
+        padding: 0 4px;
+        background: var(--pg2);
+        color: var(--pgt);
+      }
+      .v-stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 0;
+        min-height: 0;
+        padding: 10px 16px 0;
+        overflow: hidden;
+      }
+      .v-head {
+        text-align: center;
+        max-width: 900px;
+      }
+      .v-head b {
+        font-size: 17px;
+      }
+      .v-head p {
+        margin: 2px 0 0;
+        color: var(--pgm);
+      }
+      .v-duo {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 48px;
+      }
+      .v-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .v-lab {
+        font-weight: 600;
+      }
+      .v-lab span {
+        color: var(--pgm);
+        font-weight: 400;
+      }
+      .v-pw {
+        zoom: var(--z);
+        padding: 11px;
+      }
+      body.noframe .v-pw {
+        padding: 0;
+      }
+      body.noframe .phone {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      @media (max-width: 900px) {
+        body {
+          grid-template: auto auto 1fr / 1fr;
+          height: auto;
+          min-height: 100vh;
+          overflow: auto;
+        }
+        .v-bar {
+          grid-column: 1;
+        }
+        .v-side {
+          border-right: 0;
+          border-bottom: 1px solid var(--pgl);
+        }
+        .v-list {
+          display: flex;
+          overflow-x: auto;
+        }
+        .v-side h4,
+        .v-keys {
+          display: none;
+        }
+        .v-list button {
+          width: auto;
+          white-space: nowrap;
+        }
+        .v-duo {
+          flex-wrap: wrap;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .v-prog.run {
+          animation: none;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="mockups.css" />
+  </head>
+  <body>
+    <div class="v-bar">
+      <a href="options.html" title="Back to all design options"
+        >herdr-remote viewer</a
+      >
+      <span class="v-cg"
+        ><button
+          class="v-ib"
+          id="prev"
+          aria-label="Previous screen"
+          title="Previous screen (Left arrow)"
+        ></button
+        ><span id="pos"></span
+        ><button
+          class="v-ib"
+          id="next"
+          aria-label="Next screen"
+          title="Next screen (Right arrow)"
+        ></button
+      ></span>
+      <span class="v-cg"
+        ><button
+          class="v-ib"
+          id="play"
+          aria-pressed="false"
+          title="Go through all screens (Space)"
+        ></button
+        ><select id="speed" aria-label="Time on each screen">
+          <option value="2000">2 s</option>
+          <option value="4000">4 s</option>
+          <option value="8000">8 s</option>
+        </select></span
+      >
+      <span class="v-cg"
+        >Compare
+        <span class="v-seg" id="cmp"
+          ><button data-v="systems">Pane and Dispatch</button
+          ><button data-v="pane">Pane modes</button
+          ><button data-v="dispatch">Dispatch modes</button></span
+        ></span
+      >
+      <span class="v-cg"
+        >Theme
+        <span class="v-seg" id="theme"
+          ><button data-v="default">Default</button
+          ><button data-v="light">Light</button
+          ><button data-v="dark">Dark</button></span
+        ></span
+      >
+      <button
+        class="v-ib"
+        id="fs"
+        aria-label="Full screen"
+        title="Full screen (F)"
+      ></button>
+      <i class="v-prog" id="prog"></i>
+    </div>
+    <aside class="v-side">
+      <nav class="v-list" id="list" aria-label="Screens"></nav>
+      <h4>View</h4>
+      <div class="v-opts">
+        <label for="size">Size <span id="sizeL"></span></label
+        ><input type="range" id="size" min="15" max="45" step="1" />
+        <label><input type="checkbox" id="fitH" /> Fit to window height</label>
+        <label><input type="checkbox" id="bars" /> System bars</label>
+        <label><input type="checkbox" id="frame" /> Phone frame</label>
+      </div>
+      <div class="v-keys">
+        <kbd>Left</kbd> <kbd>Right</kbd> screens<br /><kbd>Space</kbd> play or
+        pause<br /><kbd>C</kbd> compare &nbsp;<kbd>T</kbd> theme<br /><kbd
+          >B</kbd
+        >
+        system bars<br /><kbd>F</kbd> full screen
+      </div>
+    </aside>
+    <main class="v-stage">
+      <div class="v-head" id="head">
+        <b id="title"></b>
+        <p id="note"></p>
+      </div>
+      <div class="v-duo" id="duo"></div>
+    </main>
+
+    <script src="mockups.js"></script>
+    <script>
+      const PANE = SYS.find((s) => s.id === "pane"),
+        DISP = SYS.find((s) => s.id === "dispatch");
+      const GROUPS = [
+        ["Lock and alerts", ["lock", "notify"]],
+        ["Pairing", ["pair", "pairCode", "pairFail"]],
+        [
+          "Spaces and agents",
+          [
+            "spacesLoading",
+            "spaces",
+            "spacesOffline",
+            "space",
+            "all",
+            "allEmpty",
+          ],
+        ],
+        [
+          "Agent",
+          [
+            "agentBlocked",
+            "agentRefused",
+            "agentViewOnly",
+            "agentApplied",
+            "agentTranscript",
+            "agentError",
+          ],
+        ],
+        ["Settings", ["settings"]],
+      ];
+      const svg = (d) =>
+        `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+      const I = {
+        prev: svg('<path d="M15 6l-6 6 6 6"/>'),
+        next: svg('<path d="M9 6l6 6-6 6"/>'),
+        play: svg('<path d="M7 5l12 7-12 7z"/>'),
+        pause: svg('<path d="M8 5v14M16 5v14"/>'),
+        fs: svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
+      };
+      const $ = (id) => document.getElementById(id);
+      const st = {
+        screen: "agentBlocked",
+        cmp: "pane",
+        theme: "default",
+        size: 30,
+        fit: 1,
+        bars: 0,
+        frame: 1,
+        speed: 4000,
+      };
+      new URLSearchParams(location.hash.slice(1)).forEach((v, k) => {
+        if (k in st)
+          st[k] = typeof st[k] === "number" ? (isNaN(+v) ? st[k] : +v) : v;
+      });
+      if (!SCREENS.some((s) => s.id === st.screen)) st.screen = "agentBlocked";
+      const idx = () => SCREENS.findIndex((s) => s.id === st.screen);
+      const nextOf = (list, v) => list[(list.indexOf(v) + 1) % list.length];
+      let timer = null;
+
+      $("prev").innerHTML = I.prev;
+      $("next").innerHTML = I.next;
+      $("fs").innerHTML = I.fs;
+      $("list").innerHTML = GROUPS.map(
+        ([g, ids]) =>
+          `<h4>${g}</h4>` +
+          ids
+            .map((id) => {
+              const i = SCREENS.findIndex((s) => s.id === id);
+              return `<button data-k="${id}"><span class="v-n">${i + 1}</span>${SCREENS[i].name}</button>`;
+            })
+            .join(""),
+      ).join("");
+
+      function fit() {
+        const pad = st.frame ? 22 : 0,
+          w = 412 + pad,
+          h = 915 + pad,
+          stage = document.querySelector(".v-stage");
+        const zh = (stage.clientHeight - $("head").offsetHeight - 48) / h; // room for the label row and gaps
+        const zw = ((st.size / 100) * innerWidth) / w; // the size that the user picked
+        const zf = (stage.clientWidth - 80) / (2 * w); // both phones must fit side by side
+        const z = Math.max(0.2, Math.min(st.fit ? zh : Infinity, zw, zf));
+        document.body.style.setProperty("--z", z.toFixed(3));
+        const real = Math.round(((z * w) / innerWidth) * 100);
+        $("sizeL").textContent =
+          real < st.size
+            ? `${real}% (max for this window)`
+            : `${st.size}% of the width`;
+      }
+      function restartProg() {
+        const p = $("prog");
+        p.classList.remove("run");
+        if (timer) {
+          void p.offsetWidth;
+          p.style.setProperty("--dur", st.speed + "ms");
+          p.classList.add("run");
+        }
+      }
+      function save() {
+        history.replaceState(null, "", "#" + new URLSearchParams(st));
+      }
+      function render() {
+        const sc = SCREENS[idx()],
+          mode = (S) => (st.theme === "default" ? S.def : st.theme);
+        $("title").textContent = sc.name;
+        $("note").textContent = sc.note;
+        $("pos").textContent = `${idx() + 1} / ${SCREENS.length}`;
+        document
+          .querySelectorAll("#list button")
+          .forEach((b) =>
+            b.setAttribute("aria-current", b.dataset.k === st.screen),
+          );
+        document
+          .querySelector(`#list button[data-k="${st.screen}"]`)
+          .scrollIntoView({ block: "nearest" });
+        const one = st.cmp === "pane" ? PANE : DISP;
+        const cols =
+          st.cmp === "systems"
+            ? [
+                [PANE, mode(PANE)],
+                [DISP, mode(DISP)],
+              ]
+            : [
+                [one, "light"],
+                [one, "dark"],
+              ];
+        $("duo").innerHTML = cols
+          .map(
+            ([S, m]) =>
+              `<div class="v-col"><div class="v-lab">${S.name} <span>· ${m === "dark" ? "Dark" : "Light"}</span></div><div class="v-pw">${phone(S, st.screen, m)}</div></div>`,
+          )
+          .join("");
+        for (const id of ["cmp", "theme"])
+          document
+            .querySelectorAll(`#${id} button`)
+            .forEach((b) =>
+              b.setAttribute("aria-pressed", b.dataset.v === st[id]),
+            );
+        $("theme").classList.toggle("off", st.cmp !== "systems");
+        $("size").value = st.size;
+        $("fitH").checked = !!st.fit;
+        $("bars").checked = !!st.bars;
+        $("frame").checked = !!st.frame;
+        $("speed").value = st.speed;
+        document.body.classList.toggle("zones", !!st.bars);
+        document.body.classList.toggle("noframe", !st.frame);
+        document.body.classList.toggle("scroll", !st.fit);
+        save();
+        fit();
+        restartProg();
+      }
+      function setPlay(on) {
+        clearInterval(timer);
+        timer = on ? setInterval(() => go(1), st.speed) : null;
+        $("play").setAttribute("aria-pressed", on);
+        $("play").innerHTML =
+          (on ? I.pause : I.play) + `<span>${on ? "Pause" : "Play"}</span>`;
+        restartProg();
+      }
+      function go(d) {
+        st.screen = SCREENS[(idx() + d + SCREENS.length) % SCREENS.length].id;
+        render();
+      }
+      const user = (fn) => {
+        fn();
+        if (timer) setPlay(true);
+      }; // a manual step restarts the play timer
+      const toggleFS = () =>
+        document.fullscreenElement
+          ? document.exitFullscreen()
+          : document.documentElement.requestFullscreen();
+      const segClick = (id, key) => (e) => {
+        const b = e.target.closest("button");
+        if (b) {
+          st[key] = b.dataset.v;
+          render();
+        }
+      };
+
+      $("prev").onclick = () => user(() => go(-1));
+      $("next").onclick = () => user(() => go(1));
+      $("list").onclick = (e) => {
+        const b = e.target.closest("button");
+        if (b)
+          user(() => {
+            st.screen = b.dataset.k;
+            render();
+          });
+      };
+      $("play").onclick = () => setPlay(!timer);
+      $("speed").onchange = (e) =>
+        user(() => {
+          st.speed = +e.target.value;
+          render();
+        });
+      $("cmp").onclick = segClick("cmp", "cmp");
+      $("theme").onclick = segClick("theme", "theme");
+      $("size").oninput = (e) => {
+        st.size = +e.target.value;
+        fit();
+        save();
+      };
+      $("fitH").onchange = (e) => {
+        st.fit = +e.target.checked;
+        render();
+      };
+      $("bars").onchange = (e) => {
+        st.bars = +e.target.checked;
+        render();
+      };
+      $("frame").onchange = (e) => {
+        st.frame = +e.target.checked;
+        render();
+      };
+      $("fs").onclick = toggleFS;
+      addEventListener("resize", fit);
+      addEventListener("keydown", (e) => {
+        if (
+          e.metaKey ||
+          e.ctrlKey ||
+          e.altKey ||
+          e.target.matches("input[type=range],select")
+        )
+          return;
+        const k = e.key.toLowerCase();
+        if (e.key === "ArrowRight") user(() => go(1));
+        else if (e.key === "ArrowLeft") user(() => go(-1));
+        else if (e.key === " ") setPlay(!timer);
+        else if (k === "t" && st.cmp === "systems") {
+          st.theme = nextOf(["default", "light", "dark"], st.theme);
+          render();
+        } else if (k === "c") {
+          st.cmp = nextOf(["systems", "pane", "dispatch"], st.cmp);
+          render();
+        } else if (k === "b") {
+          st.bars = +!st.bars;
+          render();
+        } else if (k === "f") toggleFS();
+        else return;
+        e.preventDefault();
+      });
+      setPlay(false);
+      render();
+    </script>
+  </body>
+</html>
