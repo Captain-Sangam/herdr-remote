@@ -65,6 +65,9 @@ object Texts {
 
     /** After an action: the daemon's own reply keeps its reason; any other failure may have reached the Mac. */
     fun actionError(e: Throwable): String = if (e is ApiException) error(e) else result("outcome_unknown")
+
+    /** The note when a prompt refresh fails: a Reload the user asked for reports it; the refresh after an action keeps the action's note. */
+    fun refreshError(current: String?, e: Throwable, manual: Boolean): String? = if (manual) error(e) else current
 }
 
 class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : ViewModel() {
@@ -124,9 +127,9 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
         }
     }
 
-    fun refreshPrompt() {
+    fun refreshPrompt(manual: Boolean = true) {
         viewModelScope.launch {
-            try { _prompt.value = app.api()!!.prompt(address) } catch (e: Exception) { _note.value = Texts.error(e) }
+            try { _prompt.value = app.api()!!.prompt(address) } catch (e: Exception) { _note.value = Texts.refreshError(_note.value, e, manual) }
         }
     }
 
@@ -146,7 +149,7 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 resyncIfExpired(e, api)
             }
             _busy.value = false
-            refreshPrompt()
+            refreshPrompt(manual = false)
         }
     }
 

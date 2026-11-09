@@ -36,4 +36,12 @@ class TextsTest {
             assertEquals(e.toString(), "Outcome unknown. Check the transcript before you send again.", Texts.actionError(e))
         }
     }
+
+    @Test
+    fun theRefreshAfterAnActionKeepsTheActionsNote() {
+        val note = Texts.result("outcome_unknown")
+        assertEquals(note, Texts.refreshError(note, UnreachableException("x"), manual = false))
+        assertEquals(null, Texts.refreshError(null, UnreachableException("x"), manual = false))
+        assertEquals("The Mac is not reachable.", Texts.refreshError(note, UnreachableException("x"), manual = true))
+    }
 }
