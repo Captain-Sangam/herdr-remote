@@ -316,7 +316,14 @@ fun TmuxBar(
     alerts: Map<Int, Int> = emptyMap(),
 ) {
     val c = Pane.colors
-    Row(Modifier.fillMaxWidth().height(Pane.space.touch).background(c.surface2).topRule(c.line)) {
+    // Scrolls sideways when it does not fit (font scale 1.3 on a narrow phone).
+    Row(
+        Modifier.fillMaxWidth()
+            .height(Pane.space.touch)
+            .background(c.surface2)
+            .topRule(c.line)
+            .horizontalScroll(rememberScrollState())
+    ) {
         Box(
             Modifier.fillMaxHeight().background(c.done).padding(horizontal = Pane.space.m),
             contentAlignment = Alignment.Center,

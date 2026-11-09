@@ -3,6 +3,7 @@ package dev.herdrremote
 import dev.herdrremote.net.ApiException
 import dev.herdrremote.net.UnreachableException
 import dev.herdrremote.ui.Texts
+import dev.herdrremote.ui.endpointKind
 import dev.herdrremote.ui.theme.NoteKind
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -95,5 +96,14 @@ class TextsTest {
             Texts.kind(Texts.error(ApiException(409, "x", "mac_in_use", 4200))),
         )
         assertEquals(NoteKind.Error, Texts.kind("Unlock the app first."))
+    }
+
+    @Test
+    fun endpointsAreWifiOrTailscale() {
+        assertEquals("Wi-Fi", endpointKind("192.168.1.24"))
+        assertEquals("Wi-Fi", endpointKind("10.0.0.5"))
+        assertEquals("Tailscale", endpointKind("100.101.2.3"))
+        assertEquals("Wi-Fi", endpointKind("100.128.2.3"))
+        assertEquals("Tailscale", endpointKind("zeus-mbp.tail3c2e.ts.net"))
     }
 }

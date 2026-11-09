@@ -1,18 +1,17 @@
 package dev.herdrremote.ui
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,29 +20,49 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.Agent
 import dev.herdrremote.net.Space
+import dev.herdrremote.ui.theme.NoteKind
+import dev.herdrremote.ui.theme.Pane
+import dev.herdrremote.ui.theme.PaneBanner
+import dev.herdrremote.ui.theme.PaneBox
+import dev.herdrremote.ui.theme.PaneHeader
+import dev.herdrremote.ui.theme.PaneNote
+import dev.herdrremote.ui.theme.PaneSubline
+import dev.herdrremote.ui.theme.StatusMeter
+import dev.herdrremote.ui.theme.StatusRow
+import dev.herdrremote.ui.theme.StatusTag
 import dev.herdrremote.watch.AgentsState
 import kotlinx.coroutines.delay
 
-fun statusColor(state: String): Color =
-    when (state) {
-        "blocked" -> Color(0xFFD94C4C)
-        "working" -> Color(0xFF3B82F6)
-        "done" -> Color(0xFF22A06B)
-        "error" -> Color(0xFFB45309)
-        else -> Color(0xFF8A8F98)
-    }
-
 val urgency = listOf("blocked", "error", "done", "working", "idle")
 
-fun mostUrgent(agents: List<Agent>): String =
-    agents.map { it.state }.minByOrNull { urgency.indexOf(it).let { i -> if (i < 0) 99 else i } }
-        ?: ""
+/** The place of a state in [urgency]; an unknown state sorts last. */
+fun rank(state: String) = urgency.indexOf(state).let { if (it < 0) 99 else it }
+
+fun mostUrgent(agents: List<Agent>): String = agents.map { it.state }.minByOrNull(::rank) ?: ""
+
+/** "4 agents · 1 blocked · 1 error". */
+fun counts(agents: List<Agent>): String {
+    val blocked = agents.count { it.blocked }
+    val errors = agents.count { it.state == "error" }
+    return "${agents.size} agent${if (agents.size == 1) "" else "s"}" +
+        (if (blocked > 0) " · $blocked blocked" else "") +
+        (if (errors > 0) " · $errors error" else "")
+}
+
+/** Old data stays readable but dimmed while the events stream is down. */
+fun Modifier.stale(state: AgentsState) = alpha(if (state.connected) 1f else 0.45f)
 
 /**
  * "Last update 12 s ago" while the events stream is down (failure case: hc unavailable, endpoint
@@ -62,60 +81,55 @@ fun StaleBanner(state: AgentsState) {
         val age =
             if (state.updatedAt == 0L) "no data yet"
             else "last update ${(now - state.updatedAt) / 1000} s ago"
-        Surface(
-            color = MaterialTheme.colorScheme.errorContainer,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                "Not connected to the Mac: $age",
-                Modifier.padding(12.dp),
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
-        }
+        PaneBanner("Not connected to the Mac: $age")
     }
 }
 
+/** The first load: a short terminal log of the endpoints the phone tries, not a spinner. */
 @Composable
-fun AgentRow(a: Agent, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+fun ConnectLog(endpoints: List<String>, error: String? = null) {
+    val c = Pane.colors
+    Column(
+        Modifier.padding(horizontal = Pane.space.l, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(Pane.space.xs),
     ) {
-        Surface(
-            color = statusColor(a.state),
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.padding(end = 12.dp),
-        ) {
-            Text("  ", Modifier.padding(4.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(a.label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-            val detail =
-                listOf(a.space, a.app, a.state + (a.kind?.let { " · $it" } ?: ""))
-                    .filter { it.isNotEmpty() }
-                    .joinToString(" · ")
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
-            if (a.blocked && !a.msg.isNullOrEmpty())
-                Text(a.msg, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-        }
+        Text(
+            "$ herdr-remote connect",
+            style = Pane.type.label.copy(fontWeight = FontWeight.Bold),
+            color = c.text,
+        )
+        endpoints.forEach { Text("› trying $it …", style = Pane.type.label, color = c.muted) }
+        if (error != null) Text("› $error", style = Pane.type.label, color = c.blocked)
+        Box(Modifier.size(8.dp, 15.dp).background(c.text))
     }
-    HorizontalDivider()
+}
+
+/** A pane of rows, 8 dp in from the screen edges. */
+@Composable
+fun ListPane(
+    title: String,
+    color: Color = Pane.colors.line,
+    content: @Composable ColumnScope.() -> Unit,
+) = PaneBox(title, Modifier.padding(horizontal = Pane.space.s), color = color, content = content)
+
+/** An agent row: name, "space · app · kind", and the prompt or the task title. */
+@Composable
+fun AgentRow(a: Agent, withSpace: Boolean, tag: Boolean = true, onClick: () -> Unit) {
+    StatusRow(
+        state = a.state,
+        title = a.label,
+        meta =
+            listOfNotNull(if (withSpace) a.space else null, a.app, a.kind)
+                .filter { it.isNotEmpty() }
+                .joinToString(" · "),
+        onClick = onClick,
+        detail = (if (a.blocked) a.msg else a.title)?.ifEmpty { null },
+        trailing = { if (tag) StatusTag(a.state) },
+    )
 }
 
 @Composable
-fun SpacesScreen(
-    app: HerdrRemoteApp,
-    onSpace: (Space) -> Unit,
-    onAllAgents: () -> Unit,
-    onSettings: () -> Unit,
-) {
+fun SpacesScreen(app: HerdrRemoteApp, onSpace: (Space) -> Unit, onAgent: (String) -> Unit) {
     val state by app.repository.state.collectAsStateWithLifecycle()
     var spaces by remember { mutableStateOf<List<Space>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -130,45 +144,60 @@ fun SpacesScreen(
             }
             .onFailure { error = it.message }
     }
+    val loading = spaces.isEmpty() && state.updatedAt == 0L
     Column(Modifier.fillMaxSize()) {
-        Header("Spaces", action = { TextButton(onClick = onSettings) { Text("Settings") } })
+        PaneHeader("~/spaces", online = state.connected)
+        PaneSubline {
+            Text(if (loading) "Connecting to the Mac…" else counts(state.agents.values.toList()))
+        }
+        if (loading) {
+            ConnectLog(app.store.endpoints, error?.let { "Could not load spaces: $it" })
+            return
+        }
         StaleBanner(state)
         if (error != null && spaces.isEmpty())
-            Text(
-                "Could not load spaces: $error",
-                Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.error,
-            )
-        LazyColumn(Modifier.weight(1f)) {
-            items(spaces, key = { it.id }) { sp ->
-                val live = sp.agents.map { state.agents[it.address] ?: it }
-                Row(
-                    Modifier.fillMaxWidth().clickable { onSpace(sp) }.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Surface(
-                        color = statusColor(mostUrgent(live)),
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.padding(end = 12.dp),
-                    ) {
-                        Text("  ", Modifier.padding(4.dp))
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(sp.name, style = MaterialTheme.typography.titleMedium)
-                        val blocked = live.count { it.blocked }
-                        Text(
-                            "${live.size} agent${if (live.size == 1) "" else "s"}" +
-                                if (blocked > 0) " · $blocked blocked" else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            PaneNote("Could not load spaces: $error", NoteKind.Error)
+        Column(
+            Modifier.weight(1f)
+                .verticalScroll(rememberScrollState())
+                .stale(state)
+                .padding(bottom = Pane.space.s),
+            verticalArrangement = Arrangement.spacedBy(Pane.space.s),
+        ) {
+            val blocked = state.sorted.filter { it.blocked }
+            if (blocked.isNotEmpty())
+                ListPane("needs you (${blocked.size})", Pane.colors.blocked) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(
+                                SpanStyle(color = Pane.colors.blocked, fontWeight = FontWeight.Bold)
+                            ) {
+                                append("${blocked.size}")
+                            }
+                            append(
+                                if (blocked.size == 1) " agent needs you" else " agents need you"
+                            )
+                        },
+                        Modifier.padding(horizontal = Pane.space.m).padding(bottom = Pane.space.xs),
+                        style = Pane.type.label,
+                        color = Pane.colors.muted,
+                    )
+                    blocked.forEach {
+                        AgentRow(it, withSpace = true, tag = false) { onAgent(it.address) }
                     }
                 }
-                HorizontalDivider()
+            ListPane("${spaces.size} space${if (spaces.size == 1) "" else "s"}") {
+                spaces.forEach { sp ->
+                    val live = sp.agents.map { state.agents[it.address] ?: it }
+                    StatusRow(
+                        state = mostUrgent(live),
+                        title = sp.name,
+                        meta = counts(live),
+                        onClick = { onSpace(sp) },
+                        trailing = { StatusMeter(live.map { it.state }) },
+                    )
+                }
             }
-        }
-        TextButton(onClick = onAllAgents, Modifier.padding(8.dp)) {
-            Text("All agents (${state.agents.size})")
         }
     }
 }
@@ -181,26 +210,89 @@ fun SpaceScreen(app: HerdrRemoteApp, space: Space, onAgent: (String) -> Unit, on
             .map { state.agents[it.address] ?: it }
             .filter { state.agents.isEmpty() || it.address in state.agents }
     Column(Modifier.fillMaxSize()) {
-        Header(space.name, onBack = onBack)
+        PaneHeader("~/spaces/${space.name}", onBack = onBack, online = state.connected)
+        PaneSubline { Text(counts(agents)) }
         StaleBanner(state)
-        LazyColumn { items(agents, key = { it.address }) { AgentRow(it) { onAgent(it.address) } } }
+        Column(
+            Modifier.weight(1f)
+                .verticalScroll(rememberScrollState())
+                .stale(state)
+                .padding(bottom = Pane.space.s)
+        ) {
+            ListPane("agents") {
+                agents.forEach { AgentRow(it, withSpace = false) { onAgent(it.address) } }
+            }
+        }
     }
 }
 
 @Composable
-fun AllAgentsScreen(app: HerdrRemoteApp, onAgent: (String) -> Unit, onBack: () -> Unit) {
+fun AllAgentsScreen(app: HerdrRemoteApp, onAgent: (String) -> Unit) {
     val state by app.repository.state.collectAsStateWithLifecycle()
+    val loading = state.agents.isEmpty() && state.updatedAt == 0L
+    val empty = state.agents.isEmpty() && !loading
     Column(Modifier.fillMaxSize()) {
-        Header("All agents", onBack = onBack)
-        StaleBanner(state)
-        if (state.agents.isEmpty())
+        PaneHeader("~/agents", online = state.connected)
+        PaneSubline {
             Text(
-                "No agents",
-                Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                when {
+                    loading -> "Connecting to the Mac…"
+                    empty -> "Nothing runs on the Mac"
+                    else -> "${state.agents.size} agents · blocked first"
+                }
             )
-        LazyColumn {
-            items(state.sorted, key = { it.address }) { AgentRow(it) { onAgent(it.address) } }
         }
+        if (loading) {
+            ConnectLog(app.store.endpoints)
+            return
+        }
+        StaleBanner(state)
+        if (empty) {
+            EmptyAgents()
+            return
+        }
+        // Blocked first, then by urgency; the stable sort keeps the space and tab order inside
+        // each.
+        val (blocked, others) = state.sorted.sortedBy { rank(it.state) }.partition { it.blocked }
+        Column(
+            Modifier.weight(1f)
+                .verticalScroll(rememberScrollState())
+                .stale(state)
+                .padding(bottom = Pane.space.s),
+            verticalArrangement = Arrangement.spacedBy(Pane.space.s),
+        ) {
+            if (blocked.isNotEmpty())
+                ListPane("needs you · ${blocked.size}") {
+                    blocked.forEach { AgentRow(it, withSpace = true) { onAgent(it.address) } }
+                }
+            if (others.isNotEmpty())
+                ListPane("others · ${others.size}") {
+                    others.forEach { AgentRow(it, withSpace = true) { onAgent(it.address) } }
+                }
+        }
+    }
+}
+
+@Composable
+fun EmptyAgents() {
+    val c = Pane.colors
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 56.dp),
+        verticalArrangement = Arrangement.spacedBy(Pane.space.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "┌─ hc agents ─────┐\n│                 │\n│   (0 agents)    │\n│                 │\n└─────────────────┘",
+            style = Pane.type.label,
+            color = c.muted,
+            softWrap = false,
+        )
+        Text("No agents", style = Pane.type.head, color = c.text)
+        Text(
+            "Start an agent in Herdr on the Mac. It shows here within 2 s.",
+            style = Pane.type.body,
+            color = c.muted,
+            textAlign = TextAlign.Center,
+        )
     }
 }

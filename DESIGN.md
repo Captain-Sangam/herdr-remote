@@ -60,7 +60,7 @@ Pane makes the app look like the terminal that it controls.
 
 ### Terminal palette
 
-The live view uses this palette in both modes. The values are in `assets/xterm/live.html`.
+The live view uses this palette in both modes. The values are in `assets/xterm/live.html`. Kotlin has the background and the foreground as `Pane.terminalBg` and `Pane.terminalFg`.
 
 | Role       | Colour    |
 | ---------- | --------- |
@@ -160,6 +160,7 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
 - **Idea:** a split terminal pane. The red pane is an agent that waits.
 - **Launcher:** `res/mipmap-anydpi/ic_launcher.xml`, an adaptive icon with `ic_launcher_foreground`, the background colour `ic_launcher_background` (`#191C26`) and a themed layer `ic_launcher_monochrome`.
 - **Notifications:** `res/drawable/ic_stat_herdr.xml`, the same shapes in white.
+- **UI icons:** `res/drawable/ic_lock`, `ic_mac`, `ic_tail`, `ic_key` and `ic_bell`. They are the stroke icons from `design/mockups.js` with square ends. The screen tints them.
 
 ## 9. Add a screen
 
@@ -171,7 +172,22 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
 
 ## 10. Current state
 
-- `PaneTheme` is active for the whole app through `HerdrRemoteTheme` in `App.kt`. The current screens get the Pane colours, type and square shapes through Material 3.
-- The current screens do not use the Pane components yet. Convert them one by one to match `design/viewer.html`.
-- `statusColor()` in `ListScreens.kt` still has its own colours. Replace it with `Pane.colors.status()` when you convert that file.
-- `AgentScreen.kt` paints black behind the live view while the page loads. Change it to the terminal background `#14161E`.
+- All screens use the Pane components and match `design/viewer.html`: lock, pair (start, code, failed), spaces (loading, not connected), space, all agents (empty), agent (approval, refusal, view-only question, result notes, transcript, live) and settings.
+- `TmuxBar` is the navigation between spaces, agents and settings. It scrolls sideways when it does not fit, for example at font scale 1.3.
+- Status colours come only from `Pane.colors.status()`, through `StatusRow`, `StatusGlyph`, `StatusTag` and `StatusMeter`. `statusColor()` is gone.
+- The live view has the terminal background `#14161E` behind it and in the WebView before the page paints.
+- `Texts.kind()` gives the `NoteKind` of a result or error text.
+
+Known differences from the mockups:
+
+- The API has no agent age. Meta lines show "space · app · kind" and not "app · 1 min".
+- The API has no tool name. The "needs you" rows show the prompt text and not "Bash · herdr-remote".
+- The loading log lists the stored endpoints. The phone does not report a result for each endpoint, so no line shows "timeout".
+- The header shows the link state on the list screens only (section 7). The mockup also shows it on the agent screen.
+- At font scale 1.3 a pane title sits about 3 dp below the border line. `PaneBox` offsets the title in dp, and the title grows in sp.
+
+Checks:
+
+- The JVM tests pass, and `Texts.kind()` and `endpointKind()` have tests.
+- The pair screen was checked on the emulator with `uiautomator dump` at font scale 1.0 and 1.3, in dark mode. Keys and fields are 48 dp high.
+- The other screens need a paired phone. FLAG_SECURE blocks screenshots, so check them by eye on the phone in light and dark mode, at font scale 1.3, with 3-button navigation.
