@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -85,7 +85,7 @@ fun HerdrRemoteUi(app: HerdrRemoteApp, initialAddress: String? = null) {
     }
     HerdrRemoteTheme {
         Surface(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxSize().statusBarsPadding()) {
+            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 if (!paired) {
                     PairScreen(
                         app = app,

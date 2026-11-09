@@ -51,6 +51,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-process:2.9.1")
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.biometric:biometric:1.1.0")
+    // biometric pulls fragment 1.2.5, whose FragmentActivity rejects the request codes that
+    // activity 1.10's result launchers use: asking for a permission crashed the app.
+    implementation("androidx.fragment:fragment:1.8.6")
     implementation("androidx.webkit:webkit:1.13.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
