@@ -40,6 +40,12 @@ cat >"$PLIST" <<PLIST
 PLIST
 
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+# bootout returns before the service is gone, and bootstrap fails with EIO until it is.
+i=0
+while [ $i -lt 50 ] && launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1; do
+  sleep 0.1
+  i=$((i + 1))
+done
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 echo "LaunchAgent $LABEL loaded"
 
