@@ -8,3 +8,5 @@ android/local.properties
 android/.kotlin/
 daemon/herdr-remoted
 daemon/*.test
+node_modules/
+.tools/

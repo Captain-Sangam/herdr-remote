@@ -1,0 +1,11 @@
+# Not formatted. One path from the repo root per line, no globs:
+# scripts/format.sh skips these for every tool (gofmt, ktfmt, shfmt too).
+# Prettier also skips everything in .gitignore, so build outputs are covered.
+# go.sum, LICENSE files and binaries match no formatter's file type.
+.agents/
+android/app/src/main/assets/xterm/xterm.js
+android/app/src/main/assets/xterm/xterm.css
+android/gradlew
+android/gradle/wrapper/
+daemon/testdata/
+package-lock.json
