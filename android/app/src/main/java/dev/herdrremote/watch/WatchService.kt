@@ -17,11 +17,13 @@ import dev.herdrremote.net.Agent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * Background watching (decision 13): an opt-in foreground service that holds
@@ -66,7 +68,10 @@ class WatchService : Service() {
     }
 
     override fun onDestroy() {
-        scope.cancel()
+        // Wait for the collectors: a state reset during stopService() can repost the
+        // ongoing notification after the system removed it, and it would stay for good.
+        runBlocking { scope.coroutineContext.job.cancelAndJoin() }
+        manager().cancel(ONGOING_ID)
         super.onDestroy()
     }
 

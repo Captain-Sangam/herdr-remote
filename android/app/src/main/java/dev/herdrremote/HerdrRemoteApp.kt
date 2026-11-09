@@ -6,6 +6,7 @@ import dev.herdrremote.net.DeviceKey
 import dev.herdrremote.net.HerdrApi
 import dev.herdrremote.net.Store
 import dev.herdrremote.watch.AgentsRepository
+import dev.herdrremote.watch.WatchService
 
 /** Process-wide objects. No DI framework (decision 15). */
 class HerdrRemoteApp : Application() {
@@ -28,6 +29,7 @@ class HerdrRemoteApp : Application() {
     }
 
     fun forgetMac() {
+        WatchService.stop(this)
         apiCache = null
         repository.stop()
         store.forget()

@@ -159,8 +159,8 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
         throw UnreachableException(lastErr?.message ?: "No endpoint is reachable")
     }
 
-    /** The SSE stream. The caller reads the body and closes it. */
-    fun events(host: String): Response = open(sse.newCall(Request.Builder().url("${base(host)}/v1/events").build()))
+    /** The SSE stream, as a call the caller runs with [open] and can cancel to end the blocking read. */
+    fun events(host: String): Call = sse.newCall(Request.Builder().url("${base(host)}/v1/events").build())
 
     /**
      * The live terminal bytes, as a call the caller runs with [open] and can

@@ -1,6 +1,7 @@
 package dev.herdrremote.watch
 
 import dev.herdrremote.HerdrRemoteApp
+import dev.herdrremote.net.HerdrApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,12 +14,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import okhttp3.Call
 import okhttp3.Response
 import java.io.IOException
+import kotlin.coroutines.coroutineContext
 
 /**
  * Holds /v1/events: one SSE connection with a 30 s read timeout (decision 5),
  * reconnecting with backoff. Screens read [state]; the service reads [events].
+ * stop() cancels the stream's call: the keepalives would otherwise hold the
+ * blocking read open long after the loop was cancelled.
  */
 class AgentsRepository(private val app: HerdrRemoteApp) {
     private val _state = MutableStateFlow(AgentsState())
@@ -32,6 +37,7 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var job: Job? = null
+    private var call: Call? = null
 
     @Synchronized
     fun start() {
@@ -43,17 +49,25 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
     fun stop() {
         job?.cancel()
         job = null
+        call?.cancel()
         _state.value = AgentsState()
     }
 
+    /** The stream call of the loop [me], or null when stop() came first. */
+    @Synchronized
+    private fun openCall(api: HerdrApi, host: String, me: Job?): Call? =
+        if (me !== job) null else api.events(host).also { call = it }
+
     private suspend fun loop() {
+        val me = coroutineContext[Job]
         var backoff = 1000L
         while (scope.isActive) {
             val api = app.api() ?: return
             var served = false
             for (host in api.hosts()) {
+                val c = openCall(api, host, me) ?: return
                 try {
-                    api.events(host).use { resp ->
+                    api.open(c).use { resp ->
                         api.markGood(host)
                         served = true
                         backoff = 1000L
@@ -64,6 +78,7 @@ class AgentsRepository(private val app: HerdrRemoteApp) {
                         read(resp)
                     }
                 } catch (e: IOException) {
+                    if (c.isCanceled()) return // stop(): not the next endpoint
                     // next endpoint, or back off
                 }
                 _state.update { it.copy(connected = false) }
