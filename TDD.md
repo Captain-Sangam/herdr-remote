@@ -891,3 +891,57 @@ Built by the implementer on 2026-11-08 against Herdr.app 0.1.13, hc 0.1.18, Clau
 - A grep of `audit.log` and `daemon.log` after your own run: `grep -c . ~/Library/Application\ Support/herdr-remote/audit.log`.
 
 **Undone**: nothing in the plan is unimplemented. Criterion 10 (Tailscale) could not be run here. The probes, the emulator and the manual harness were removed at the end.
+
+## Review (2026-11-09)
+
+Two code reviews checked the implementation, and their fixes are on `main` up to `fca5008`. The reports are `.agents/tasks/herdr-remote/review.md` and `review-2.md`.
+
+**Plan amendments.** The code now does the following, and this list replaces the earlier text where they differ:
+
+- **Decision 5 and section 3.7, actions:**
+  - The action read timeout is 150 s.
+  - An action changes endpoint only if the connection failed before the request was sent. After that, the app never retries.
+  - Any failure that is not an explicit daemon reply shows "Outcome unknown. Check the transcript before you send again".
+  - The prompt refresh after a decision does not replace that note.
+- **Decision 7, revocation:** a revoke marks the device as revoked in memory, closes its connections and live views, and then writes `devices.json`. A failed write keeps the mark and returns the error, so a retry writes again.
+- **Decision 14, section 3.7 and criterion 12, notifications:** both the private and the public text say "An agent needs attention". The tab name appears only in the app.
+- **Section 3.7, app lock:** the application registers one observer on the process lifecycle. No activity owns it.
+- **Section 3.7, prompt card:** the prompt block has a bounded height (a third of the screen) and scrolls vertically. Approve and Deny stay visible.
+- **Section 3.7, "Forget this Mac":** it cancels the event stream and stops the watch service before it clears the pairing.
+- **Section 3.7, `/v1/hello`:** the app calls it on each SSE connect, beside the stream, and after `expired_request`, without a re-post.
+- **Section 3.5:** the daemon waits up to 120 s for `terminal.keys`.
+- **Section 3.6, transcripts:**
+  - A read error, or a file with no record that parses, falls back to terminal text.
+  - The first request pages back until it has an item.
+- **Section 7:** hc can hold an approval key for up to 120 s while someone types at the Mac. That is the queued-key window of the accepted residual race.
+
+**Known issues, accepted** (likelihood times severity):
+
+- A reused process ID can map an agent to an old Claude session (1 × 5).
+- A duplicate request in flight gets an empty reply after a refusal (2 × 3).
+- A stalled enrollment connection can outlive the pairing window (2 × 4).
+- An unpaired client can write refusal lines during a pairing window (2 × 3).
+- The live handler waits for the process before it cancels it (1 × 3).
+- `install.sh` loads the LaunchAgent before it checks the mod marker (1 × 2).
+- A retry of a decision after the terminal ended gets 404 (2 × 2).
+- An open space screen does not add new agents (5 × 2).
+- Commit `0d14b24` does not build alone (history only).
+- The title line above the prompt block has no line limit (1 × 6). The optional fix is `maxLines = 3`.
+
+**Closing check against section 4, at `fca5008`:**
+
+| Criterion | Verdict |
+|---|---|
+| 1 | Delivered. Rerun `scripts/install.sh`, because the installed daemon is older than the fixes. |
+| 2 | Delivered in code and tests. Allow with a real phone is not verified. |
+| 3 | Delivered, verified on the emulator. |
+| 4 | Delivered, with the fallback fix. |
+| 5 | Delivered in code. Resize and heavy output are not verified. |
+| 6 | Delivered, with the long-prompt fix. |
+| 7 | Delivered (at most once, "Outcome unknown"). |
+| 8 | Delivered on the emulator. Not verified on a real phone. |
+| 9 | Delivered, with the revoke fix. |
+| 10 | Not verified (no Tailscale). |
+| 11 | Delivered, with the app-lock fix. Verified on the emulator after a swipe from recents. |
+| 12 | Delivered in code. The lock screen and recents on a real phone are not verified. |
+| 13 | Delivered. |
