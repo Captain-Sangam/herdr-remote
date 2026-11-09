@@ -10,10 +10,12 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.HerdrApi
+import dev.herdrremote.ui.theme.Pane
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
@@ -186,6 +188,8 @@ fun LiveView(app: HerdrRemoteApp, address: String, modifier: Modifier = Modifier
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
+                // The terminal colour before live.html paints, not white.
+                setBackgroundColor(Pane.terminalBg.toArgb())
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false

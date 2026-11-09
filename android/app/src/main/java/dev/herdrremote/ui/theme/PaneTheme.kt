@@ -178,6 +178,10 @@ object Pane {
 
     val type = PaneTypeScale
     val space = PaneSpace
+
+    /** The live view's terminal colours, the same in both modes (assets/xterm/live.html). */
+    val terminalBg = Color(0xFF14161E)
+    val terminalFg = Color(0xFFD8DEE9)
 }
 
 /**

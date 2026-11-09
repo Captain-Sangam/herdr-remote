@@ -3,6 +3,7 @@ package dev.herdrremote
 import dev.herdrremote.net.ApiException
 import dev.herdrremote.net.UnreachableException
 import dev.herdrremote.ui.Texts
+import dev.herdrremote.ui.theme.NoteKind
 import java.io.IOException
 import java.net.SocketTimeoutException
 import org.junit.Assert.assertEquals
@@ -78,5 +79,21 @@ class TextsTest {
             "The Mac is not reachable.",
             Texts.refreshError(note, UnreachableException("x"), manual = true),
         )
+    }
+
+    @Test
+    fun aNoteLooksLikeItsOutcome() {
+        assertEquals(NoteKind.Ok, Texts.kind(Texts.result("applied")))
+        assertEquals(NoteKind.Ok, Texts.kind(Texts.result("sent")))
+        for (r in listOf("sent_unconfirmed", "uncertain", "outcome_unknown")) assertEquals(
+            r,
+            NoteKind.Warn,
+            Texts.kind(Texts.result(r)),
+        )
+        assertEquals(
+            NoteKind.Error,
+            Texts.kind(Texts.error(ApiException(409, "x", "mac_in_use", 4200))),
+        )
+        assertEquals(NoteKind.Error, Texts.kind("Unlock the app first."))
     }
 }

@@ -13,6 +13,7 @@ import dev.herdrremote.net.PromptView
 import dev.herdrremote.net.TranscriptItem
 import dev.herdrremote.net.UnreachableException
 import dev.herdrremote.net.Uuid7
+import dev.herdrremote.ui.theme.NoteKind
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +69,17 @@ object Texts {
                 }
             is UnreachableException -> "The Mac is not reachable."
             else -> "Outcome unknown. Check the transcript before you send again."
+        }
+
+    /** How a note looks: Ok when applied or sent, Warn when not confirmed, Error for the rest. */
+    fun kind(note: String): NoteKind =
+        when (note) {
+            result("applied"),
+            result("sent") -> NoteKind.Ok
+            result("sent_unconfirmed"),
+            result("uncertain"),
+            result("outcome_unknown") -> NoteKind.Warn
+            else -> NoteKind.Error
         }
 
     /**
