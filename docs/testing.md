@@ -210,8 +210,8 @@ Useful commands. `adb` is in `$ANDROID_HOME/platform-tools/`, which is not on th
 - `scripts/format.sh` formats Markdown, JSON, YAML, JavaScript, HTML and CSS with Prettier, Go with `gofmt`, Kotlin with ktfmt and shell with shfmt. The tool versions are pinned.
 - `scripts/format.sh --check` changes nothing. It lists unformatted files and exits 1 if there are any.
 - `.githooks/pre-commit` formats the staged files. Turn it on once per clone with `git config core.hooksPath .githooks`. It refuses a file that also has unstaged changes.
-- `.github/workflows/ci.yaml` runs on each pull request and each push to `main`. It has two Linux jobs. Each command has a cap of 30 s:
+- `.github/workflows/ci.yaml` runs on each pull request and each push to `main`. It has two Linux jobs. Each check has a cap of 30 s, and each job a cap of 1 minute:
   - `format`: `scripts/format.sh --check`.
-  - `daemon`: `go test -short ./...`. `-short` skips the 60 s pairing long-poll and the 10 s keepalive. The rest takes about 15 s.
+  - `daemon`: `go test -short -timeout 30s ./...`, with the Go build cache. `-short` skips the 60 s pairing long-poll and the 10 s keepalive. The rest takes about 15 s.
 - The full daemon suite and the app tests and build run locally before each commit ([AGENTS.md](../AGENTS.md)). Gradle alone takes minutes on a fresh runner.
 - `.prettierignore` lists the paths that no tool formats.

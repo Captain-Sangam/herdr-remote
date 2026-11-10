@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  # Each command has a hard cap of 30 s. timeout-minutes counts only whole
+  # Each check has a cap of 30 s. timeout-minutes counts only whole
   # minutes, so it is the backstop for the setup steps.
   format:
     runs-on: ubuntu-24.04
@@ -42,6 +42,9 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: daemon/go.mod
-          cache: false
-      - run: timeout 30 go test -short ./...
+          # The build cache: a cold compile of crypto/tls and net/http
+          # takes most of the job.
+          cache-dependency-path: daemon/go.sum
+      # go test's own -timeout caps the tests at 30 s, not the compile.
+      - run: go test -short -timeout 30s ./...
         working-directory: daemon
