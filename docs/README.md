@@ -66,4 +66,6 @@ The council record of the planning, the build and the reviews is in `.agents/tas
 ## Other places
 
 - [`design/`](../design/viewer.html): the Pane mockups. `viewer.html` shows one screen at a time. `options.html` shows all screens, the tokens and the components.
+- [`assets/`](assets/): the logo and the screens in the root README.
 - [`../HANDOFF.md`](../HANDOFF.md): the state of the work for the next session.
+- [`../AGENTS.md`](../AGENTS.md): the short guide for coding agents.

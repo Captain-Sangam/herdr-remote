@@ -1,6 +1,6 @@
 # Deployment
 
-This page tells how to install, pair and update herdr-remote on one Mac and one or more Android phones. The root README has the short version.
+This page tells how to install, pair and update herdr-remote on one Mac and one or more Android phones. The [README](../README.md) has the short version.
 
 ## What goes where
 

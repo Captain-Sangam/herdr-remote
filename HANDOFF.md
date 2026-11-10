@@ -6,10 +6,12 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 
 - An Android app that controls Herdr.app sessions on this Mac. It shows spaces, agents, transcripts, a live terminal view, approve and deny, and messages.
 - The phone reaches only `herdr-remoted`, a Go daemon (LaunchAgent `dev.herdr-remote`), over mutual TLS:
-  - port 7766 for paired phones;
+  - port 7766 for paired phones
   - port 7767 for enrollment, open only during a pairing window.
 - A Herdr mod overlay (`herdr-remote`) shows the pairing QR code, the paired devices and Revoke.
-- The design is [`docs/history/technical-design.md`](docs/history/technical-design.md) (was `TDD.md`). Its "As built" and "Review (2026-11-09)" sections at the end describe the code. [`docs/product.md`](docs/product.md) (was `PRD.md`) holds the product requirements. [`docs/history/debate.md`](docs/history/debate.md) (was `DEBATE.md`) tells why each decision was made.
+- The docs are in [`docs/`](docs/README.md). [`AGENTS.md`](AGENTS.md) has the commands and the conventions. [`README.md`](README.md) has the local setup.
+  - The current design is [`docs/architecture.md`](docs/architecture.md), with one ADR for each decision in [`docs/adr/`](docs/README.md#decisions-adr). [`docs/product.md`](docs/product.md) holds the product requirements.
+  - The original technical design (was `TDD.md`) and the design debate (was `DEBATE.md`) are in [`docs/history/`](docs/README.md#history). They are the record, not the current state.
 - The visual design is [`docs/design.md`](docs/design.md) (was `DESIGN.md`, the Pane design system). [`design/viewer.html`](design/viewer.html) shows every screen in Pane, beside the runner-up, Dispatch.
 
 ## Where things are
@@ -17,6 +19,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 | What           | Where                                                                                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Repo           | `/Users/zeus/code/herdr-remote`, branch `main`, no git remote                                                                                                       |
+| Docs           | `docs/` (index `docs/README.md`), `AGENTS.md`, `README.md`. Images in `docs/assets/`                                                                                |
 | Daemon code    | `daemon/` (Go)                                                                                                                                                      |
 | Android app    | `android/` (Kotlin, Compose). The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`                                                                     |
 | Pane theme     | `android/app/src/main/java/dev/herdrremote/ui/theme/` (`PaneTheme.kt`, `PaneComponents.kt`)                                                                         |
@@ -48,6 +51,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - The Pane design system, the app icon and the notification icon (`48d779f`). Every screen uses the Pane components (`f234df4`, `c9cdeab`, `8bc7120`). `docs/design.md` section 10 lists the known differences from the mockups.
   - Every block gave two alerts: hc sends the status and the turn as two events, and the turn went into the episode key. Fixed (`6c8e729`).
   - The tab bar has no window numbers: "0:spaces" read as "0 spaces".
+  - The docs moved under `docs/`: focused docs, 18 ADRs, `README.md`, `AGENTS.md` and `CLAUDE.md`. Code comments cite the docs and the ADRs (`51bc97a` to the commit that adds this line).
 - **The phone:** Samsung S26 (SM-S942B), Android 17, 3-button navigation, dark mode, font scale 0.9. USB debugging is on. It runs the latest APK and is paired as `SM-S942B` (`af453d9d2350e234`). "Notify me" is on.
 - **Checked on the phone over adb on 2026-11-10 (all pass):**
   - Layout at font scale 0.9 and 1.3, with the keyboard open: nothing under the navigation bar, no tap target under 48 dp.
@@ -79,13 +83,4 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 
 ## Conventions for the next session
 
-- **Herdr:** drive it only with `hc` and `herdr-app` (see the `herdr` skill). Never use the legacy `herdr` CLI.
-- **Helper agents:** start them with `hc run --bg --label herdr.space=<space id>` so that they show as a tab, and name the tab. Under auto mode, a helper may not pair a device: `herdr-remoted pair allow` needs the user's approval.
-- **Council:** larger work goes through the council skill (`/council plan | implement | review`), with the task folder `.agents/tasks/herdr-remote/`.
-  - `.agents/` is tracked in git, so commit changes there before a council review. Its pre-flight check expects a clean tree.
-  - Use new reviewer and implementer names that do not clash with live terminals.
-- **Commits:** commit on `main` and never push without asking. The pre-commit hook formats staged files and refuses a file that also has unstaged changes.
-- **The user's preferences:**
-  - Save and checkpoint (commit plus an annotated `checkpoint-*` tag) when asked.
-  - Reviews must not nitpick. Surface only what matters.
-  - Plan and design docs follow the house style (the `language` skill).
+The conventions are in [`AGENTS.md`](AGENTS.md#conventions). Claude Code loads them through `CLAUDE.md`.
