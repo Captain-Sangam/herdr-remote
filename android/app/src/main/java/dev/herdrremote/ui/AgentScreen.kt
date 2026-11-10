@@ -1,7 +1,13 @@
 package dev.herdrremote.ui
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollScope
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,21 +23,34 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,7 +79,7 @@ import dev.herdrremote.ui.theme.PromptField
 import dev.herdrremote.ui.theme.StatusTag
 import dev.herdrremote.ui.theme.topRule
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
 
 @Composable
 fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
@@ -73,6 +92,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
     val state by app.repository.state.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
     var draft by remember { mutableStateOf("") }
+    val follow = remember { mutableStateOf(true) }
 
     Column(Modifier.fillMaxSize()) {
         val a = agent
@@ -122,7 +142,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
             PaneNote(n, kind, Modifier.padding(Pane.space.s))
 
         PaneTabs(listOf("transcript", "live"), tab) { tab = it }
-        if (tab == 0) Transcript(vm, a.app, a.state == "working", Modifier.weight(1f))
+        if (tab == 0) Transcript(vm, a.app, a.state == "working", follow, Modifier.weight(1f))
         else
             Column(Modifier.weight(1f).fillMaxWidth().background(Pane.terminalBg)) {
                 LiveView(app, address, Modifier.weight(1f).fillMaxWidth())
@@ -144,7 +164,12 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
         PromptField(
             value = draft,
             onValueChange = { draft = it },
-            onSend = { if (!busy) vm.send(draft) { draft = "" } },
+            onSend = {
+                if (!busy) {
+                    follow.value = true
+                    vm.send(draft) { draft = "" }
+                }
+            },
             placeholder = if (a.blocked) "Answer the prompt first" else "Message the agent",
             enabled = !a.blocked,
         )
@@ -241,8 +266,39 @@ fun Approval(
     }
 }
 
+/** A transcript list entry: one message, or the steps of a turn in one fold. */
+data class Entry(val items: List<TranscriptItem>, val steps: Boolean)
+
+/**
+ * Folds a transcript like Claude does: the prompts and each turn's answer show, and the steps
+ * between them (tool calls, results and the text between them) go into one fold per turn.
+ */
+fun fold(items: List<TranscriptItem>): List<Entry> {
+    val out = mutableListOf<Entry>()
+    val turn = mutableListOf<TranscriptItem>()
+    fun flush() {
+        // The answer is the text after the last tool step.
+        val last = turn.indexOfLast { it.kind != "text" }
+        if (last >= 0) out += Entry(turn.subList(0, last + 1).toList(), steps = true)
+        turn.drop(last + 1).forEach { out += Entry(listOf(it), steps = false) }
+        turn.clear()
+    }
+    for (it in items) if (it.kind == "text" && it.role == "user") {
+        flush()
+        out += Entry(listOf(it), steps = false)
+    } else turn += it
+    flush()
+    return out
+}
+
 @Composable
-fun Transcript(vm: AgentViewModel, app: String, working: Boolean, modifier: Modifier = Modifier) {
+fun Transcript(
+    vm: AgentViewModel,
+    app: String,
+    working: Boolean,
+    follow: MutableState<Boolean>,
+    modifier: Modifier = Modifier,
+) {
     val tr by vm.transcript.collectAsStateWithLifecycle()
     val c = Pane.colors
     val list = rememberLazyListState()
@@ -259,24 +315,63 @@ fun Transcript(vm: AgentViewModel, app: String, working: Boolean, modifier: Modi
                 }
             }
     }
-    // The end marker's index: the head items before tr.items, plus tr.items.
-    val end =
-        tr.items.size +
-            listOf(tr.nextCursor.isNotEmpty(), tr.source == "terminal", tr.error != null).count {
-                it
-            }
-    // Like a terminal: new items scroll into view while the end is in view. Read before the new
-    // items are laid out, so it is the old layout's answer.
-    val atEnd = remember(tr.items) { !list.canScrollForward }
-    LaunchedEffect(tr.items) { if (atEnd) list.scrollToItem(end) }
-    val scope = rememberCoroutineScope()
+    val entries = remember(tr.items) { fold(tr.items) }
+    // The open folds, by their first item.
+    val open = remember { mutableStateListOf<TranscriptItem>() }
 
-    Box(modifier.fillMaxWidth()) {
+    // Follow, like a terminal: the view stays at the end while items come, the keyboard opens or
+    // the last fold grows. A scroll up turns it off. The end, a send or "Bottom ↓" turn it on.
+    val scrollUp = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (
+                    source == NestedScrollSource.UserInput &&
+                        available.y > 0 &&
+                        list.canScrollBackward
+                )
+                    follow.value = false
+                return Offset.Zero
+            }
+        }
+    }
+    LaunchedEffect(list) {
+        // The transcript opens at the end.
+        follow.value = true
+        var more = false
+        snapshotFlow { follow.value to list.canScrollForward }
+            .collect { (on, now) ->
+                // Only a scroll that reaches the end turns follow on. A fold that opens at the
+                // end turns it off before the list grows.
+                if (more && !now) follow.value = true
+                else if (on && now) list.scrollToItem(list.layoutInfo.totalItemsCount - 1)
+                more = now
+            }
+    }
+    // A tick each time a message start passes the top, like the detents of a dial.
+    val haptic = LocalHapticFeedback.current
+    LaunchedEffect(list) {
+        snapshotFlow { list.firstVisibleItemIndex }
+            .drop(1)
+            .collect {
+                if (!follow.value)
+                    haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+            }
+    }
+    val scrolling = list.isScrollInProgress && !follow.value
+    val bar by
+        animateFloatAsState(
+            if (scrolling) 1f else 0f,
+            tween(if (scrolling) 100 else 400, delayMillis = if (scrolling) 0 else 600),
+            label = "scroll bar",
+        )
+
+    Box(modifier.fillMaxWidth().nestedScroll(scrollUp)) {
         LazyColumn(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().scrollBar(list, c.muted) { bar },
             state = list,
             contentPadding = PaddingValues(horizontal = Pane.space.m, vertical = Pane.space.s),
             verticalArrangement = Arrangement.spacedBy(6.dp),
+            flingBehavior = rememberMessageFling(list),
         ) {
             if (tr.nextCursor.isNotEmpty())
                 item {
@@ -285,6 +380,7 @@ fun Transcript(vm: AgentViewModel, app: String, working: Boolean, modifier: Modi
                             enabled = !tr.loading,
                             role = Role.Button,
                         ) {
+                            follow.value = false
                             vm.loadOlder()
                         },
                         contentAlignment = Alignment.CenterStart,
@@ -305,17 +401,121 @@ fun Transcript(vm: AgentViewModel, app: String, working: Boolean, modifier: Modi
                     )
                 }
             tr.error?.let { item { PaneNote(it, NoteKind.Error) } }
-            items(tr.items) { TranscriptRow(it, app) }
+            for (e in entries) if (!e.steps) item { TranscriptRow(e.items[0], app) }
+            else {
+                val key = e.items[0]
+                val shown = key in open
+                item {
+                    StepsRow(e.items, shown) {
+                        if (shown) open -= key
+                        else {
+                            open += key
+                            // Show the steps from the top, not the end of the list.
+                            follow.value = false
+                        }
+                    }
+                }
+                if (shown) items(e.items) { TranscriptRow(it, app) }
+            }
             item { Spacer(Modifier.height(1.dp)) }
         }
-        if (list.canScrollForward)
+        if (!follow.value)
             KeyButton(
                 "Bottom ↓",
-                { scope.launch { list.animateScrollToItem(end) } },
+                { follow.value = true },
                 Modifier.align(Alignment.BottomEnd).padding(Pane.space.m).background(c.bg),
             )
     }
 }
+
+/**
+ * A fling that comes to rest on the nearest message start, so a scroll moves from message to
+ * message. A message taller than the screen scrolls freely, so all of it can be read.
+ */
+@Composable
+fun rememberMessageFling(list: LazyListState): FlingBehavior {
+    val decay = ScrollableDefaults.flingBehavior()
+    return remember(list, decay) {
+        object : FlingBehavior {
+            override suspend fun ScrollScope.performFling(initialVelocity: Float): Float {
+                val left = with(decay) { performFling(initialVelocity) }
+                val info = list.layoutInfo
+                val shown = info.visibleItemsInfo
+                val i = shown.indexOfFirst { it.offset + it.size > 0 }
+                val top = shown.getOrNull(i) ?: return left
+                // At the end the view stays there, so that follow comes back on.
+                if (
+                    top.offset >= 0 || top.size > info.viewportSize.height || !list.canScrollForward
+                )
+                    return left
+                val next = shown.getOrNull(i + 1)?.offset
+                val by = if (next == null || -top.offset < next) top.offset else next
+                var done = 0f
+                animate(0f, by.toFloat()) { v, _ -> done += scrollBy(v - done) }
+                return left
+            }
+        }
+    }
+}
+
+/** A thin bar on the right that shows where the view is in the loaded transcript. */
+fun Modifier.scrollBar(list: LazyListState, color: Color, alpha: () -> Float) = drawWithContent {
+    drawContent()
+    val a = alpha()
+    val info = list.layoutInfo
+    val shown = info.visibleItemsInfo
+    val n = info.totalItemsCount
+    if (a == 0f || shown.isEmpty() || !(list.canScrollForward || list.canScrollBackward))
+        return@drawWithContent
+    // Item counts stand in for heights: rows are mostly short now that the steps fold.
+    val first = shown.first()
+    val pos = first.index + (-first.offset).coerceAtLeast(0).toFloat() / first.size.coerceAtLeast(1)
+    val h = maxOf(size.height * shown.size / n, 24.dp.toPx())
+    val f =
+        if (!list.canScrollForward) 1f
+        else (pos / (n - shown.size).coerceAtLeast(1)).coerceIn(0f, 1f)
+    val w = 3.dp.toPx()
+    drawRoundRect(
+        color.copy(alpha = a),
+        Offset(size.width - w - 2.dp.toPx(), (size.height - h) * f),
+        Size(w, h),
+        CornerRadius(w / 2),
+    )
+}
+
+/** A turn's folded steps: "▸ 5 steps · Bash git status". A tap opens or closes them. */
+@Composable
+fun StepsRow(steps: List<TranscriptItem>, open: Boolean, onToggle: () -> Unit) {
+    val c = Pane.colors
+    val calls = steps.filter { it.kind == "tool_call" }
+    val n = calls.size.takeIf { it > 0 } ?: steps.size
+    // The last call: in a turn that runs, what the agent does now.
+    val last = (calls.lastOrNull() ?: steps.last()).text.lineSequence().first()
+    Row(
+        Modifier.fillMaxWidth()
+            .heightIn(min = Pane.space.touch)
+            .clickable(role = Role.Button, onClick = onToggle),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            if (open) "  ▾" else "  ▸",
+            Modifier.width(labelWidth()),
+            style = Pane.type.label.copy(fontWeight = FontWeight.Bold),
+            color = c.muted,
+        )
+        Text(
+            "$n ${if (n == 1) "step" else "steps"} · $last",
+            style = Pane.type.label,
+            color = c.muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Nine cells at the label size; sp, so it grows with the font scale. */
+@Composable private fun labelWidth() = with(LocalDensity.current) { 66.sp.toDp() }
 
 /** One transcript item: "you ›", "claude ›", "tool $" or "⎿" in a left column, then the text. */
 @Composable
@@ -333,8 +533,7 @@ fun TranscriptRow(it: TranscriptItem, app: String) {
         if (label != null)
             Text(
                 label,
-                // Nine cells at the label size; sp, so it grows with the font scale.
-                Modifier.width(with(LocalDensity.current) { 66.sp.toDp() }),
+                Modifier.width(labelWidth()),
                 style = Pane.type.label.copy(fontWeight = FontWeight.Bold),
                 color = labelColor,
                 maxLines = 1,

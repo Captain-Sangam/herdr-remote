@@ -3,8 +3,10 @@ package dev.herdrremote
 import dev.herdrremote.net.ApiException
 import dev.herdrremote.net.TranscriptItem
 import dev.herdrremote.net.UnreachableException
+import dev.herdrremote.ui.Entry
 import dev.herdrremote.ui.Texts
 import dev.herdrremote.ui.endpointKind
+import dev.herdrremote.ui.fold
 import dev.herdrremote.ui.mergeTail
 import dev.herdrremote.ui.theme.NoteKind
 import java.io.IOException
@@ -34,6 +36,29 @@ class TextsTest {
         assertEquals(items("a"), mergeTail(emptyList(), items("a")))
         // No overlap (another file, or terminal text): null, so the caller replaces.
         assertNull(mergeTail(items("a", "b"), items("c")))
+    }
+
+    @Test
+    fun stepsFoldBetweenThePromptAndTheAnswer() {
+        val ask = TranscriptItem("user", "text", "ask")
+        val note = TranscriptItem("assistant", "text", "let me look")
+        val call = TranscriptItem("assistant", "tool_call", "Bash ls")
+        val out = TranscriptItem("user", "tool_result", "a b")
+        val answer = TranscriptItem("assistant", "text", "done")
+        val run = TranscriptItem("assistant", "tool_call", "Bash make")
+        assertEquals(
+            listOf(
+                Entry(listOf(ask), false),
+                Entry(listOf(note, call, out), true),
+                Entry(listOf(answer), false),
+                // A turn that runs: all of it folds.
+                Entry(listOf(ask), false),
+                Entry(listOf(note, run), true),
+            ),
+            fold(listOf(ask, note, call, out, answer, ask, note, run)),
+        )
+        // No tool steps (terminal text, or a plain answer): nothing folds.
+        assertEquals(listOf(Entry(listOf(answer), false)), fold(listOf(answer)))
     }
 
     @Test
