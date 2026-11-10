@@ -19,21 +19,22 @@ type trFixture struct {
 
 func setupTranscripts(t *testing.T) *trFixture {
 	t.Helper()
-	d := startTestDaemon(t)
+	d := startTestDaemon(t, func(f *fake) {
+		claude := liveAgent("t1", "claude-code", "done", 3)
+		claude.Foreground = &Foreground{PID: 4242, Name: "claude.exe"}
+		f.setTerminal(claude)
+		f.setRead("t1", "screen of t1")
+		codex := liveAgent("t2", "codex", "idle", 2)
+		codex.Foreground = &Foreground{PID: 4343, Name: "node"}
+		f.setTerminal(codex)
+		f.setRead("t2", "screen of t2")
+	})
 	root := t.TempDir()
 	f := &trFixture{d: d, claude: filepath.Join(root, "claude"), codex: filepath.Join(root, "codex")}
 	d.transcripts.claudeDir, d.transcripts.codexDir = f.claude, f.codex
 	os.MkdirAll(filepath.Join(f.claude, "sessions"), 0o700)
 	os.MkdirAll(filepath.Join(f.claude, "projects", "-x"), 0o700)
 	os.MkdirAll(filepath.Join(f.codex, "sessions", "2026", "11", "08"), 0o700)
-	claude := liveAgent("t1", "claude-code", "done", 3)
-	claude.Foreground = &Foreground{PID: 4242, Name: "claude.exe"}
-	d.f.setTerminal(claude)
-	d.f.setRead("t1", "screen of t1")
-	codex := liveAgent("t2", "codex", "idle", 2)
-	codex.Foreground = &Foreground{PID: 4343, Name: "node"}
-	d.f.setTerminal(codex)
-	d.f.setRead("t2", "screen of t2")
 	f.cert, _ = d.pairPhone(t, "p")
 	d.waitOK(t)
 	return f
@@ -315,9 +316,10 @@ func TestTranscriptStaleCursor(t *testing.T) {
 	if st != 409 || raw["reason"] != "cursor" {
 		t.Fatalf("other file: %d %v", st, raw)
 	}
-	// The same path replaced by a new file (new inode): 409.
+	// The same path replaced by a new file (new inode): 409. The old file moves
+	// aside rather than going: Linux reuses a freed inode at once.
 	f.bindClaude(t, 4242, "sid-a")
-	os.Remove(f.claudeFile("sid-a"))
+	os.Rename(f.claudeFile("sid-a"), f.claudeFile("sid-a")+".old")
 	writeLines(t, f.claudeFile("sid-a"), lines, true)
 	if st, _, raw = f.get(t, "/v1/terminals/t1/transcript?cursor="+cur); st != 409 || raw["reason"] != "cursor" {
 		t.Fatalf("replaced file: %d %v", st, raw)

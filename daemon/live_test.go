@@ -41,8 +41,7 @@ func readsEOF(rd io.Reader, within time.Duration) bool {
 }
 
 func TestLiveStreamEndsOnDisconnectSizeAndRevoke(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, dev := d.pairPhone(t, "p")
 	d.waitOK(t)
 	open := func() (*http.Response, *bufio.Reader) {
@@ -98,8 +97,7 @@ func TestLiveStreamEndsOnDisconnectSizeAndRevoke(t *testing.T) {
 }
 
 func TestLiveLimitAndTargets(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 	var open []*http.Response

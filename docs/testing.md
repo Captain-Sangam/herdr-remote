@@ -4,15 +4,15 @@ This page tells how herdr-remote is tested. It covers the unit tests, the emulat
 
 ## Test layers
 
-| Layer            | Where                                | Runs                                       |
-| ---------------- | ------------------------------------ | ------------------------------------------ |
-| Go tests         | `daemon/*_test.go`                   | `go test ./...`, with a fake `hc`          |
-| JVM tests        | `android/app/src/test/`              | `./gradlew testDebugUnitTest`              |
-| Emulator tests   | `android/app/src/androidTest/`       | `./gradlew connectedDebugAndroidTest`      |
-| Manual harness   | `daemon/manual_test.go`              | A scratch daemon against the real `hc`     |
-| Probe agents     | Throwaway Claude and Codex terminals | Real prompts for approve, deny and markers |
-| On-device checks | A real phone over `adb`              | The acceptance criteria, by hand           |
-| Format check     | `scripts/format.sh --check`          | Local, the pre-commit hook and CI          |
+| Layer            | Where                                | Runs                                                |
+| ---------------- | ------------------------------------ | --------------------------------------------------- |
+| Go tests         | `daemon/*_test.go`                   | `go test ./...`, with a fake `hc`. CI runs `-short` |
+| JVM tests        | `android/app/src/test/`              | `./gradlew testDebugUnitTest`, local only           |
+| Emulator tests   | `android/app/src/androidTest/`       | `./gradlew connectedDebugAndroidTest`               |
+| Manual harness   | `daemon/manual_test.go`              | A scratch daemon against the real `hc`              |
+| Probe agents     | Throwaway Claude and Codex terminals | Real prompts for approve, deny and markers          |
+| On-device checks | A real phone over `adb`              | The acceptance criteria, by hand                    |
+| Format check     | `scripts/format.sh --check`          | Local, the pre-commit hook and CI                   |
 
 ## Commands
 
@@ -210,5 +210,8 @@ Useful commands. `adb` is in `$ANDROID_HOME/platform-tools/`, which is not on th
 - `scripts/format.sh` formats Markdown, JSON, YAML, JavaScript, HTML and CSS with Prettier, Go with `gofmt`, Kotlin with ktfmt and shell with shfmt. The tool versions are pinned.
 - `scripts/format.sh --check` changes nothing. It lists unformatted files and exits 1 if there are any.
 - `.githooks/pre-commit` formats the staged files. Turn it on once per clone with `git config core.hooksPath .githooks`. It refuses a file that also has unstaged changes.
-- `.github/workflows/ci.yaml` runs `scripts/format.sh --check` on each push and pull request. The repo has no remote yet, so it has not run.
+- `.github/workflows/ci.yaml` runs on each pull request and each push to `main`. It has two Linux jobs. Each check has a cap of 30 s, and each job a cap of 1 minute:
+  - `format`: `scripts/format.sh --check`.
+  - `daemon`: `go test -short -timeout 30s ./...`, with the Go build cache. `-short` skips the 60 s pairing long-poll and the 10 s keepalive. The rest takes about 15 s.
+- The full daemon suite and the app tests and build run locally before each commit ([AGENTS.md](../AGENTS.md)). Gradle alone takes minutes on a fresh runner.
 - `.prettierignore` lists the paths that no tool formats.

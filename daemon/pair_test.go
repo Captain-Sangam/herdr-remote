@@ -32,9 +32,15 @@ type testDaemon struct {
 	f *fake
 }
 
-func startTestDaemon(t *testing.T) *testDaemon {
+// startTestDaemon starts a daemon on a fake hc. Each setup runs before the
+// start: the fake reports terminals only in the snapshot that answers
+// events.subscribe, so a terminal set after the start can be missing.
+func startTestDaemon(t *testing.T, setup ...func(*fake)) *testDaemon {
 	t.Helper()
 	f := newFake(t)
+	for _, s := range setup {
+		s(f)
+	}
 	dir := filepath.Join(t.TempDir(), "state")
 	d, err := newDaemon(dir, f.r, "127.0.0.1:0", "127.0.0.1:0")
 	if err != nil {

@@ -157,8 +157,7 @@ func seedAgents(f *fake) {
 }
 
 func TestHelloAgentsAndTerminal(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 
@@ -214,8 +213,7 @@ func TestHelloAgentsAndTerminal(t *testing.T) {
 }
 
 func TestSpacesFollowHerdrApp(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 	var spaces []spaceJSON
@@ -250,8 +248,7 @@ func TestSpacesFollowHerdrApp(t *testing.T) {
 }
 
 func TestEventsSSE(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 	c := d.sse(t, &cert)
@@ -324,8 +321,10 @@ func TestLayoutParsesRealShape(t *testing.T) {
 }
 
 func TestEventsKeepaliveWithin11s(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	if testing.Short() {
+		t.Skip("10 s keepalive")
+	}
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 	c := d.sse(t, &cert)
@@ -341,8 +340,7 @@ func TestEventsKeepaliveWithin11s(t *testing.T) {
 }
 
 func TestHCLostGives503ThenRecovers(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, _ := d.pairPhone(t, "p")
 	d.waitOK(t)
 	c := d.sse(t, &cert)
@@ -384,8 +382,7 @@ func TestHCLostGives503ThenRecovers(t *testing.T) {
 }
 
 func TestRevokeEndsStreams(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, dev := d.pairPhone(t, "p")
 	d.waitOK(t)
 	c := d.sse(t, &cert)
@@ -404,8 +401,7 @@ func TestRevokeEndsStreams(t *testing.T) {
 // A revoke whose write of devices.json fails still ends the phone's access, and
 // a retry finds the device and writes the file (ADR 0007, amended).
 func TestRevokeThatFailsToSaveStillRevokes(t *testing.T) {
-	d := startTestDaemon(t)
-	seedAgents(d.f)
+	d := startTestDaemon(t, seedAgents)
 	cert, dev := d.pairPhone(t, "p")
 	d.waitOK(t)
 	c := d.sse(t, &cert)

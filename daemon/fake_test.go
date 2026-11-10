@@ -301,7 +301,18 @@ type fake struct {
 
 func newFake(t *testing.T) *fake {
 	t.Helper()
-	dir := t.TempDir()
+	// Not t.TempDir: a fake that the daemon's stop killed can still be writing
+	// calls.jsonl, and then a single RemoveAll fails the test. This cleanup runs
+	// after stop (cleanups run last in, first out) and tries again for 1 s.
+	dir, err := os.MkdirTemp("", "hrfake")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 50 && os.RemoveAll(dir) != nil; i++ {
+			time.Sleep(20 * time.Millisecond)
+		}
+	})
 	exe, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)

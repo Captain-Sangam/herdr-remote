@@ -1,13 +1,20 @@
 name: ci
 
-on: [push, pull_request]
+# One run for each push to a pull request: not a second one for the push.
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
+  # Each check has a cap of 30 s. timeout-minutes counts only whole
+  # minutes, so it is the backstop for the setup steps.
   format:
     runs-on: ubuntu-24.04
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -22,4 +29,22 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: scripts/format.sh --check
+      - run: timeout 30 scripts/format.sh --check
+
+  # -short skips the 60 s pairing long-poll and the 10 s keepalive. The full
+  # suite and the app tests and build run locally before each commit
+  # (AGENTS.md): Gradle alone takes minutes on a fresh runner.
+  daemon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: daemon/go.mod
+          # The build cache: a cold compile of crypto/tls and net/http
+          # takes most of the job.
+          cache-dependency-path: daemon/go.sum
+      # go test's own -timeout caps the tests at 30 s, not the compile.
+      - run: go test -short -timeout 30s ./...
+        working-directory: daemon
