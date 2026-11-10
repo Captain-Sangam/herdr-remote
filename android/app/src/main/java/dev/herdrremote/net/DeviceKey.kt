@@ -9,8 +9,8 @@ import java.util.Date
 import javax.security.auth.x500.X500Principal
 
 /**
- * The phone's P-256 key in Android Keystore (TDD section 3.7). Not bound to an unlocked device, so
- * alerts work while locked.
+ * The phone's P-256 key in Android Keystore (ADR 0014). Not bound to an unlocked device, so alerts
+ * work while locked.
  */
 object DeviceKey {
     const val ALIAS = "herdr-remote-device"

@@ -39,7 +39,7 @@ type reqEntry struct {
 }
 
 // actions holds the per-terminal locks, consumed markers, request ids and the
-// per-device rate limit (section 3.5 and decision 12).
+// per-device rate limit (docs/architecture.md section 3.5, and ADR 0012).
 type actions struct {
 	d        *Daemon
 	mu       sync.Mutex
@@ -205,7 +205,7 @@ func promptBlock(screen string) string {
 	return ""
 }
 
-// hasMarkers checks the option markers verified in sections 2.6 and 2.7.
+// hasMarkers checks the option markers verified in docs/interfaces.md.
 func hasMarkers(app, block string) bool {
 	switch app {
 	case "claude-code":
@@ -323,6 +323,8 @@ func (a *actions) checkRequestID(w http.ResponseWriter, id string) bool {
 	return true
 }
 
+// handleDecision runs the approval guard. The Rule N comments are the rules in
+// docs/architecture.md section 3.5.
 func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 	term, ok := d.agentTarget(w, r)
 	if !ok {

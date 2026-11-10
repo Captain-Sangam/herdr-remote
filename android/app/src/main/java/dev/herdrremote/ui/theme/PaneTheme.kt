@@ -26,13 +26,13 @@ import androidx.core.view.WindowCompat
 import dev.herdrremote.R
 
 /*
- * Pane, the herdr-remote design system (DESIGN.md). The app looks like the terminal it controls:
- * monospace text, square panes with 1 dp lines and ANSI status colours. Every screen reads its
- * colours, type and spacing from here (Pane.colors, Pane.type, Pane.space) and builds on the
- * components in PaneComponents.kt. Do not hard-code a colour or a text size in a screen.
+ * Pane, the herdr-remote design system (docs/design.md). The app looks like the terminal it
+ * controls: monospace text, square panes with 1 dp lines and ANSI status colours. Every screen
+ * reads its colours, type and spacing from here (Pane.colors, Pane.type, Pane.space) and builds on
+ * the components in PaneComponents.kt. Do not hard-code a colour or a text size in a screen.
  */
 
-/** The colour tokens. The names match DESIGN.md and design/mockups.js. */
+/** The colour tokens. The names match docs/design.md and design/mockups.js. */
 @Immutable
 data class PaneColors(
     val bg: Color,

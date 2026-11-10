@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** The app gate (decision 14) and its one process-lifecycle observer (review 2, fix 1). */
+/** The app gate (ADR 0014) and its one process-lifecycle observer (review 2, fix 1). */
 class GateTest {
     private class Process : LifecycleOwner {
         val registry = LifecycleRegistry.createUnsafe(this)

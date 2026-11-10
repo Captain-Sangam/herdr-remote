@@ -78,7 +78,7 @@ object Clients {
     }
 }
 
-/** The daemon's API (TDD section 3.4) with the phone-side timeouts of decision 5. */
+/** The daemon's API (docs/api.md) with the phone-side timeouts of ADR 0005. */
 class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKeyEntry) {
     private val calls = Clients.base(pin, entry).build()
     /**
@@ -246,7 +246,7 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
     }
 }
 
-/** Enrollment on the enrollment port (TDD section 3.3, rule 5). */
+/** Enrollment on the enrollment port (docs/architecture.md section 3.1, rule 5). */
 object Enroll {
     class Result(val deviceId: String)
 

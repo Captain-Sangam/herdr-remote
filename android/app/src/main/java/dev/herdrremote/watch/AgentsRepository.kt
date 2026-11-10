@@ -20,7 +20,7 @@ import okhttp3.Call
 import okhttp3.Response
 
 /**
- * Holds /v1/events: one SSE connection with a 30 s read timeout (decision 5), reconnecting with
+ * Holds /v1/events: one SSE connection with a 30 s read timeout (ADR 0005), reconnecting with
  * backoff. Screens read [state]; the service reads [events]. stop() cancels the stream's call: the
  * keepalives would otherwise hold the blocking read open long after the loop was cancelled.
  */

@@ -151,7 +151,7 @@ type ctxKey int
 
 const ctxDevice ctxKey = 1
 
-// deviceMiddleware looks the device up again on every request (decision 4).
+// deviceMiddleware looks the device up again on every request (ADR 0004).
 func (d *Daemon) deviceMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {

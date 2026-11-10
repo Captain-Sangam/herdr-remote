@@ -71,7 +71,7 @@ class AssetOnlyClient(context: Context, private val onReady: () -> Unit = {}) : 
 
 /**
  * The live terminal: xterm.js at the terminal's own size, fed from /v1/terminals/{t}/live with the
- * flow control of decision 8. It reopens the stream when it ends (a resize on the Mac), on an SSE
+ * flow control of ADR 0008. It reopens the stream when it ends (a resize on the Mac), on an SSE
  * reconnect, and when more than 1 MiB is waiting. stop() and reopen() cancel the stream's call, so
  * the blocking read ends, the response closes and the Mac's attach ends.
  */

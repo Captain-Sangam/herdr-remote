@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// agentJSON is the agent shape of section 3.4.
+// agentJSON is the agent shape in docs/api.md.
 type agentJSON struct {
 	Address string `json:"address"`
 	Space   string `json:"space"`
@@ -62,7 +62,7 @@ type state struct {
 	lay      layout
 	layAt    time.Time
 	subs     map[*subscriber]struct{}
-	onSize   func(terminal string) // step 5: end live streams of a resized terminal
+	onSize   func(terminal string) // end live streams of a resized terminal (ADR 0008)
 	kaEvery  time.Duration
 	deadline time.Duration // no note for this long means the connection is dead
 	conn     *hcConn       // the current events connection (tests)

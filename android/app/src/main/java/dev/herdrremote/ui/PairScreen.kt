@@ -68,7 +68,8 @@ sealed class PairState {
 }
 
 /**
- * Pairing (TDD section 3.3): scan or paste the code, show the 6 digits, wait for Allow on the Mac.
+ * Pairing (docs/architecture.md section 3.1): scan or paste the code, show the 6 digits, wait for
+ * Allow on the Mac.
  */
 @Composable
 fun PairScreen(app: HerdrRemoteApp, onPaired: () -> Unit) {

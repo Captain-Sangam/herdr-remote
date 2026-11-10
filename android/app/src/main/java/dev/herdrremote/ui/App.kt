@@ -54,7 +54,7 @@ sealed class Screen {
 /** The top-level screens, in the order of the tmux bar. */
 private val TOP = listOf(Screen.Home, Screen.AllAgents, Screen.Settings)
 
-/** The Pane design system: ui/theme and DESIGN.md. */
+/** The Pane design system: ui/theme and docs/design.md. */
 @Composable fun HerdrRemoteTheme(content: @Composable () -> Unit) = PaneTheme(content = content)
 
 /** No agent data here (SR-11): only the app's name and the Unlock key. */

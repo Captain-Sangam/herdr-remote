@@ -402,7 +402,7 @@ func TestRevokeEndsStreams(t *testing.T) {
 }
 
 // A revoke whose write of devices.json fails still ends the phone's access, and
-// a retry finds the device and writes the file (decision 7, amended).
+// a retry finds the device and writes the file (ADR 0007, amended).
 func TestRevokeThatFailsToSaveStillRevokes(t *testing.T) {
 	d := startTestDaemon(t)
 	seedAgents(d.f)

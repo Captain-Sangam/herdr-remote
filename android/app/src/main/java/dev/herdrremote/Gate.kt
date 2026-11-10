@@ -5,8 +5,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 
 /**
- * The app gate (decision 14): locked at start and after 5 minutes in the background. Nothing is
- * shown and no action runs while locked.
+ * The app gate (ADR 0014): locked at start and after 5 minutes in the background. Nothing is shown
+ * and no action runs while locked.
  */
 object Gate {
     const val LOCK_AFTER_MS = 5 * 60 * 1000L

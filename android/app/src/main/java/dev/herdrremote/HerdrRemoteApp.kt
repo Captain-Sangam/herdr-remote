@@ -8,7 +8,7 @@ import dev.herdrremote.net.Store
 import dev.herdrremote.watch.AgentsRepository
 import dev.herdrremote.watch.WatchService
 
-/** Process-wide objects. No DI framework (decision 15). */
+/** Process-wide objects. No DI framework (ADR 0015). */
 class HerdrRemoteApp : Application() {
     lateinit var store: Store
     @Volatile private var apiCache: HerdrApi? = null

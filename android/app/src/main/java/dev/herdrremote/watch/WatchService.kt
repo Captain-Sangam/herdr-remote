@@ -27,8 +27,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
- * Background watching (decision 13): an opt-in foreground service that holds /v1/events and shows
- * one private notification for each blocked episode.
+ * Background watching (ADR 0013): an opt-in foreground service that holds /v1/events and shows one
+ * private notification for each blocked episode.
  */
 class WatchService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

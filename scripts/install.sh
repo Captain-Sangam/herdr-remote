@@ -1,5 +1,5 @@
 #!/bin/sh
-# Installs herdr-remote for this user (TDD step 8):
+# Installs herdr-remote for this user (docs/deployment.md):
 #   ~/.local/bin/herdr-remoted                    the daemon, built from daemon/
 #   ~/Library/LaunchAgents/dev.herdr-remote.plist  runs `herdr-remoted serve`
 #   ~/.config/herdr-app/mods/herdr-remote/         the overlay mod

@@ -3,7 +3,7 @@ package dev.herdrremote.net
 import java.security.MessageDigest
 import java.util.Base64
 
-/** The content of the pairing QR code (TDD section 3.3, rule 4). */
+/** The content of the pairing QR code (docs/api.md, Pairing link). */
 data class PairingLink(
     val pin: String,
     val endpoints: List<String>,

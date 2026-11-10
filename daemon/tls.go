@@ -93,7 +93,7 @@ func pairCode(serverSPKI, clientSPKI []byte) string {
 	return fmt.Sprintf("%06d", binary.BigEndian.Uint32(h[:4])%1000000)
 }
 
-// mutualTLS is the shared listener configuration (decision 4). verify runs on
+// mutualTLS is the shared listener configuration (ADR 0004). verify runs on
 // every handshake, including resumptions, with a parsed P-256 leaf.
 func mutualTLS(cert tls.Certificate, verify func(leaf *x509.Certificate) error) *tls.Config {
 	return &tls.Config{

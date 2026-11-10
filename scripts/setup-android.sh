@@ -1,5 +1,5 @@
 #!/bin/sh
-# Installs the Android toolchain for herdr-remote on this Mac (TDD step 1).
+# Installs the Android toolchain for herdr-remote on this Mac (docs/deployment.md).
 # Outside the repo it changes only Homebrew packages and the SDK directory.
 set -eu
 export NONINTERACTIVE=1

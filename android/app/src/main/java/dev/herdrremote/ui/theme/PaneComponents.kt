@@ -51,8 +51,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /*
- * The Pane building blocks (DESIGN.md, section Components). Screens compose these; the mockups in
- * design/viewer.html show each one in use.
+ * The Pane building blocks (docs/design.md, section Components). Screens compose these; the
+ * mockups in design/viewer.html show each one in use.
  */
 
 private val TAG =

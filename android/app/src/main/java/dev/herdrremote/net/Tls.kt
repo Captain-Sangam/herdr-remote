@@ -16,7 +16,7 @@ import javax.net.ssl.X509TrustManager
 /**
  * Accepts only a leaf certificate whose SPKI SHA-256 equals the pin. Names and addresses play no
  * part, so LAN and Tailscale endpoints work the same way. It is both the trust manager and the
- * hostname verifier (TDD section 3.7).
+ * hostname verifier (docs/architecture.md section 4.3).
  */
 class PinnedTrust(private val pin: String) : X509TrustManager, HostnameVerifier {
     fun matches(chain: Array<out Certificate>?): Boolean {

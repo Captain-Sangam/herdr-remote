@@ -36,7 +36,7 @@ var targetRe = regexp.MustCompile(`^t[0-9a-z]+$`)
 // validTarget accepts a local terminal id only: no names, no machine/ prefix.
 func validTarget(t string) bool { return targetRe.MatchString(t) }
 
-// allowedMethods is every JSON-RPC method the daemon may send (decision 3).
+// allowedMethods is every JSON-RPC method the daemon may send (ADR 0003).
 var allowedMethods = map[string]bool{
 	"hello":            true,
 	"terminal.list":    true,
