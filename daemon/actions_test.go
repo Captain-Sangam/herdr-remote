@@ -32,23 +32,24 @@ func screenFixture(t *testing.T, name string) string {
 
 func setupActions(t *testing.T) *actFixture {
 	t.Helper()
-	d := startTestDaemon(t)
+	d := startTestDaemon(t, func(f *fake) {
+		claude := liveAgent("t1", "claude-code", "blocked", 1)
+		claude.Status.Kind, claude.Status.Msg = "permission", "approve Bash: touch x"
+		f.setTerminal(claude)
+		f.setRead("t1", screenFixture(t, "screen-claude-cmd.txt"))
+		codex := liveAgent("t2", "codex", "blocked", 1)
+		codex.Status.Kind = "permission"
+		f.setTerminal(codex)
+		f.setRead("t2", screenFixture(t, "screen-codex-cmd.txt"))
+		idle := liveAgent("t3", "claude-code", "idle", 4)
+		f.setTerminal(idle)
+		f.setRead("t3", "❯ \n")
+		shell := liveAgent("t8", "", "idle", 0)
+		shell.Reported, shell.Status = false, nil
+		f.setTerminal(shell)
+	})
 	d.actions.settle = 300 * time.Millisecond
 	d.actions.perSec = 1000 // TestRateLimitThirdActionInASecond sets the real limit
-	claude := liveAgent("t1", "claude-code", "blocked", 1)
-	claude.Status.Kind, claude.Status.Msg = "permission", "approve Bash: touch x"
-	d.f.setTerminal(claude)
-	d.f.setRead("t1", screenFixture(t, "screen-claude-cmd.txt"))
-	codex := liveAgent("t2", "codex", "blocked", 1)
-	codex.Status.Kind = "permission"
-	d.f.setTerminal(codex)
-	d.f.setRead("t2", screenFixture(t, "screen-codex-cmd.txt"))
-	idle := liveAgent("t3", "claude-code", "idle", 4)
-	d.f.setTerminal(idle)
-	d.f.setRead("t3", "❯ \n")
-	shell := liveAgent("t8", "", "idle", 0)
-	shell.Reported, shell.Status = false, nil
-	d.f.setTerminal(shell)
 	f := &actFixture{d: d}
 	f.cert, f.dev = d.pairPhone(t, "p")
 	d.waitOK(t)

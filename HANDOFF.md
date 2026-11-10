@@ -47,7 +47,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - Alerts when an agent finishes. The blocked alert shows the prompt, with Approve and Deny ([ADR 0019](docs/adr/0019-alert-preview-and-actions.md)).
   - A locked phone and the Galaxy Watch show only the agent name and what it needs. SR-11 changed to allow the agent name.
   - The "Watching N agents" notification no longer comes back after a dismissal.
-  - CI runs the format check, the daemon tests (macOS runner) and the app tests and build.
+  - CI runs the format check and the short daemon tests (`go test -short`), each capped at 30 s. The full daemon suite and the app tests and build run locally.
 - **Done since 2026-11-09:**
   - `install.sh` waits for `bootout` to finish before `bootstrap` (`52ee7fe`).
   - Tailscale runs on the Mac (`macbook-pro-5`, `100.107.60.83`) and on the phone (`ajays-s26`, `100.111.88.15`), with the same account.

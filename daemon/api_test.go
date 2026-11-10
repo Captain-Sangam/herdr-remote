@@ -324,6 +324,9 @@ func TestLayoutParsesRealShape(t *testing.T) {
 }
 
 func TestEventsKeepaliveWithin11s(t *testing.T) {
+	if testing.Short() {
+		t.Skip("10 s keepalive")
+	}
 	d := startTestDaemon(t)
 	seedAgents(d.f)
 	cert, _ := d.pairPhone(t, "p")

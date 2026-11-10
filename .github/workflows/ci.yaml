@@ -1,13 +1,20 @@
 name: ci
 
-on: [push, pull_request]
+# One run for each push to a pull request: not a second one for the push.
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
+  # Each command has a hard cap of 30 s. timeout-minutes counts only whole
+  # minutes, so it is the backstop for the setup steps.
   format:
     runs-on: ubuntu-24.04
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -22,29 +29,19 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: scripts/format.sh --check
+      - run: timeout 30 scripts/format.sh --check
 
-  # The daemon ships only on macOS. Three of its tests fail on Linux, so it
-  # tests on a macOS runner (billed at 10 times the Linux rate).
+  # -short skips the 60 s pairing long-poll and the 10 s keepalive. The full
+  # suite and the app tests and build run locally before each commit
+  # (AGENTS.md): Gradle alone takes minutes on a fresh runner.
   daemon:
-    runs-on: macos-15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: daemon/go.mod
           cache: false
-      - run: go test ./...
+      - run: timeout 30 go test -short ./...
         working-directory: daemon
-
-  android:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: 17
-      # The runner image has the Android SDK in ANDROID_HOME.
-      - run: ./gradlew testDebugUnitTest assembleDebug
-        working-directory: android
