@@ -38,6 +38,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `checkpoint-reviewed` (`b331373`)
   - `checkpoint-formatted` (`21e19c8`)
   - `checkpoint-pane` (`764495b`)
+  - `checkpoint-device-tested` (the commit that adds this line)
 - **Done since 2026-11-09:**
   - `install.sh` waits for `bootout` to finish before `bootstrap` (`52ee7fe`).
   - Tailscale runs on the Mac (`macbook-pro-5`, `100.107.60.83`) and on the phone (`ajays-s26`, `100.111.88.15`), with the same account.
