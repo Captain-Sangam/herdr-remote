@@ -37,54 +37,44 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `checkpoint-fixes-applied` (`429c512`)
   - `checkpoint-reviewed` (`b331373`)
   - `checkpoint-formatted` (`21e19c8`)
-  - `checkpoint-pane` (the commit that adds this file)
+  - `checkpoint-pane` (`764495b`)
 - **Done since 2026-11-09:**
   - `install.sh` waits for `bootout` to finish before `bootstrap` (`52ee7fe`).
-  - Tailscale runs on the Mac (`macbook-pro-5`) and on the phone (`ajays-s26`), with the same account. The daemon was restarted after the install.
-  - The app is on the phone (Samsung S26, Android 16, 3-button navigation). It is paired as `S26` (`0b14a90331fe8ee0`). A message from the phone to an agent worked.
+  - Tailscale runs on the Mac (`macbook-pro-5`, `100.107.60.83`) and on the phone (`ajays-s26`, `100.111.88.15`), with the same account.
   - Two app fixes (`d3cd35f`):
     - "Notify me" crashed: biometric 1.1.0 pulls `fragment` 1.2.5, which rejects the permission request code. `fragment` 1.8.6 is now pinned.
     - Content sat under the 3-button navigation bar. The root now uses `safeDrawingPadding()`, with `adjustResize`.
-  - The Pane design system, the app icon and the notification icon (`48d779f`).
-  - Every screen uses the Pane components (`f234df4`, `c9cdeab`, `8bc7120`). `DESIGN.md` section 10 lists the known differences from the mockups.
+  - The Pane design system, the app icon and the notification icon (`48d779f`). Every screen uses the Pane components (`f234df4`, `c9cdeab`, `8bc7120`). `DESIGN.md` section 10 lists the known differences from the mockups.
+  - Every block gave two alerts: hc sends the status and the turn as two events, and the turn went into the episode key. Fixed (`6c8e729`).
+  - The tab bar has no window numbers: "0:spaces" read as "0 spaces".
+- **The phone:** Samsung S26 (SM-S942B), Android 17, 3-button navigation, dark mode, font scale 0.9. USB debugging is on. It runs the latest APK and is paired as `SM-S942B` (`af453d9d2350e234`). "Notify me" is on.
+- **Checked on the phone over adb on 2026-11-10 (all pass):**
+  - Layout at font scale 0.9 and 1.3, with the keyboard open: nothing under the navigation bar, no tap target under 48 dp.
+  - A status change shows in about 1.2 s.
+  - Transcripts for Claude and for `--no-daemon` Codex.
+  - The live view: in color, follows a pane resize, recovers after 50 MB of output.
+  - Approve, deny and a message: applied on the Mac and in `audit.log`. A tap while the Mac is in use gives "Someone is using the Mac" (the limit is 10 s of idle).
+  - "Notify me": the two prompts, no crash. An alert 3 to 4 s after a block, once, with only "An agent needs attention". The recents card is blank.
+  - The app asks for the fingerprint on a cold start and after 5 minutes away.
+  - After a phone reboot, the watcher starts by itself and alerts come.
+  - Revoke: the Mac drops the phone in 0.21 s. Pairing again works.
+  - Wi-Fi off: the app connects over Tailscale.
 - **Tests pass:**
   - `cd daemon && go test ./...`
   - `cd android && ./gradlew testDebugUnitTest assembleDebug`, with `JAVA_HOME=/opt/homebrew/opt/openjdk@17` and `ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   - `scripts/format.sh --check`
-- **Not checked yet:**
-  - The phone runs an old APK. It does not have the fixes or the Pane screens.
-  - Only the pair screen was checked on the emulator. FLAG_SECURE blocks screenshots, so check the other screens by eye on the phone.
+- **How the phone was tested:** `adb` and `uiautomator dump` for the screens, and the WebView debugging port for the live view (a debug build only). FLAG_SECURE blocks screenshots of the app. A plain terminal shows on the phone as an agent if it prints `ESC ] 7501 ; state=idle BEL`.
 - **The emulator** was paired once to reproduce the crash, then revoked on the Mac. Its app still thinks that it is paired.
 
 ## What is left, in order
 
-1. **Install the new APK on the phone:** `tailscale file cp ~/code/herdr-remote/android/app/build/outputs/apk/debug/app-debug.apk ajays-s26:`, then open the file on the phone.
-2. **Check every screen by eye** against `design/viewer.html`: light and dark mode, font scale 1.3, 3-button navigation. Nothing must sit under the navigation bar or the keyboard.
-3. **Codex transcripts:** set Herdr's Codex launcher to `["codex", "--no-daemon"]` (Herdr settings, `new-menu.agents`). Without it, Codex agents show terminal text.
-4. **Basic checks:**
-   - spaces and agents show, and a status change shows within 2 s;
-   - transcripts show for Claude and for `--no-daemon` Codex;
-   - the live view is in color, and recovers after a pane resize and after heavy output (`yes | head -c 50000000`).
-5. **Approvals and messages:**
-   1. Make a test prompt: `hc run --bg --name hr-test --cwd ~/code/herdr-remote -- claude --permission-mode default "Use Bash to run: touch /tmp/hr-ok"`.
-   2. Approve one, and deny one.
-   3. Tap while you type on the Mac. Expect "Someone is using the Mac".
-   4. Send a message to an idle agent.
-   5. Then `hc kill hr-test; hc rm hr-test`.
-6. **Background alerts and privacy:**
-   - Turn "Notify me" on, and allow notifications and the battery exemption.
-   - Swipe the app away, then block an agent. Expect an alert within 5 s that shows only "An agent needs attention" on the lock screen.
-   - The recents card is blank.
-   - After more than 5 minutes away, the app asks for your PIN.
-   - After a phone reboot, alerts still come.
-7. **Revoke:** click Revoke in the overlay. The phone loses access within 2 s. Then pair again.
-8. **Away from home:** on cellular with Tailscale, the app connects.
-9. **After a Mac reboot:** `launchctl print gui/$(id -u)/dev.herdr-remote | grep state` shows running. `audit.log` holds lines with no secrets or content.
-10. **Optional:**
-    - The pairing link lists the Mac's Tailscale name but not its Tailscale address (`100.107.60.83`), although `endpoints()` in `daemon/daemon.go` should add it. Find out why. The name works only while Tailscale DNS is on in the phone app.
-    - On the same Wi-Fi without Tailscale, the app uses `192.168.1.3`. Reserve that address for the Mac in the router, or pair again when it changes.
-    - Push to a GitHub repo so that `ci.yaml` runs.
-    - Add the shfmt checksums for Intel Macs and arm64 Linux to `scripts/format.sh`.
+1. **After a Mac reboot:** `launchctl print gui/$(id -u)/dev.herdr-remote | grep state` shows running. `audit.log` holds lines with no secrets or content.
+2. **Look at the screens by eye** in light mode. FLAG_SECURE blocked a check of the colours.
+3. **Optional:**
+   - A revoked phone keeps its last data on the screen with "Not connected" and retries for good. It does not say that it was removed or offer to pair again.
+   - The phone learns new Mac addresses only while it is connected. Without Tailscale, a new Wi-Fi address on the Mac needs a new pairing.
+   - Push to a GitHub repo so that `ci.yaml` runs.
+   - Add the shfmt checksums for Intel Macs and arm64 Linux to `scripts/format.sh`.
 
 ## Conventions for the next session
 
