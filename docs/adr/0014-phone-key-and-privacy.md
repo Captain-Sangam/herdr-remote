@@ -1,6 +1,6 @@
 # ADR 0014: The phone key, the app lock and privacy
 
-- **Status:** Accepted, 2026-11-08. Amended 2026-11-09 after the code reviews.
+- **Status:** Accepted, 2026-11-08. Amended 2026-11-09 after the code reviews. Notifications changed by [ADR 0019](0019-alert-preview-and-actions.md).
 - **Decision:** 14 in the [decision table](../history/technical-design.md#31-decision-table).
 
 ## Context
@@ -20,6 +20,7 @@
 - **Amended 2026-11-09:**
   - Both the private and the public notification text say "An agent needs attention". The tab name appears only in the app.
   - The application registers one observer on the process lifecycle for the app lock. No activity owns it.
+- **Changed 2026-11-10 by [ADR 0019](0019-alert-preview-and-actions.md):** an unlocked phone shows the agent name and the prompt, with Approve and Deny. A locked phone still shows only the generic text.
 
 ## Alternatives
 

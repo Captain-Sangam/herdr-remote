@@ -26,11 +26,26 @@ import kotlinx.coroutines.launch
 data class TranscriptState(
     val source: String = "",
     val hint: String? = null,
+    val model: String = "",
     val items: List<TranscriptItem> = emptyList(),
     val nextCursor: String = "",
     val loading: Boolean = false,
     val error: String? = null,
 )
+
+/**
+ * The newest page on top of the items the phone holds. A transcript only grows, so the page starts
+ * inside [old]: what lies before it (the earlier pages the user loaded) stays. Null when they do
+ * not overlap (another file, or terminal text).
+ */
+fun mergeTail(old: List<TranscriptItem>, page: List<TranscriptItem>): List<TranscriptItem>? {
+    if (old.isEmpty()) return page
+    val i =
+        old.indices.firstOrNull { i ->
+            old.size - i <= page.size && old.subList(i, old.size) == page.subList(0, old.size - i)
+        } ?: return null
+    return old.subList(0, i) + page
+}
 
 /** What the phone says for each result and each 409 reason (steps 7 and 11). */
 object Texts {
@@ -133,15 +148,31 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
     }
 
     fun loadTranscript() {
-        viewModelScope.launch {
-            _transcript.update { it.copy(loading = true, error = null) }
+        viewModelScope.launch { refresh() }
+    }
+
+    /** Fetches the newest page and merges it in, keeping the earlier pages the user loaded. */
+    suspend fun refresh() {
+        val page =
             try {
-                val page = app.api()!!.transcript(address, null)
-                _transcript.value =
-                    TranscriptState(page.source, page.hint, page.items, page.nextCursor)
+                app.api()!!.transcript(address, null)
             } catch (e: Exception) {
-                _transcript.update { it.copy(loading = false, error = Texts.error(e)) }
+                _transcript.update { it.copy(error = Texts.error(e)) }
+                return
             }
+        _transcript.update {
+            val merged = if (page.source == it.source) mergeTail(it.items, page.items) else null
+            it.copy(
+                source = page.source,
+                hint = page.hint,
+                model = page.model.ifEmpty { it.model },
+                items = merged ?: page.items,
+                // Earlier pages stay: so does the cursor before the first of them.
+                nextCursor =
+                    if (merged != null && merged.size > page.items.size) it.nextCursor
+                    else page.nextCursor,
+                error = null,
+            )
         }
     }
 
@@ -161,8 +192,10 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                     )
                 }
             } catch (e: ApiException) {
-                if (e.reason == "cursor") loadTranscript()
-                else _transcript.update { it.copy(loading = false, error = Texts.error(e)) }
+                if (e.reason == "cursor") {
+                    _transcript.value = TranscriptState()
+                    loadTranscript()
+                } else _transcript.update { it.copy(loading = false, error = Texts.error(e)) }
             } catch (e: Exception) {
                 _transcript.update { it.copy(loading = false, error = Texts.error(e)) }
             }

@@ -73,6 +73,10 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 
 ## What is left, in order
 
+0. **Look at the transcript scroll by eye** ([ADR 0019](docs/adr/0019-alert-preview-and-actions.md)): it follows new items while the end shows, and "Bottom ↓" shows after a scroll up. Only the unit tests cover this.
+   - Checked over `adb` on 2026-11-10: the live transcript, the model in the header, the blocked alert with the prompt, Approve from the shade (`applied`), the refusal with the buttons back, finish alerts, and the redaction on the lock screen and its end after an unlock.
+   - Do not lock, turn off or reboot the phone in a test without asking the user first.
+   - The Galaxy Watch 8 skips the alerts now (`WearNotifPipeline: Discarding`). Approve on the watch needs a new decision: a watch button skips the phone unlock.
 1. **After a Mac reboot:** `launchctl print gui/$(id -u)/dev.herdr-remote | grep state` shows running. `audit.log` holds lines with no secrets or content.
 2. **Look at the screens by eye** in light mode. FLAG_SECURE blocked a check of the colours.
 3. **Optional:**

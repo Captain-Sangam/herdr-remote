@@ -1,17 +1,41 @@
 package dev.herdrremote
 
 import dev.herdrremote.net.ApiException
+import dev.herdrremote.net.TranscriptItem
 import dev.herdrremote.net.UnreachableException
 import dev.herdrremote.ui.Texts
 import dev.herdrremote.ui.endpointKind
+import dev.herdrremote.ui.mergeTail
 import dev.herdrremote.ui.theme.NoteKind
 import java.io.IOException
 import java.net.SocketTimeoutException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TextsTest {
+    @Test
+    fun newestPageMergesOntoLoadedItems() {
+        fun items(vararg t: String) = t.map { TranscriptItem("assistant", "text", it, 1) }
+        // The window moved on by one item: the earlier pages stay, the new item comes after.
+        assertEquals(
+            items("a", "b", "c", "d", "e"),
+            mergeTail(items("a", "b", "c", "d"), items("c", "d", "e")),
+        )
+        // The same page: nothing changes.
+        assertEquals(items("a", "b"), mergeTail(items("a", "b"), items("a", "b")))
+        // Repeated items: the longest overlap wins, so nothing is shown twice.
+        assertEquals(
+            items("x", "y", "x", "y", "z"),
+            mergeTail(items("x", "y", "x", "y"), items("x", "y", "x", "y", "z")),
+        )
+        // Nothing loaded yet: the page.
+        assertEquals(items("a"), mergeTail(emptyList(), items("a")))
+        // No overlap (another file, or terminal text): null, so the caller replaces.
+        assertNull(mergeTail(items("a", "b"), items("c")))
+    }
+
     @Test
     fun everyResultAndReasonHasWords() {
         for (r in listOf("applied", "sent_unconfirmed", "uncertain", "outcome_unknown", "sent")) {

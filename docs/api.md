@@ -29,7 +29,7 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 | `GET /v1/terminals/{t}`                            | none                                        | `agent` plus `{cols, rows}`                                                                                          |
 | `GET /v1/events`                                   | none                                        | SSE. See [Events](#events).                                                                                          |
 | `GET /v1/terminals/{t}/live`                       | none                                        | Chunked `application/octet-stream` from `hc attach --observe --history 500`.                                         |
-| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none                                        | `{source, hint?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`.                                |
+| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none                                        | `{source, hint?, model?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`.                        |
 | `GET /v1/terminals/{t}/prompt`                     | none                                        | `{app, kind, msg, block, turn, prompt_hash, actionable, reason?}`                                                    |
 | `POST /v1/terminals/{t}/decision`                  | `{request_id, decision, turn, prompt_hash}` | `{result}`: `applied`, `sent_unconfirmed`, `uncertain` or `outcome_unknown`                                          |
 | `POST /v1/terminals/{t}/message`                   | `{request_id, text}`                        | `{result}`: `sent` or `outcome_unknown`                                                                              |
@@ -39,6 +39,7 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 - **`agent`:** `{address, space, tab, where, app, state, kind, msg, turn, title}`.
   - `state` is the hc status word: `idle`, `working`, `done`, `blocked` or `error`.
   - `kind` and `msg` are set only when the agent is blocked.
+- **Transcript page:** `model` is the last model that the page names: `message.model` in Claude Code, `turn_context` in Codex. Terminal text has none.
 - **Transcript item:** `{role, kind, text, ts}`.
   - `kind` is `text`, `tool_call` or `tool_result`.
   - Tool calls and tool results are cut to 2000 characters. Thinking blocks are not sent.

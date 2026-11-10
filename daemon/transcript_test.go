@@ -120,14 +120,15 @@ func TestTranscriptClaudeParses(t *testing.T) {
 		`{"type":"attachment","attachment":{"x":1}}`,
 		`{"type":"user","isMeta":true,"message":{"content":"<local-command>"}}`,
 		claudeUser("hello"),
-		`{"type":"assistant","timestamp":"2026-11-08T07:26:14.714Z","message":{"content":[{"type":"thinking","thinking":"secret"},{"type":"text","text":"hi"},{"type":"tool_use","id":"tu1","name":"Bash","input":{"command":"ls"}}]}}`,
+		`{"type":"assistant","timestamp":"2026-11-08T07:26:14.714Z","message":{"model":"claude-opus-5-5","content":[{"type":"thinking","thinking":"secret"},{"type":"text","text":"hi"},{"type":"tool_use","id":"tu1","name":"Bash","input":{"command":"ls"}}]}}`,
 		`{"type":"user","timestamp":"2026-11-08T07:26:15.000Z","message":{"content":[{"type":"tool_result","tool_use_id":"tu1","content":"` + long + `"}]}}`,
 		`{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"tu2","content":[{"type":"text","text":"part a"},{"type":"text","text":"part b"}]}]}}`,
+		`{"type":"assistant","message":{"model":"<synthetic>","content":"No response requested."}}`,
 		`{"type":"ai-title","title":"x"}`,
 	}
 	writeLines(t, f.claudeFile("sid-1"), lines, true)
 	st, pg, raw := f.get(t, "/v1/terminals/t1/transcript")
-	if st != 200 || pg.Source != "claude" || pg.NextCursor != "" {
+	if st != 200 || pg.Source != "claude" || pg.NextCursor != "" || pg.Model != "claude-opus-5-5" {
 		t.Fatalf("%d %+v", st, pg)
 	}
 	if _, has := raw["hint"]; has {
@@ -139,6 +140,7 @@ func TestTranscriptClaudeParses(t *testing.T) {
 		{"assistant", "tool_call", `Bash {"command":"ls"}`},
 		{"user", "tool_result", strings.Repeat("r", 2000) + "…"},
 		{"user", "tool_result", "part a\npart b"},
+		{"assistant", "text", "No response requested."},
 	}
 	if len(pg.Items) != len(want) {
 		t.Fatalf("items %v", texts(pg.Items))
@@ -201,12 +203,12 @@ func TestTranscriptCodexParsesAndIgnoresGuardian(t *testing.T) {
 		`{"timestamp":"2026-11-08T07:26:23.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"cmd\":\"ls\"}","call_id":"c2"}}`,
 		`{"timestamp":"2026-11-08T07:26:24.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"c2","output":"a b c"}}`,
 		`{"timestamp":"2026-11-08T07:26:25.000Z","type":"event_msg","payload":{"type":"task_complete"}}`,
-		`{"timestamp":"2026-11-08T07:26:26.000Z","type":"turn_context","payload":{}}`,
+		`{"timestamp":"2026-11-08T07:26:26.000Z","type":"turn_context","payload":{"model":"gpt-6.1-sol"}}`,
 	})
 	guardian := f.rollout("rollout-2026-11-08T12-56-14-guardian.jsonl", "thr", []string{codexMsg("user", "guardian only")})
 	f.bindCodex(t, 4344, guardian, main)
 	st, pg, raw := f.get(t, "/v1/terminals/t2/transcript")
-	if st != 200 || pg.Source != "codex" {
+	if st != 200 || pg.Source != "codex" || pg.Model != "gpt-6.1-sol" {
 		t.Fatalf("%d %+v", st, pg)
 	}
 	if _, has := raw["hint"]; has {

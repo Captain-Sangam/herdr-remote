@@ -35,6 +35,7 @@ data class TranscriptItem(val role: String, val kind: String, val text: String, 
 data class TranscriptPage(
     val source: String,
     val hint: String? = null,
+    val model: String = "",
     val items: List<TranscriptItem> = emptyList(),
     @SerialName("next_cursor") val nextCursor: String = "",
 )

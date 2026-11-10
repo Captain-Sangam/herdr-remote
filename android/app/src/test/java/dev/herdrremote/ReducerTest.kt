@@ -2,7 +2,8 @@ package dev.herdrremote
 
 import dev.herdrremote.net.Agent
 import dev.herdrremote.watch.AgentsState
-import dev.herdrremote.watch.BlockedNotifier
+import dev.herdrremote.watch.Alert
+import dev.herdrremote.watch.Notifier
 import dev.herdrremote.watch.Reducer
 import dev.herdrremote.watch.SseEvent
 import org.junit.Assert.assertEquals
@@ -72,20 +73,34 @@ class ReducerTest {
 
     @Test
     fun oneNotificationPerEpisode() {
-        val n = BlockedNotifier()
+        val n = Notifier()
+        fun alerts(vararg a: Agent) = n.alerts(a.toList()).map { (x, alert) -> x.address to alert }
         val first = Reducer.parse("snapshot", snapshot) as SseEvent.Snapshot
-        assertEquals(listOf("t1"), n.newEpisodes(first.agents).map { it.address })
-        assertEquals(emptyList<Agent>(), n.newEpisodes(first.agents))
+        // The first snapshot: the blocked agent alerts, the idle one does not.
+        assertEquals(listOf("t1" to Alert.Blocked), alerts(*first.agents.toTypedArray()))
+        assertEquals(emptyList<Any>(), n.alerts(first.agents))
         val again = first.agents.first { it.address == "t1" }
-        assertEquals(0, n.newEpisodes(listOf(again)).size)
-        // A reconnect snapshot with the same blocked agent: nothing new.
-        assertEquals(0, n.newEpisodes(first.agents).size)
-        // hc sends the turn after the blocked status: the same episode.
-        assertEquals(0, n.newEpisodes(listOf(again.copy(turn = 3))).size)
+        // hc sends the turn after the blocked status: the same episode, a quiet refresh.
+        assertEquals(listOf("t1" to Alert.Refresh), alerts(again.copy(turn = 3)))
+        assertEquals(emptyList<Any>(), alerts(again.copy(turn = 3)))
         // Another prompt while still blocked: another episode.
-        assertEquals(1, n.newEpisodes(listOf(again.copy(turn = 3, msg = "approve Write: y"))).size)
-        // Not blocked: never. The next block is a new episode, even with the same prompt.
-        assertEquals(0, n.newEpisodes(listOf(again.copy(turn = 4, state = "working"))).size)
-        assertEquals(1, n.newEpisodes(listOf(again.copy(turn = 5))).size)
+        assertEquals(
+            listOf("t1" to Alert.Blocked),
+            alerts(again.copy(turn = 3, msg = "approve Write: y")),
+        )
+        // Approved: working clears the prompt; then done, or idle when someone looked, alerts.
+        assertEquals(listOf("t1" to Alert.Clear), alerts(again.copy(turn = 4, state = "working")))
+        assertEquals(listOf("t1" to Alert.Done), alerts(again.copy(turn = 5, state = "idle")))
+        assertEquals(emptyList<Any>(), alerts(again.copy(turn = 5, state = "done")))
+        // The next block is a new episode, even with the same prompt.
+        assertEquals(listOf("t1" to Alert.Blocked), alerts(again.copy(turn = 5)))
+        // Denied: idle, no finish alert.
+        assertEquals(listOf("t1" to Alert.Clear), alerts(again.copy(turn = 5, state = "idle")))
+        // Blocked straight to done: finished.
+        alerts(again.copy(turn = 6))
+        assertEquals(listOf("t1" to Alert.Done), alerts(again.copy(turn = 7, state = "done")))
+        // An agent gone and back: like a first sight.
+        n.forget("t1")
+        assertEquals(emptyList<Any>(), alerts(again.copy(state = "done")))
     }
 }

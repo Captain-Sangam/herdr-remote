@@ -313,15 +313,16 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 
 ### 4.2 Screens
 
-| Screen     | Content                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------- |
-| Lock       | The app icon, the name and Unlock. No agent data.                                           |
-| Pair       | Code scanner or a pasted link, the 6-digit code, a wait for Allow.                          |
-| Spaces     | Agents that need the user, then the spaces with agent counts and the most urgent status.    |
-| Space      | Agents in the space, with status and tab name.                                              |
-| All agents | Every agent. Blocked agents first.                                                          |
-| Agent      | Tabs: Transcript, Live. A prompt card with Approve and Deny when actionable. A message box. |
-| Settings   | Paired Mac, background watching, Forget this Mac.                                           |
+| Screen     | Content                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lock       | The app icon, the name and Unlock. No agent data.                                                                                                 |
+| Pair       | Code scanner or a pasted link, the 6-digit code, a wait for Allow.                                                                                |
+| Spaces     | Agents that need the user, then the spaces with agent counts and the most urgent status.                                                          |
+| Space      | Agents in the space, with status and tab name.                                                                                                    |
+| All agents | Every agent. Blocked agents first.                                                                                                                |
+| Agent      | Tabs: Transcript, Live. A prompt card with Approve and Deny when actionable. A message box.                                                       |
+| Transcript | The model in the header. It follows new items while the end shows, with a Bottom button. It reloads the last page each 2 s while the agent works. |
+| Settings   | Paired Mac, background watching, Forget this Mac.                                                                                                 |
 
 ### 4.3 Key and TLS client
 
@@ -341,7 +342,7 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 - Any failure that is not an explicit daemon reply shows "Outcome unknown. Check the transcript before you send again".
 - The prompt refresh after a decision does not replace that note.
 - After `expired_request`, the app calls `/v1/hello` to correct its clock. It does not post again.
-- Approve, Deny and messages work only in the unlocked app.
+- Messages work only in the unlocked app. Approve and Deny work in the unlocked app and in an alert on an unlocked phone ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
 
 ### 4.5 Live view WebView
 
@@ -352,14 +353,18 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 
 ### 4.6 Background watching
 
-- The watch service is an opt-in foreground service that holds `/v1/events` ([ADR 0013](adr/0013-background-alerts.md)). It shows an ongoing notification, "Watching N agents".
+- The watch service is an opt-in foreground service that holds `/v1/events` ([ADR 0013](adr/0013-background-alerts.md)). It posts the ongoing notification "Herdr Remote is watching" once and never updates it.
 - It shows one notification for each blocked episode. An episode starts when an agent becomes blocked, or shows another `msg` while blocked. The turn is not part of the episode, because hc sends the turn after the blocked status.
+- The blocked alert shows the prompt and has Approve and Deny ([ADR 0019](adr/0019-alert-preview-and-actions.md)). A turn change in the same episode updates it quietly, because the prompt hash holds the turn.
+- An agent that stops working (`done`, `idle` or `error`) gives one alert on the channel "Agent finished".
+- Each agent has one notification. A new alert replaces the last one.
+- A locked phone shows only the generic text, with no buttons.
 - After a reconnect, the snapshot shows the agents that are still blocked.
 - Alerts come only while the service runs and is connected.
 - **Manifest:**
   - Permissions: `INTERNET`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, `USE_BIOMETRIC`.
   - The service has `android:foregroundServiceType="specialUse"` and the `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
-  - `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` receivers start the service again if the toggle is on.
+  - `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` receivers start the service again if the toggle is on. The app also starts it each time it opens, because Android 17 can skip `MY_PACKAGE_REPLACED`.
 - The app starts the service while it is in the foreground. It asks for an exemption from battery optimization.
 - If notifications are denied, the toggle explains why and stays off.
 - **Forget this Mac** cancels the event stream and stops the watch service. Then it clears the pairing.
@@ -408,7 +413,7 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 | A prompt that changed under the user  | Turn, prompt hash and marker checks, the Mac-in-use guard, the `uncertain` result.                                                                                            | SR-7        |
 | No record of what a phone did         | An audit line for each pairing event, revocation, decision, refusal and message ([ADR 0017](adr/0017-logging-and-audit.md)).                                                  | SR-8        |
 | Secrets or content in logs            | No log has tokens, codes, keys, transcript text, terminal bytes or message text.                                                                                              | SR-9        |
-| Content on the lock screen or recents | `FLAG_SECURE`, private notifications with only "An agent needs attention" ([ADR 0014](adr/0014-phone-key-and-privacy.md)).                                                    | SR-11       |
+| Content on the lock screen or recents | `FLAG_SECURE`. Alerts on a locked phone say only "An agent needs attention" or "An agent finished" ([ADR 0019](adr/0019-alert-preview-and-actions.md)).                       | SR-11       |
 | Content at rest on the phone          | Transcripts and terminal bytes stay in memory only.                                                                                                                           | SR-12       |
 | Hostile terminal bytes                | The WebView loads only bundled files and cannot send input. The message filter removes control characters. Transcript paths must be under two roots.                          | SR-13       |
 
@@ -417,7 +422,9 @@ The SR numbers are the security requirements in [product.md](product.md#8-securi
 ### 6.3 Phone privacy
 
 - The activity sets `FLAG_SECURE`. Screenshots and the recents card show no content.
-- Notifications use `VISIBILITY_PRIVATE`. Both the private and the public text say "An agent needs attention". The tab name appears only in the app. Notifications have no action buttons.
+- Notifications use `VISIBILITY_PRIVATE` with a generic public version ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
+  - On a locked phone, the service also replaces each alert with the generic text, with no buttons. The default lock screen setting shows private text, so the public version alone is not enough.
+  - On an unlocked phone, an alert shows the agent name and the prompt. Approve and Deny need the phone to be unlocked.
 - Transcripts and terminal bytes stay in memory. No build logs content.
 
 ### 6.4 Residual risk
