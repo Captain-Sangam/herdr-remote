@@ -3,7 +3,7 @@
 - **Status:** Chosen on 9 November 2026.
 - **Owner:** Ajay.
 - **Code:** `android/app/src/main/java/dev/herdrremote/ui/theme/`: `PaneTheme.kt` (tokens) and `PaneComponents.kt` (components).
-- **Mockups:** `design/viewer.html` shows one screen at a time. `design/options.html` shows all screens, the tokens and the components. Both use `design/mockups.js` and `design/mockups.css`.
+- **Mockups:** [`design/viewer.html`](../design/viewer.html) shows one screen at a time. [`design/options.html`](../design/options.html) shows all screens, the tokens and the components. Both use [`design/mockups.js`](../design/mockups.js) and [`design/mockups.css`](../design/mockups.css).
 
 ## 1. Summary
 
@@ -24,7 +24,7 @@ Pane makes the app look like the terminal that it controls.
 6. Keep content between the status bar and the navigation bar. The app root applies `safeDrawingPadding()`. Do not draw content under the system bars.
 7. Write pane titles, tabs and navigation items in lowercase: "4 spaces", "transcript". Write content, buttons and messages in sentence case: "Forget this Mac".
 8. Show commands, diffs and prompt text exactly as the agent shows them. Use `CodeBlock`. The type scale turns ligatures off for this reason.
-9. Show no agent names, commands or project data on the lock screen or in a notification (SR-11).
+9. Show no agent names, commands or project data on the lock screen or in a notification ([SR-11](product.md#8-security-and-privacy-requirements)).
 10. Use the result and error texts in `AgentViewModel.Texts`. Write new texts in the same plain style.
 
 ## 3. Colour tokens

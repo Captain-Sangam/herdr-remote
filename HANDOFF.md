@@ -9,26 +9,26 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - port 7766 for paired phones;
   - port 7767 for enrollment, open only during a pairing window.
 - A Herdr mod overlay (`herdr-remote`) shows the pairing QR code, the paired devices and Revoke.
-- The design is `TDD.md`. Its "As built" and "Review (2026-11-09)" sections at the end describe the code. `PRD.md` holds the product requirements. `DEBATE.md` tells why each decision was made.
-- The visual design is `DESIGN.md` (the Pane design system). `design/viewer.html` shows every screen in Pane, beside the runner-up, Dispatch.
+- The design is [`docs/history/technical-design.md`](docs/history/technical-design.md) (was `TDD.md`). Its "As built" and "Review (2026-11-09)" sections at the end describe the code. [`docs/product.md`](docs/product.md) (was `PRD.md`) holds the product requirements. [`docs/history/debate.md`](docs/history/debate.md) (was `DEBATE.md`) tells why each decision was made.
+- The visual design is [`docs/design.md`](docs/design.md) (was `DESIGN.md`, the Pane design system). [`design/viewer.html`](design/viewer.html) shows every screen in Pane, beside the runner-up, Dispatch.
 
 ## Where things are
 
-| What           | Where                                                                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`, no git remote                                                                                    |
-| Daemon code    | `daemon/` (Go)                                                                                                                                   |
-| Android app    | `android/` (Kotlin, Compose). The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`                                                  |
-| Pane theme     | `android/app/src/main/java/dev/herdrremote/ui/theme/` (`PaneTheme.kt`, `PaneComponents.kt`)                                                      |
-| Mod source     | `mod/herdr-remote/`                                                                                                                              |
-| Install        | `scripts/install.sh`: builds the daemon to `~/.local/bin/herdr-remoted`, writes the LaunchAgent, copies the mod                                  |
-| Formatting     | `scripts/format.sh` (`--check`, `--list`, or paths), `.githooks/pre-commit`, `.github/workflows/ci.yaml`                                         |
-| Daemon state   | `~/Library/Application Support/herdr-remote/` (`server.key`, `devices.json`, `audit.log`, `daemon.log`, `admin.sock`). Do not print `server.key` |
-| Daemon admin   | `herdr-remoted pair [status\|allow\|deny\|cancel]`, `herdr-remoted devices ls\|rm <id>`                                                          |
-| Installed mod  | `~/.config/herdr-app/mods/herdr-remote/`                                                                                                         |
-| Council record | `.agents/tasks/herdr-remote/`: `record.md` (full trail), `review.md` and `review-2.md` (code reviews), `plan.md` (superseded by `TDD.md`)        |
-| Android SDK    | `/opt/homebrew/share/android-commandlinetools`. `adb` is in `platform-tools/` and is not on the PATH                                             |
-| Emulator       | AVD `herdr-remote` (API 35, 3-button navigation on). Start it with `emulator -avd herdr-remote -no-window` from `emulator/`                      |
+| What           | Where                                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`, no git remote                                                                                                       |
+| Daemon code    | `daemon/` (Go)                                                                                                                                                      |
+| Android app    | `android/` (Kotlin, Compose). The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`                                                                     |
+| Pane theme     | `android/app/src/main/java/dev/herdrremote/ui/theme/` (`PaneTheme.kt`, `PaneComponents.kt`)                                                                         |
+| Mod source     | `mod/herdr-remote/`                                                                                                                                                 |
+| Install        | `scripts/install.sh`: builds the daemon to `~/.local/bin/herdr-remoted`, writes the LaunchAgent, copies the mod                                                     |
+| Formatting     | `scripts/format.sh` (`--check`, `--list`, or paths), `.githooks/pre-commit`, `.github/workflows/ci.yaml`                                                            |
+| Daemon state   | `~/Library/Application Support/herdr-remote/` (`server.key`, `devices.json`, `audit.log`, `daemon.log`, `admin.sock`). Do not print `server.key`                    |
+| Daemon admin   | `herdr-remoted pair [status\|allow\|deny\|cancel]`, `herdr-remoted devices ls\|rm <id>`                                                                             |
+| Installed mod  | `~/.config/herdr-app/mods/herdr-remote/`                                                                                                                            |
+| Council record | `.agents/tasks/herdr-remote/`: `record.md` (full trail), `review.md` and `review-2.md` (code reviews), `plan.md` (superseded by `docs/history/technical-design.md`) |
+| Android SDK    | `/opt/homebrew/share/android-commandlinetools`. `adb` is in `platform-tools/` and is not on the PATH                                                                |
+| Emulator       | AVD `herdr-remote` (API 35, 3-button navigation on). Start it with `emulator -avd herdr-remote -no-window` from `emulator/`                                         |
 
 ## State on 2026-11-10
 
@@ -45,7 +45,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - Two app fixes (`d3cd35f`):
     - "Notify me" crashed: biometric 1.1.0 pulls `fragment` 1.2.5, which rejects the permission request code. `fragment` 1.8.6 is now pinned.
     - Content sat under the 3-button navigation bar. The root now uses `safeDrawingPadding()`, with `adjustResize`.
-  - The Pane design system, the app icon and the notification icon (`48d779f`). Every screen uses the Pane components (`f234df4`, `c9cdeab`, `8bc7120`). `DESIGN.md` section 10 lists the known differences from the mockups.
+  - The Pane design system, the app icon and the notification icon (`48d779f`). Every screen uses the Pane components (`f234df4`, `c9cdeab`, `8bc7120`). `docs/design.md` section 10 lists the known differences from the mockups.
   - Every block gave two alerts: hc sends the status and the turn as two events, and the turn went into the episode key. Fixed (`6c8e729`).
   - The tab bar has no window numbers: "0:spaces" read as "0 spaces".
 - **The phone:** Samsung S26 (SM-S942B), Android 17, 3-button navigation, dark mode, font scale 0.9. USB debugging is on. It runs the latest APK and is paired as `SM-S942B` (`af453d9d2350e234`). "Notify me" is on.

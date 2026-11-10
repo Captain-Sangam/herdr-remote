@@ -3,9 +3,9 @@
 - **Status:** Approved for implementation.
 - **Date:** 2026-11-08.
 - **Owner:** Ajay.
-- **Technical design:** `TDD.md`.
-- **Design debate:** `DEBATE.md`.
-- **Design system:** `DESIGN.md` (Pane).
+- **Technical design:** [`history/technical-design.md`](history/technical-design.md).
+- **Design debate:** [`history/debate.md`](history/debate.md).
+- **Design system:** [`design.md`](design.md) (Pane).
 
 ## 1. Summary
 
@@ -192,7 +192,7 @@ flowchart TD
 
 ## 11. Acceptance criteria
 
-The product is done when all 13 criteria in `TDD.md` section 4 pass. They must pass on the emulator and on a real phone. In short:
+The product is done when all 13 criteria in [the technical design](history/technical-design.md), section 4, pass. They must pass on the emulator and on a real phone. In short:
 
 1. The daemon runs after a reboot, and rejects unpaired TLS clients.
 2. Pairing works with a matching code and Allow, and fails safely in every other case.
