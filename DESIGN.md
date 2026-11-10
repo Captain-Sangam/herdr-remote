@@ -107,25 +107,25 @@ The live view uses this palette in both modes. The values are in `assets/xterm/l
 
 ## 6. Components
 
-| Component                   | Use                                                                                      |
-| --------------------------- | ---------------------------------------------------------------------------------------- |
-| `PaneHeader`                | Top line of a screen: back key, path (`~/spaces/herdr-remote`), link state.              |
-| `PaneSubline`               | Line under the header: counts or the agent state, dashed rule.                           |
-| `PaneBox`                   | A pane: 1 dp box, title in the top border. A status colour makes it an alert.            |
-| `StatusRow`                 | List row: glyph, name, meta line, detail line, status tag. Blocked rows have a red tint. |
-| `StatusGlyph`               | `[!]` lead of a row.                                                                     |
-| `StatusTag`                 | `BLOCKED` inverse tag.                                                                   |
-| `StatusMeter`               | One bar for each agent of a space.                                                       |
-| `PaneTabs`                  | `transcript` and `live` tabs. The selected tab is inverse on the accent colour.          |
-| `TmuxBar`                   | Bottom navigation: `[herdr] 0:spaces* 1:agents(2!) 2:settings`.                          |
-| `KeyButton`, `KeyKind`      | Square key with an optional key hint. Go, Plain, Stop or Quiet.                          |
-| `PromptField`               | Message composer: `›` prompt, field, character count, send key.                          |
-| `PaneNote`, `NoteKind`      | Result of an action: Ok, Warn or Error bar.                                              |
-| `PaneBanner`                | Full-width warning strip, for example "Not connected to the Mac".                        |
-| `PaneSwitch`                | `[ on ]` and `[ off ]` switch.                                                           |
-| `PaneField`                 | Text field in a pane, label in the top border.                                           |
-| `CodeBlock`                 | Command, diff or prompt text. No wrap, scrolls both ways, optional maximum height.       |
-| `bottomRule()`, `topRule()` | 1 dp rule under or over an element.                                                      |
+| Component                   | Use                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------- |
+| `PaneHeader`                | Top line of a screen: back key, path (`~/spaces/herdr-remote`), link state.                       |
+| `PaneSubline`               | Line under the header: counts or the agent state, dashed rule.                                    |
+| `PaneBox`                   | A pane: 1 dp box, title in the top border. A status colour makes it an alert.                     |
+| `StatusRow`                 | List row: glyph, name, meta line, detail line, status tag. Blocked rows have a red tint.          |
+| `StatusGlyph`               | `[!]` lead of a row.                                                                              |
+| `StatusTag`                 | `BLOCKED` inverse tag.                                                                            |
+| `StatusMeter`               | One bar for each agent of a space.                                                                |
+| `PaneTabs`                  | `transcript` and `live` tabs. The selected tab is inverse on the accent colour.                   |
+| `TmuxBar`                   | Bottom navigation: `[herdr] spaces* agents(2!) settings`. No window numbers: they read as counts. |
+| `KeyButton`, `KeyKind`      | Square key with an optional key hint. Go, Plain, Stop or Quiet.                                   |
+| `PromptField`               | Message composer: `›` prompt, field, character count, send key.                                   |
+| `PaneNote`, `NoteKind`      | Result of an action: Ok, Warn or Error bar.                                                       |
+| `PaneBanner`                | Full-width warning strip, for example "Not connected to the Mac".                                 |
+| `PaneSwitch`                | `[ on ]` and `[ off ]` switch.                                                                    |
+| `PaneField`                 | Text field in a pane, label in the top border.                                                    |
+| `CodeBlock`                 | Command, diff or prompt text. No wrap, scrolls both ways, optional maximum height.                |
+| `bottomRule()`, `topRule()` | 1 dp rule under or over an element.                                                               |
 
 ## 7. Screen anatomy
 

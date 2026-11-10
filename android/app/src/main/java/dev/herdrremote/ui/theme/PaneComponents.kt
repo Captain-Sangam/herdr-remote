@@ -345,7 +345,7 @@ fun TmuxBar(
             ) {
                 Text(
                     buildAnnotatedString {
-                        append("$i:${name.lowercase()}")
+                        append(name.lowercase())
                         if (on) append("*")
                         val n = alerts[i] ?: 0
                         if (n > 0)
