@@ -358,7 +358,7 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 - The blocked alert shows the prompt and has Approve and Deny ([ADR 0019](adr/0019-alert-preview-and-actions.md)). A turn change in the same episode updates it quietly, because the prompt hash holds the turn.
 - An agent that stops working (`done`, `idle` or `error`) gives one alert on the channel "Agent finished".
 - Each agent has one notification. A new alert replaces the last one.
-- A locked phone shows only the generic text, with no buttons.
+- A locked phone, and so a mirrored watch, shows only the agent name and what it needs, with no prompt and no buttons.
 - After a reconnect, the snapshot shows the agents that are still blocked.
 - Alerts come only while the service runs and is connected.
 - **Manifest:**
@@ -413,7 +413,7 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 | A prompt that changed under the user  | Turn, prompt hash and marker checks, the Mac-in-use guard, the `uncertain` result.                                                                                            | SR-7        |
 | No record of what a phone did         | An audit line for each pairing event, revocation, decision, refusal and message ([ADR 0017](adr/0017-logging-and-audit.md)).                                                  | SR-8        |
 | Secrets or content in logs            | No log has tokens, codes, keys, transcript text, terminal bytes or message text.                                                                                              | SR-9        |
-| Content on the lock screen or recents | `FLAG_SECURE`. Alerts on a locked phone say only "An agent needs attention" or "An agent finished" ([ADR 0019](adr/0019-alert-preview-and-actions.md)).                       | SR-11       |
+| Content on the lock screen or recents | `FLAG_SECURE`. Alerts on a locked phone show only the agent name and what it needs, with no prompt ([ADR 0019](adr/0019-alert-preview-and-actions.md)).                       | SR-11       |
 | Content at rest on the phone          | Transcripts and terminal bytes stay in memory only.                                                                                                                           | SR-12       |
 | Hostile terminal bytes                | The WebView loads only bundled files and cannot send input. The message filter removes control characters. Transcript paths must be under two roots.                          | SR-13       |
 
@@ -422,8 +422,8 @@ The SR numbers are the security requirements in [product.md](product.md#8-securi
 ### 6.3 Phone privacy
 
 - The activity sets `FLAG_SECURE`. Screenshots and the recents card show no content.
-- Notifications use `VISIBILITY_PRIVATE` with a generic public version ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
-  - On a locked phone, the service also replaces each alert with the generic text, with no buttons. The default lock screen setting shows private text, so the public version alone is not enough.
+- Notifications use `VISIBILITY_PRIVATE`. The public version has only the title: the agent name and what it needs ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
+  - On a locked phone, the service also replaces each alert with its title only, with no prompt and no buttons. The default lock screen setting shows private text, so the public version alone is not enough.
   - On an unlocked phone, an alert shows the agent name and the prompt. Approve and Deny need the phone to be unlocked.
 - Transcripts and terminal bytes stay in memory. No build logs content.
 

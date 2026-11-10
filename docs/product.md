@@ -112,7 +112,7 @@ flowchart TD
 ```
 
 1. An agent on the Mac asks for a permission, for example to run a command or to edit a file.
-2. The phone shows a notification. The lock screen shows only "An agent needs attention".
+2. The phone shows a notification. The lock screen shows only the agent name and "needs approval".
 3. The user unlocks the phone and opens the agent. Or the user expands the notification, reads the prompt there and taps **Approve** or **Deny** (then skip to step 6).
 4. The app shows the request: the command or the file, and the text of the prompt.
 5. The user taps **Approve** or **Deny**.
@@ -165,7 +165,7 @@ flowchart TD
 | SR-8  | The daemon writes an audit line for each pairing event, revocation, decision, refusal and message.                                                                                                                                                                                 |
 | SR-9  | No log on the Mac or the phone contains tokens, pairing codes, keys, transcript text, terminal bytes or message text.                                                                                                                                                              |
 | SR-10 | After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything.                                                                                                                                                                 |
-| SR-11 | The recents screen and screenshots show no app content. The lock screen shows no command or project data.                                                                                                                                                                          |
+| SR-11 | The recents screen and screenshots show no app content. The lock screen shows no command and no prompt. It can show the agent name.                                                                                                                                                |
 | SR-12 | The phone keeps transcripts and terminal data in memory only.                                                                                                                                                                                                                      |
 | SR-13 | The live view shows terminal bytes in a WebView that can load only bundled files and cannot send input.                                                                                                                                                                            |
 

@@ -24,7 +24,7 @@ Pane makes the app look like the terminal that it controls.
 6. Keep content between the status bar and the navigation bar. The app root applies `safeDrawingPadding()`. Do not draw content under the system bars.
 7. Write pane titles, tabs and navigation items in lowercase: "4 spaces", "transcript". Write content, buttons and messages in sentence case: "Forget this Mac".
 8. Show commands, diffs and prompt text exactly as the agent shows them. Use `CodeBlock`. The type scale turns ligatures off for this reason.
-9. Show no agent names, commands or project data on the lock screen ([SR-11](product.md#8-security-and-privacy-requirements)). An alert on an unlocked phone can show them ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
+9. Show no commands or prompts on the lock screen ([SR-11](product.md#8-security-and-privacy-requirements)). The lock screen can show the agent name. An alert on an unlocked phone shows the prompt too ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
 10. Use the result and error texts in `AgentViewModel.Texts`. Write new texts in the same plain style.
 
 ## 3. Colour tokens

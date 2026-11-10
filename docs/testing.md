@@ -138,7 +138,7 @@ The product is done when these 13 criteria pass on the emulator and on a real ph
 9. A revoke on the Mac ends the open streams of that phone within 2 s. Later handshakes fail, also when the phone tries to resume a TLS session.
 10. The same pairing works over Tailscale from a cellular connection.
 11. After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything.
-12. The recents screen shows no app content. The lock screen shows only "An agent needs attention" or "An agent finished".
+12. The recents screen shows no app content. The lock screen shows only the agent name and what it needs, with no prompt and no buttons.
 13. `audit.log` has a line for every pairing event, revocation, decision and message. It contains no token, code, transcript text, terminal bytes or message text.
 
 ### Check for each criterion

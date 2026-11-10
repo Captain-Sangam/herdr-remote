@@ -20,7 +20,7 @@
 - **Amended 2026-11-09:**
   - Both the private and the public notification text say "An agent needs attention". The tab name appears only in the app.
   - The application registers one observer on the process lifecycle for the app lock. No activity owns it.
-- **Changed 2026-11-10 by [ADR 0019](0019-alert-preview-and-actions.md):** an unlocked phone shows the agent name and the prompt, with Approve and Deny. A locked phone still shows only the generic text.
+- **Changed 2026-11-10 by [ADR 0019](0019-alert-preview-and-actions.md):** an unlocked phone shows the agent name and the prompt, with Approve and Deny. A locked phone shows the agent name and what it needs, with no prompt and no buttons.
 
 ## Alternatives
 

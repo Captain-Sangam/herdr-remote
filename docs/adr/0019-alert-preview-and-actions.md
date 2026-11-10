@@ -23,7 +23,9 @@
   - Each button has `setAuthenticationRequired(true)`. The phone must be unlocked to use it.
   - The service never retries. The notification shows the result in the words of the app.
   - After a refusal (for example `mac_in_use`), if the agent is still blocked, the alert comes back with its buttons and the reason on top.
-- **Lock screen:** a locked phone shows only "An agent needs attention" or "An agent finished", with no preview and no buttons.
+- **Lock screen and watch:** a locked phone shows only the agent name and what it needs. There is no prompt and there are no buttons.
+  - Examples: "Herdr Remote / watch-probe needs approval", "Niti / 2 finished".
+  - A Galaxy Watch gets the same alert, because it mirrors the phone. The phone is usually locked when the user looks at the watch.
   - The service shows the redacted alerts when the screen goes off.
   - When the screen comes on, the service checks the keyguard each 500 ms. It shows the full alerts again when the phone is unlocked. `ACTION_USER_PRESENT` did not reach the app on Android 17 (the S26).
   - So SR-11 holds with any lock screen setting.
@@ -33,14 +35,17 @@
 
 ## Alternatives
 
-| Alternative                               | Why it lost                                             |
-| ----------------------------------------- | ------------------------------------------------------- |
-| Only `VISIBILITY_PRIVATE` for the preview | The default lock screen setting shows the private text. |
-| A `BroadcastReceiver` for the buttons     | An action can wait 150 s. A receiver has about 10 s.    |
-| Buttons on the redacted alert             | The user could approve a prompt that they did not see.  |
-| Approve only in the app                   | The user asked for Approve in the notification.         |
+| Alternative                                   | Why it lost                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Only `VISIBILITY_PRIVATE` for the preview     | The default lock screen setting shows the private text.                               |
+| A `BroadcastReceiver` for the buttons         | An action can wait 150 s. A receiver has about 10 s.                                  |
+| Buttons on the redacted alert                 | The user could approve a prompt that they did not see.                                |
+| Generic text on the lock screen and the watch | The watch said only "An agent needs attention". The user chose to see the agent name. |
+| Approve only in the app                       | The user asked for Approve in the notification.                                       |
 
 ## Consequences
+
+- The lock screen and the watch show agent names (the space and the tab). SR-11 changed to allow this on 2026-11-10, at the user's request. Before, they showed only "An agent needs attention" or "An agent finished".
 
 - An unlocked phone can approve without the app lock. The phone unlock is the only check. This is weaker than the app lock ([ADR 0014](0014-phone-key-and-privacy.md)), which asks again after 5 minutes.
 - The notification shade of an unlocked phone shows agent names and commands.
