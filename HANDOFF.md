@@ -18,7 +18,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 
 | What           | Where                                                                                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`, no git remote                                                                                                       |
+| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`. Remote: `Captain-Sangam/herdr-remote` on GitHub (private). Work lands through pull requests                         |
 | Docs           | `docs/` (index `docs/README.md`), `AGENTS.md`, `README.md`. Images in `docs/assets/`                                                                                |
 | Daemon code    | `daemon/` (Go)                                                                                                                                                      |
 | Android app    | `android/` (Kotlin, Compose). The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`                                                                     |
@@ -42,6 +42,12 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `checkpoint-formatted` (`21e19c8`)
   - `checkpoint-pane` (`764495b`)
   - `checkpoint-device-tested` (the commit that adds this line)
+- **Done on 2026-11-10, later (PRs #2 and #3):**
+  - The transcript updates live while the agent works, follows new items and has "Bottom ↓". The header shows the model.
+  - Alerts when an agent finishes. The blocked alert shows the prompt, with Approve and Deny ([ADR 0019](docs/adr/0019-alert-preview-and-actions.md)).
+  - A locked phone and the Galaxy Watch show only the agent name and what it needs. SR-11 changed to allow the agent name.
+  - The "Watching N agents" notification no longer comes back after a dismissal.
+  - CI runs the format check, the daemon tests (macOS runner) and the app tests and build.
 - **Done since 2026-11-09:**
   - `install.sh` waits for `bootout` to finish before `bootstrap` (`52ee7fe`).
   - Tailscale runs on the Mac (`macbook-pro-5`, `100.107.60.83`) and on the phone (`ajays-s26`, `100.111.88.15`), with the same account.
@@ -76,13 +82,13 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 0. **Look at the transcript scroll by eye** ([ADR 0019](docs/adr/0019-alert-preview-and-actions.md)): it follows new items while the end shows, and "Bottom ↓" shows after a scroll up. Only the unit tests cover this.
    - Checked over `adb` on 2026-11-10: the live transcript, the model in the header, the blocked alert with the prompt, Approve from the shade (`applied`), the refusal with the buttons back, finish alerts, and the redaction on the lock screen and its end after an unlock.
    - Do not lock, turn off or reboot the phone in a test without asking the user first.
-   - The Galaxy Watch 8 skips the alerts now (`WearNotifPipeline: Discarding`). Approve on the watch needs a new decision: a watch button skips the phone unlock.
+   - The Galaxy Watch 8 gets the alerts: Herdr Remote is on in Galaxy Wearable. The bridge holds an alert while the phone is in use (`pending:USING_PHONE`). Check by eye that the watch shows the agent name after a phone lock. The logs did not confirm it.
+   - Approve on the watch needs a new decision: a watch button skips the phone unlock.
 1. **After a Mac reboot:** `launchctl print gui/$(id -u)/dev.herdr-remote | grep state` shows running. `audit.log` holds lines with no secrets or content.
 2. **Look at the screens by eye** in light mode. FLAG_SECURE blocked a check of the colours.
 3. **Optional:**
    - A revoked phone keeps its last data on the screen with "Not connected" and retries for good. It does not say that it was removed or offer to pair again.
    - The phone learns new Mac addresses only while it is connected. Without Tailscale, a new Wi-Fi address on the Mac needs a new pairing.
-   - Push to a GitHub repo so that `ci.yaml` runs.
    - Add the shfmt checksums for Intel Macs and arm64 Linux to `scripts/format.sh`.
 
 ## Conventions for the next session
