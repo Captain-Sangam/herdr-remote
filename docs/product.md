@@ -1,10 +1,11 @@
 # herdr-remote: Product Requirements
 
-- **Status:** Approved for implementation.
+- **Status:** Built. Approved for implementation on 2026-11-08.
 - **Date:** 2026-11-08.
 - **Owner:** Ajay.
-- **Technical design:** [`history/technical-design.md`](history/technical-design.md).
-- **Design debate:** [`history/debate.md`](history/debate.md).
+- **Architecture:** [`architecture.md`](architecture.md). The decisions are in [`adr/`](README.md#decisions-adr).
+- **Technical design (history):** [`history/technical-design.md`](history/technical-design.md).
+- **Design debate (history):** [`history/debate.md`](history/debate.md).
 - **Design system:** [`design.md`](design.md) (Pane).
 
 ## 1. Summary
@@ -144,7 +145,7 @@ flowchart TD
 | FR-8  | The app shows the transcript of a Claude Code agent, and of a Codex agent that runs with `--no-daemon`. For other agents it shows the terminal text, with a label. For a Codex in daemon mode, it also shows a hint to start Codex with `--no-daemon`. The app never guesses which transcript belongs to an agent. |
 | FR-9  | The app shows a live, colored, read-only view of the terminal of an agent.                                                                                                                                                                                                                                         |
 | FR-10 | The user can approve or deny a permission prompt from Claude Code or Codex. This covers commands and file edits.                                                                                                                                                                                                   |
-| FR-11 | The app refuses an approval, and gives the reason, in these cases: the prompt changed, someone already answered it, or someone uses the Mac keyboard or mouse at that time.                                                                                                                                        |
+| FR-11 | The app refuses an approval, with the reason, in three cases. The prompt changed. Someone already answered it. Someone uses the Mac keyboard or mouse at that time.                                                                                                                                                |
 | FR-12 | Agent questions, login prompts and other agents' prompts are view-only. The app says "Answer this on the Mac".                                                                                                                                                                                                     |
 | FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself.                                                                                    |
 | FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode. Watching starts again after a reboot or an app update.                                                                                                                                                  |
@@ -182,6 +183,8 @@ flowchart TD
 
 ## 10. Setup requirements
 
+[Deployment](deployment.md) gives the steps.
+
 - **Mac:**
   - Run `scripts/install.sh`. It installs the daemon, the LaunchAgent and the Herdr mod.
   - Allow incoming connections for `herdr-remoted` if the macOS firewall asks.
@@ -192,7 +195,7 @@ flowchart TD
 
 ## 11. Acceptance criteria
 
-The product is done when all 13 criteria in [the technical design](history/technical-design.md), section 4, pass. They must pass on the emulator and on a real phone. In short:
+The product is done when all 13 [acceptance criteria](testing.md#acceptance-criteria) pass. They must pass on the emulator and on a real phone. In short:
 
 1. The daemon runs after a reboot, and rejects unpaired TLS clients.
 2. Pairing works with a matching code and Allow, and fails safely in every other case.
@@ -221,12 +224,14 @@ The product is done when all 13 criteria in [the technical design](history/techn
 
 ## 13. Milestones
 
-| Milestone           | TDD steps | Result                                                        |
-| ------------------- | --------- | ------------------------------------------------------------- |
-| M1: Daemon core     | 1 to 4    | Pairing from the command line, read API, events.              |
-| M2: Daemon features | 5 to 8    | Live view, transcripts, approvals, messages, mod and install. |
-| M3: Android app     | 9 to 11   | Pairing, lists, background alerts, agent screen.              |
-| M4: Acceptance      | 12        | All 13 criteria pass on the emulator and a real phone.        |
+The build steps are in the [technical design, section 5](history/technical-design.md#5-implementation-plan). M1 to M3 are done. M4 passed on a real phone on 2026-11-10, with two checks open in [testing](testing.md#checks-on-a-real-phone).
+
+| Milestone           | Build steps | Result                                                        |
+| ------------------- | ----------- | ------------------------------------------------------------- |
+| M1: Daemon core     | 1 to 4      | Pairing from the command line, read API, events.              |
+| M2: Daemon features | 5 to 8      | Live view, transcripts, approvals, messages, mod and install. |
+| M3: Android app     | 9 to 11     | Pairing, lists, background alerts, agent screen.              |
+| M4: Acceptance      | 12          | All 13 criteria pass on the emulator and a real phone.        |
 
 ## 14. Open questions
 

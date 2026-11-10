@@ -1,6 +1,6 @@
 # Design debate: herdr-remote
 
-This file is the full record of how the design in `PRD.md` and `TDD.md` was reached. `PRD.md` is now [`docs/product.md`](../product.md). `TDD.md` is now [`docs/history/technical-design.md`](technical-design.md). You don't need it to build anything. It explains why each decision is what it is, who argued what, and what was checked against the real tools.
+This file is the full record of how the design in `PRD.md` and `TDD.md` was reached. `PRD.md` is now [`docs/product.md`](../product.md). `TDD.md` is now [`docs/history/technical-design.md`](technical-design.md). Each decision has an ADR in [`docs/adr/`](../README.md#decisions-adr), which links back to the parts of this record that it uses. You don't need it to build anything. It explains why each decision is what it is, who argued what, and what was checked against the real tools.
 
 Two stages:
 

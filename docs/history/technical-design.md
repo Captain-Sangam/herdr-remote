@@ -1,5 +1,7 @@
 # herdr-remote: Technical Design
 
+This is a historical record. It is the design as approved on 2026-11-08, with the "As built" notes of the build and the review of 2026-11-09. The current docs are in [`docs/`](../README.md): the [architecture](../architecture.md), the [ADRs](../README.md#decisions-adr), the [API](../api.md) and the others. This file was `TDD.md` at the repo root.
+
 - **Status:** Ready for implementation.
 - **Date:** 2026-11-08.
 - **Repo:** `/Users/zeus/code/herdr-remote` (branch `main`, no commits at the time of this design).

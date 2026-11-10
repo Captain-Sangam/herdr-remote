@@ -172,7 +172,12 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
 
 ## 10. Current state
 
-- All screens use the Pane components and match `design/viewer.html`: lock, pair (start, code, failed), spaces (loading, not connected), space, all agents (empty), agent (approval, refusal, view-only question, result notes, transcript, live) and settings.
+- All screens use the Pane components and match `design/viewer.html`:
+  - lock
+  - pair (start, code, failed)
+  - spaces (loading, not connected), space, all agents (empty)
+  - agent (approval, refusal, view-only question, result notes, transcript, live)
+  - settings.
 - `TmuxBar` is the navigation between spaces, agents and settings. It scrolls sideways when it does not fit, for example at font scale 1.3.
 - Status colours come only from `Pane.colors.status()`, through `StatusRow`, `StatusGlyph`, `StatusTag` and `StatusMeter`. `statusColor()` is gone.
 - The live view has the terminal background `#14161E` behind it and in the WebView before the page paints.
@@ -184,7 +189,8 @@ Known differences from the mockups:
 - The API has no tool name. The "needs you" rows show the prompt text and not "Bash · herdr-remote".
 - The loading log lists the stored endpoints. The phone does not report a result for each endpoint, so no line shows "timeout".
 - The header shows the link state on the list screens only (section 7). The mockup also shows it on the agent screen.
-- At font scale 1.3 a pane title sits about 3 dp below the border line. `PaneBox` offsets the title in dp, and the title grows in sp.
+- The mockups show window numbers in the tmux bar (`0:spaces*`). The app has none, because "0:spaces" read as "0 spaces" (`907cdfc`).
+- At font scale 1.3, a pane title sits about 3 dp below the border line. The cause: `PaneBox` offsets the title in dp, but the title grows in sp.
 
 Checks:
 
