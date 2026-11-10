@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="18 18 72 72" role="img" aria-label="herdr-remote">
+  <!-- The Pane launcher icon: android/app/src/main/res/drawable/ic_launcher_foreground.xml on ic_launcher_background (#191C26), cut to the 72 dp safe zone. -->
+  <rect x="18" y="18" width="72" height="72" rx="16" fill="#191C26" />
+  <path d="M35,33h38a4,4 0,0 1,4 4v34a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-34a4,4 0,0 1,4 -4z" fill="#222736" stroke="#D8DEE9" stroke-width="3.5" />
+  <path d="M56,33v42M56,54h21" fill="none" stroke="#D8DEE9" stroke-width="3.5" />
+  <path d="M59.5,36.5h14v14h-14z" fill="#BF616A" />
+  <path d="M37,47l6,5l-6,5" fill="none" stroke="#88C0D0" stroke-width="3.5" stroke-linecap="square" />
+  <path d="M45,58h6v3.5h-6z" fill="#A3BE8C" />
+</svg>

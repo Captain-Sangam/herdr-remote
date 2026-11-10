@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>herdr-remote design options</title>
+    <style>
+      /* ---------- Page chrome ---------- */
+      :root {
+        --pg: #e7e8eb;
+        --pg2: #f7f7f8;
+        --pgt: #16181c;
+        --pgm: #5b616c;
+        --pgl: #d0d3d8;
+        --pga: #2b59c3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --pg: #101113;
+          --pg2: #1a1b1e;
+          --pgt: #e9eaec;
+          --pgm: #9aa0aa;
+          --pgl: #2b2e33;
+          --pga: #8ab0ff;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 72px;
+      }
+      body {
+        margin: 0;
+        background: var(--pg);
+        color: var(--pgt);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Helvetica Neue",
+          sans-serif;
+        --z: 0.5;
+      }
+      a {
+        color: var(--pga);
+      }
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in srgb, var(--pg) 90%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--pgl);
+      }
+      .top-in {
+        max-width: 1720px;
+        margin: 0 auto;
+        padding: 10px 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        align-items: center;
+      }
+      .brand {
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px;
+      }
+      .links a {
+        color: var(--pgt);
+        text-decoration: none;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+      }
+      .links a:hover {
+        background: var(--pg2);
+      }
+      .ctl {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        margin-left: auto;
+        font-size: 13px;
+        color: var(--pgm);
+      }
+      .ctl label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+      .seg {
+        display: inline-flex;
+        border: 1px solid var(--pgl);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .seg button {
+        all: unset;
+        padding: 4px 10px;
+        cursor: pointer;
+        color: var(--pgt);
+      }
+      .seg button[aria-pressed="true"] {
+        background: var(--pgt);
+        color: var(--pg);
+      }
+      .seg button:focus-visible,
+      .chips button:focus-visible {
+        outline: 2px solid var(--pga);
+        outline-offset: 2px;
+      }
+      main {
+        max-width: 1720px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      section.blk {
+        margin: 0 0 64px;
+      }
+      h1 {
+        font-size: 34px;
+        line-height: 1.15;
+        margin: 16px 0 10px;
+        letter-spacing: -0.01em;
+      }
+      h2 {
+        font-size: 24px;
+        line-height: 1.2;
+        margin: 0 0 12px;
+      }
+      h3.k {
+        font-size: 12px;
+        margin: 28px 0 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--pgm);
+      }
+      .leadp {
+        font-size: 17px;
+        max-width: 900px;
+        margin: 0 0 10px;
+      }
+      .facts {
+        max-width: 960px;
+        padding-left: 20px;
+        margin: 8px 0 0;
+      }
+      .facts li {
+        margin: 3px 0;
+      }
+      .muted {
+        color: var(--pgm);
+      }
+      .tw {
+        overflow-x: auto;
+      }
+      table.t {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13.5px;
+        background: var(--pg2);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      table.t th,
+      table.t td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--pgl);
+        vertical-align: top;
+      }
+      table.t th {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--pgm);
+        font-weight: 600;
+      }
+      table.t tr:last-child td {
+        border-bottom: 0;
+      }
+      table.t a {
+        font-weight: 600;
+        text-decoration: none;
+      }
+      code {
+        font:
+          12.5px ui-monospace,
+          Menlo,
+          monospace;
+        background: var(--pg2);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0 0 14px;
+      }
+      .chips button {
+        all: unset;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--pgl);
+        background: var(--pg2);
+      }
+      .chips button[aria-pressed="true"] {
+        background: var(--pgt);
+        color: var(--pg);
+        border-color: var(--pgt);
+      }
+      .scrnote {
+        margin: 0 0 16px;
+        max-width: 900px;
+      }
+      .cmprow {
+        display: grid;
+        grid-template-columns: repeat(2, max-content);
+        gap: 18px;
+        overflow-x: auto;
+        padding: 4px 2px 14px;
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px 22px;
+      }
+      .cell {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .cap {
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: var(--pgm);
+        width: calc(434px * var(--z));
+      }
+      .cap b {
+        color: var(--pgt);
+        display: block;
+        font-size: 13px;
+      }
+      .pw {
+        zoom: var(--z);
+        padding: 11px;
+        cursor: zoom-in;
+        width: max-content;
+      }
+      .sys {
+        padding-top: 12px;
+        border-top: 1px solid var(--pgl);
+      }
+      .sys-h {
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        margin: 8px 0 10px;
+      }
+      .letter {
+        font: 700 12px system-ui;
+        color: var(--pgm);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .nm {
+        font-size: 46px;
+        line-height: 1.05;
+        margin: 2px 0 8px;
+      }
+      .idea {
+        font-size: 16px;
+        max-width: 860px;
+        margin: 0;
+      }
+      .pc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px 28px;
+        margin: 14px 0 6px;
+        font-size: 14px;
+        max-width: 1200px;
+      }
+      .pc b {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--pgm);
+      }
+      .pc ul {
+        margin: 4px 0 0;
+        padding-left: 18px;
+      }
+      .pc p {
+        margin: 4px 0 0;
+      }
+      .specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        background: var(--pg2);
+        border: 1px solid var(--pgl);
+        border-radius: 14px;
+        padding: 16px;
+        min-width: 0;
+      }
+      .card h4 {
+        margin: 0 0 10px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--pgm);
+      }
+      .tok {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      .tok td,
+      .tok th {
+        padding: 3px 4px;
+        vertical-align: middle;
+        text-align: left;
+      }
+      .tok th {
+        font-size: 11px;
+        color: var(--pgm);
+        font-weight: 600;
+      }
+      .sw8 {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        border: 1px solid rgba(127, 127, 127, 0.4);
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      .hex {
+        font:
+          11.5px ui-monospace,
+          Menlo,
+          monospace;
+        color: var(--pgm);
+      }
+      .fnote {
+        font-size: 12.5px;
+        color: var(--pgm);
+        margin: 0 0 8px;
+      }
+      .ts {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--pgl);
+        overflow: hidden;
+      }
+      .ts:last-child {
+        border-bottom: 0;
+      }
+      .ts .smp {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .ts .spc {
+        font:
+          11px ui-monospace,
+          Menlo,
+          monospace;
+        color: var(--pgm);
+        white-space: nowrap;
+        text-align: right;
+      }
+      .spr {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font:
+          12px ui-monospace,
+          Menlo,
+          monospace;
+        color: var(--pgm);
+        margin: 5px 0;
+      }
+      .spr i {
+        display: block;
+        height: 10px;
+        background: var(--pga);
+        border-radius: 2px;
+      }
+      .rad {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      .rad div {
+        width: 58px;
+        height: 58px;
+        border: 2px solid var(--pgt);
+        display: grid;
+        place-items: center;
+        font:
+          10.5px ui-monospace,
+          Menlo;
+        text-align: center;
+        line-height: 1.2;
+        color: var(--pgm);
+      }
+      .icons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: flex-end;
+      }
+      .lbl {
+        font-size: 11.5px;
+        color: var(--pgm);
+        text-align: center;
+        margin-top: 5px;
+      }
+      .layers {
+        display: flex;
+        gap: 14px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+      .layers svg {
+        width: 116px;
+        height: 116px;
+        border: 1px solid var(--pgl);
+        border-radius: 8px;
+        display: block;
+      }
+      .chk {
+        background: repeating-conic-gradient(#c9ccd1 0 25%, #f4f5f6 0 50%) 0
+          0/12px 12px;
+      }
+      .sheets {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .sheet-w {
+        zoom: 0.8;
+      }
+      .sheet-w .lbl2 {
+        font: 600 13px system-ui;
+        color: var(--pgm);
+        margin: 0 0 8px 4px;
+      }
+      #lb {
+        position: fixed;
+        inset: 0;
+        background: rgba(6, 7, 9, 0.8);
+        z-index: 100;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 16px;
+      }
+      #lb.on {
+        display: flex;
+      }
+      #lb .pw {
+        cursor: zoom-out;
+      }
+      .lbc {
+        color: #fff;
+        max-width: 280px;
+        font-size: 14px;
+      }
+      .lbc b {
+        font-size: 20px;
+        display: block;
+        margin: 4px 0 6px;
+      }
+      .lbc .letter {
+        color: #aab;
+      }
+      .lbc .keys {
+        color: #aab;
+        font-size: 12.5px;
+        margin-top: 18px;
+      }
+    </style>
+    <link rel="stylesheet" href="mockups.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="top-in">
+        <div class="brand">herdr-remote design options</div>
+        <nav class="links" id="links">
+          <a href="#overview">Overview</a><a href="#inventory">Screens</a
+          ><a href="#compare">Compare</a><a href="viewer.html"><b>Viewer</b></a>
+        </nav>
+        <div class="ctl">
+          <span>Theme</span>
+          <span class="seg" id="modeSeg"
+            ><button data-m="default" aria-pressed="true">Default</button
+            ><button data-m="light" aria-pressed="false">Light</button
+            ><button data-m="dark" aria-pressed="false">Dark</button></span
+          >
+          <label
+            >Size
+            <input
+              type="range"
+              id="zoom"
+              min="0.35"
+              max="0.9"
+              step="0.05"
+              value="0.5"
+          /></label>
+          <label><input type="checkbox" id="zones" /> Show system bars</label>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="blk" id="overview">
+        <h1>Two design systems for herdr-remote</h1>
+        <p class="leadp">
+          <b>Decision (9 November 2026): Pane.</b> The rules are in
+          <code>docs/design.md</code>, the code is in
+          <code>android/app/src/main/java/dev/herdrremote/ui/theme/</code>. The
+          shortlist was Pane and Dispatch. Each system draws the same 18 screens
+          with the same content, so you can compare them directly.
+        </p>
+        <ul class="facts">
+          <li>
+            Each mockup is 412 × 915 dp, with the status bar and the 3-button
+            navigation bar of the Galaxy S26. App content stays between the two
+            bars. Turn on <b>Show system bars</b> to see the two zones.
+          </li>
+          <li>
+            Use <b>Compare</b> to see one screen in both systems side by side.
+          </li>
+          <li>
+            Click a phone to open it at full size. Use the arrow keys to move
+            between screens and systems. Press Esc to close.
+          </li>
+          <li>
+            Use <b>Theme</b> to show all mockups in light or dark.
+            <b>Default</b> shows each system in its main mode.
+          </li>
+          <li>
+            The mockups use macOS fonts as stand-ins. Each system names the open
+            font to bundle in the app.
+          </li>
+        </ul>
+        <h3 class="k">The two systems</h3>
+        <div class="tw"><table class="t" id="sumT"></table></div>
+      </section>
+
+      <section class="blk" id="inventory">
+        <h2>Screens and states</h2>
+        <p class="muted" style="max-width: 900px; margin: 0 0 12px">
+          This list comes from the Compose code in
+          <code>android/app/src/main/java/dev/herdrremote/</code> and from
+          <code>docs/product.md</code>.
+        </p>
+        <div class="tw">
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Screen</th>
+                <th>Code</th>
+                <th>States in the app</th>
+                <th>Drawn as</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>App lock</b></td>
+                <td>
+                  <code>MainActivity.kt</code>, <code>Gate.kt</code>,
+                  <code>LockedScreen</code> in <code>App.kt</code>
+                </td>
+                <td>
+                  Locked at start and after 5 min in the background. The system
+                  prompt asks for a biometric or the PIN. A note shows if the
+                  check fails.
+                </td>
+                <td>App lock</td>
+              </tr>
+              <tr>
+                <td><b>Notifications</b></td>
+                <td><code>watch/WatchService.kt</code></td>
+                <td>
+                  One alert for each blocked episode: "An agent needs
+                  attention". An ongoing notice: "Watching n agents" or
+                  "Connecting to the Mac…". The lock screen shows the public
+                  version only (SR-11).
+                </td>
+                <td>Notification on the lock screen</td>
+              </tr>
+              <tr>
+                <td><b>Pair</b></td>
+                <td><code>PairScreen.kt</code></td>
+                <td>
+                  Start (scan or paste). Connecting. Code shown, wait for Allow.
+                  Failed: denied, window closed, bad code, Mac not reachable.
+                </td>
+                <td>Pair: start. Pair: compare the code. Pair: failed.</td>
+              </tr>
+              <tr>
+                <td><b>Spaces</b> (home)</td>
+                <td>
+                  <code>SpacesScreen</code> in <code>ListScreens.kt</code>
+                </td>
+                <td>
+                  Loaded. First load. Not connected (stale banner with the age
+                  of the data). Could not load spaces.
+                </td>
+                <td>Spaces. Spaces: loading. Spaces: not connected.</td>
+              </tr>
+              <tr>
+                <td><b>Space</b></td>
+                <td><code>SpaceScreen</code></td>
+                <td>The agents of one space, with live status.</td>
+                <td>Space</td>
+              </tr>
+              <tr>
+                <td><b>All agents</b></td>
+                <td><code>AllAgentsScreen</code></td>
+                <td>Blocked agents first. Empty: "No agents".</td>
+                <td>All agents. All agents: empty.</td>
+              </tr>
+              <tr>
+                <td><b>Agent</b></td>
+                <td>
+                  <code>AgentScreen.kt</code>, <code>AgentViewModel.kt</code>
+                </td>
+                <td>
+                  <ul style="margin: 0; padding-left: 16px">
+                    <li>Blocked, with a prompt that the phone can answer.</li>
+                    <li>
+                      Refused: Mac in use, prompt changed, already answered.
+                    </li>
+                    <li>View-only prompt.</li>
+                    <li>
+                      Result notes: done, sent, not confirmed, uncertain,
+                      outcome unknown.
+                    </li>
+                    <li>
+                      Transcript with "Load earlier", or terminal text with a
+                      hint.
+                    </li>
+                    <li>Message composer, off while blocked.</li>
+                    <li>Agent gone.</li>
+                  </ul>
+                </td>
+                <td>Six agent mockups</td>
+              </tr>
+              <tr>
+                <td><b>Live view</b></td>
+                <td><code>LiveView.kt</code></td>
+                <td>
+                  Read-only terminal in colour, at the terminal size. Pinch to
+                  zoom.
+                </td>
+                <td>Agent: approved, live view</td>
+              </tr>
+              <tr>
+                <td><b>Settings</b></td>
+                <td><code>SettingsScreen.kt</code></td>
+                <td>
+                  Paired Mac endpoints, device id, background watching switch, a
+                  note when notifications are off, Forget this Mac.
+                </td>
+                <td>Settings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted" style="max-width: 900px; margin-bottom: 4px">
+          Three small states have no mockup of their own. Each one uses a
+          pattern that the mockups show:
+        </p>
+        <ul class="facts muted">
+          <li>Pair connecting uses the wait pattern of the code screen.</li>
+          <li>Agent gone uses the empty pattern.</li>
+          <li>Notifications off uses the note pattern.</li>
+        </ul>
+      </section>
+
+      <section class="blk" id="compare">
+        <h2>Compare one screen</h2>
+        <div class="chips" id="chips"></div>
+        <p class="scrnote muted" id="scrnote"></p>
+        <div class="cmprow" id="cmprow"></div>
+      </section>
+
+      <div id="systems"></div>
+    </main>
+    <div id="lb" role="dialog" aria-modal="true"></div>
+
+    <script src="mockups.js"></script>
+    <script>
+      /* ---------- Page ---------- */
+      let MODE = "default",
+        SEL = "agentBlocked";
+      const modeOf = (S) => (MODE === "default" ? S.def : MODE);
+      const pw = (S, k) =>
+        `<div class="pw" data-s="${S.id}" data-k="${k}" tabindex="0" role="button" aria-label="${S.name}: ${SCREENS.find((x) => x.id === k).name}">${phone(S, k, modeOf(S))}</div>`;
+      function sheet(S, mode) {
+        return `<div class="sheet-w"><div class="lbl2">${cap(mode)}</div><div class="ui sheet s-${S.id} md-${mode}" style="${vars(S, mode)}"><div class="sh-l">Status badges</div><div class="sh-row">${["idle", "working", "done", "blocked", "error"].map(badge).join("")}</div><div class="sh-l">Agent rows</div><div class="list">${agentRow(S, A.daemon, true)}${agentRow(S, A.android, true)}</div><div class="sh-l">Approval card</div>${approval(S, P.daemon)}<div class="sh-l">Message composer</div>${composer({ value: "Yes, install it and open the pairing screen", cnt: "44/4000" })}${composer({ ph: "Answer the prompt first", off: true })}<div class="sh-l">Buttons</div><div class="sh-row">${btn("pri", "Approve", "check", "y")}${btn("alt", "Deny", "x", "n")}${btn("txt", "Reload", "refresh", "r")}${btn("dang", "Forget this Mac")}</div></div></div>`;
+      }
+      function specs(S) {
+        const rows = TOK.filter(([k]) => S.light[k])
+          .map(
+            ([k, n]) =>
+              `<tr><td>${n}</td><td><span class="sw8" style="background:${S.light[k]}"></span><span class="hex">${S.light[k]}</span></td><td><span class="sw8" style="background:${S.dark[k]}"></span><span class="hex">${S.dark[k]}</span></td></tr>`,
+          )
+          .join("");
+        const ty = S.type
+          .map(
+            (r) =>
+              `<div class="ts"><span class="smp" style="font:${r.w} ${Math.min(r.s, 48)}px/${Math.min(r.l, 52)}px ${S.fonts[r.f].replace(/"/g, "'")};${r.x}">${r.smp}</span><span class="spc">${r.n}<br>${r.s}/${r.l} · ${r.w}</span></div>`,
+          )
+          .join("");
+        const sp = S.space
+          .map(
+            (v) =>
+              `<div class="spr"><span style="width:28px">${v}</span><i style="width:${v * 4}px"></i></div>`,
+          )
+          .join("");
+        const rd = S.radius
+          .map(
+            ([n, v]) =>
+              `<div style="border-radius:${v === "full" ? "50%" : typeof v === "number" ? Math.min(v, 29) + "px" : "0"}">${n}<br>${v === "full" ? "full" : typeof v === "number" ? v + " dp" : v}</div>`,
+          )
+          .join("");
+        const all = `${S.icon.bg}${S.icon.fg}`;
+        return `<div class="specs">
+   <div class="card"><h4>Colour tokens</h4><table class="tok"><tr><th>Token</th><th>Light</th><th>Dark</th></tr>${rows}</table></div>
+   <div class="card"><h4>Type scale</h4><p class="fnote">${S.fontNote}</p>${ty}</div>
+   <div class="card"><h4>Spacing and corners</h4><p class="fnote">Spacing steps in dp. Touch targets are 48 dp or more.</p>${sp}<div class="rad">${rd}</div></div>
+   <div class="card"><h4>App icon</h4><p class="fnote">${S.icon.iconNote} Adaptive icon: 108 dp layers, 72 dp visible, 66 dp safe zone.</p>
+    <div class="icons"><div>${aicon(S, "circle")}<div class="lbl">Circle</div></div><div>${aicon(S, "squircle")}<div class="lbl">Squircle</div></div><div>${aicon(S, "rsq")}<div class="lbl">Rounded</div></div><div><div class="aicon m-circle" style="background:#DCE3F2;--mf:#1E3567;--mb:#DCE3F2"><svg viewBox="18 18 72 72">${S.icon.mono}</svg></div><div class="lbl">Themed</div></div></div>
+    <div class="layers"><div><svg viewBox="0 0 108 108">${S.icon.bg}<rect x="18" y="18" width="72" height="72" fill="none" stroke="#fff" stroke-dasharray="3 3" opacity=".7"/></svg><div class="lbl">Background</div></div><div><svg class="chk" viewBox="0 0 108 108">${S.icon.fg}<circle cx="54" cy="54" r="33" fill="none" stroke="#E0245E" stroke-dasharray="3 3"/><rect x="18" y="18" width="72" height="72" fill="none" stroke="#555" stroke-dasharray="3 3"/></svg><div class="lbl">Foreground</div></div></div></div>
+  </div>`;
+      }
+      function renderSystems() {
+        document.getElementById("systems").innerHTML = SYS.map(
+          (S) => `<section class="blk sys" id="sys-${S.id}">
+   <div class="sys-h">${aicon(S, "squircle", 88)}<div><div class="letter">Option ${S.letter} · ${S.def} first</div><h2 class="nm" style="font-family:${S.fonts.d.replace(/"/g, "'")};${S.id === "dispatch" ? "font-weight:800;letter-spacing:-.03em" : ""}${S.id === "console" ? ";text-transform:uppercase;letter-spacing:.04em" : ""}">${S.name}</h2><p class="idea">${S.idea}</p></div></div>
+   <div class="pc"><div><b>Strengths</b><ul>${S.pros.map((x) => `<li>${x}</li>`).join("")}</ul></div><div><b>Risks</b><ul>${S.cons.map((x) => `<li>${x}</li>`).join("")}</ul></div><div><b>Signature</b><p>${S.sig}</p></div></div>
+   <h3 class="k">Tokens, type and icon</h3>${specs(S)}
+   <h3 class="k">Key components</h3><div class="sheets">${sheet(S, "light")}${sheet(S, "dark")}</div>
+   <h3 class="k">All screens</h3><div class="grid">${SCREENS.map((sc) => `<div class="cell">${pw(S, sc.id)}<div class="cap"><b>${sc.name}</b>${sc.note}</div></div>`).join("")}</div>
+  </section>`,
+        ).join("");
+      }
+      function renderGrids() {
+        document.querySelectorAll(".sys .grid").forEach((g, i) => {
+          const S = SYS[i];
+          g.innerHTML = SCREENS.map(
+            (sc) =>
+              `<div class="cell">${pw(S, sc.id)}<div class="cap"><b>${sc.name}</b>${sc.note}</div></div>`,
+          ).join("");
+        });
+      }
+      function renderCompare() {
+        document.getElementById("chips").innerHTML = SCREENS.map(
+          (s) =>
+            `<button data-k="${s.id}" aria-pressed="${s.id === SEL}">${s.name}</button>`,
+        ).join("");
+        document.getElementById("scrnote").textContent = SCREENS.find(
+          (s) => s.id === SEL,
+        ).note;
+        document.getElementById("cmprow").innerHTML = SYS.map(
+          (S) =>
+            `<div class="cell">${pw(S, SEL)}<div class="cap"><b>${S.letter} · ${S.name}</b></div></div>`,
+        ).join("");
+      }
+      document.getElementById("sumT").innerHTML =
+        "<thead><tr><th>Option</th><th>Name</th><th>Idea</th><th>Main mode</th><th>Signature</th></tr></thead><tbody>" +
+        SYS.map(
+          (S) =>
+            `<tr><td>${S.letter}</td><td><a href="#sys-${S.id}">${S.name}</a></td><td>${S.idea}</td><td>${cap(S.def)}</td><td>${S.sig}</td></tr>`,
+        ).join("") +
+        "</tbody>";
+      document
+        .getElementById("links")
+        .insertAdjacentHTML(
+          "beforeend",
+          SYS.map(
+            (S) => `<a href="#sys-${S.id}">${S.letter} · ${S.name}</a>`,
+          ).join(""),
+        );
+      renderCompare();
+      renderSystems();
+
+      document.getElementById("chips").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (b) {
+          SEL = b.dataset.k;
+          renderCompare();
+        }
+      });
+      document.getElementById("modeSeg").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        MODE = b.dataset.m;
+        document
+          .querySelectorAll("#modeSeg button")
+          .forEach((x) => x.setAttribute("aria-pressed", x === b));
+        renderCompare();
+        renderGrids();
+        if (LB) drawLB();
+      });
+      document
+        .getElementById("zoom")
+        .addEventListener("input", (e) =>
+          document.body.style.setProperty("--z", e.target.value),
+        );
+      document
+        .getElementById("zones")
+        .addEventListener("change", (e) =>
+          document.body.classList.toggle("zones", e.target.checked),
+        );
+
+      const lb = document.getElementById("lb");
+      let LB = null;
+      function drawLB() {
+        const S = SYS.find((x) => x.id === LB.s),
+          sc = SCREENS.find((x) => x.id === LB.k),
+          z = Math.min(1, (innerHeight - 40) / 937);
+        lb.innerHTML = `<div class="pw" style="zoom:${z}">${phone(S, LB.k, modeOf(S))}</div><div class="lbc"><div class="letter">Option ${S.letter} · ${S.name}</div><b>${sc.name}</b><div>${sc.note}</div><div class="keys">Left and right: screens<br>Up and down: systems<br>Esc or click: close</div></div>`;
+      }
+      function openLB(s, k) {
+        LB = { s, k };
+        drawLB();
+        lb.classList.add("on");
+      }
+      function closeLB() {
+        lb.classList.remove("on");
+        LB = null;
+      }
+      document.addEventListener("click", (e) => {
+        if (lb.classList.contains("on")) {
+          closeLB();
+          return;
+        }
+        const p = e.target.closest(".pw");
+        if (p) openLB(p.dataset.s, p.dataset.k);
+      });
+      document.addEventListener("keydown", (e) => {
+        if (!LB) {
+          if (
+            e.key === "Enter" &&
+            e.target.classList &&
+            e.target.classList.contains("pw")
+          )
+            openLB(e.target.dataset.s, e.target.dataset.k);
+          return;
+        }
+        const si = SYS.findIndex((x) => x.id === LB.s),
+          ki = SCREENS.findIndex((x) => x.id === LB.k);
+        if (e.key === "Escape") closeLB();
+        else if (e.key === "ArrowRight")
+          LB.k = SCREENS[(ki + 1) % SCREENS.length].id;
+        else if (e.key === "ArrowLeft")
+          LB.k = SCREENS[(ki + SCREENS.length - 1) % SCREENS.length].id;
+        else if (e.key === "ArrowDown") LB.s = SYS[(si + 1) % SYS.length].id;
+        else if (e.key === "ArrowUp")
+          LB.s = SYS[(si + SYS.length - 1) % SYS.length].id;
+        else return;
+        e.preventDefault();
+        if (LB) drawLB();
+      });
+    </script>
+  </body>
+</html>

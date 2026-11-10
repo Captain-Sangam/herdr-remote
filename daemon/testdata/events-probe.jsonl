@@ -1,0 +1,96 @@
+{"channel":null,"seq":14025,"terminals":[{"address":"t2c","argv":["claude","--permission-mode","default","Use Bash to run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok"],"cols":200,"created_ms":1794122558161,"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","die_with_parent":true,"exit_code":null,"finished_ms":null,"identity":"ghostty","keep":false,"labels":{},"name":"hr-probe-claude","notify":true,"parent":"t2b","pid":42024,"reason":null,"reported":false,"rm":false,"rows":120,"screen":"exact","signal":null,"state":"live","status":null,"status_ms":null,"template":null,"title":"","turn":0},{"address":"t2d","argv":["codex","--no-daemon","-s","read-only","-a","on-request","Run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok2"],"cols":200,"created_ms":1794122772627,"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","die_with_parent":true,"exit_code":null,"finished_ms":null,"identity":"ghostty","keep":false,"labels":{},"name":"hr-probe-codex","notify":true,"parent":"t2b","pid":42555,"reason":null,"reported":false,"rm":false,"rows":120,"screen":"exact","signal":null,"state":"live","status":null,"status_ms":null,"template":null,"title":"","turn":0}]}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"address":"t2c","argv":["claude","--permission-mode","default","Use Bash to run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok"],"cols":200,"created_ms":1794122558161,"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","die_with_parent":true,"exit_code":null,"finished_ms":null,"identity":"ghostty","keep":false,"labels":{},"name":"hr-probe-claude","notify":true,"parent":"t2b","pid":42024,"reason":null,"reported":false,"rm":false,"rows":120,"screen":"exact","signal":null,"state":"live","status":null,"status_ms":null,"template":null,"title":"","turn":0},"seq":14026,"terminal":"t2c","type":"created"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"argv":["claude","--permission-mode","default","Use Bash to run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok"],"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","name":"claude.exe","pid":42024},"seq":14027,"terminal":"t2c","type":"foreground"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"labels":{"where":"Herdr Remote / herdr-remote-impl"}},"seq":14028,"terminal":"t2c","type":"labels"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14029}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14030}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"idle"}},"seq":14032,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"Claude Code"},"seq":14033,"terminal":"t2c","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"address":"t2d","argv":["codex","--no-daemon","-s","read-only","-a","on-request","Run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok2"],"cols":200,"created_ms":1794122772627,"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","die_with_parent":true,"exit_code":null,"finished_ms":null,"identity":"ghostty","keep":false,"labels":{},"name":"hr-probe-codex","notify":true,"parent":"t2b","pid":42555,"reason":null,"reported":false,"rm":false,"rows":120,"screen":"exact","signal":null,"state":"live","status":null,"status_ms":null,"template":null,"title":"","turn":0},"seq":14034,"terminal":"t2d","type":"created"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"working"}},"seq":14035,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"labels":{"where":"Herdr Remote / herdr-remote-impl"}},"seq":14036,"terminal":"t2d","type":"labels"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"argv":["node","/opt/homebrew/bin/codex","--no-daemon","-s","read-only","-a","on-request","Run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok2"],"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","name":"node","pid":42555},"seq":14037,"terminal":"t2d","type":"foreground"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"probe"},"seq":14038,"terminal":"t2d","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"idle"}},"seq":14039,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"\u280b probe"},"seq":14040,"terminal":"t2d","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"working"}},"seq":14041,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"\u2819 probe"},"seq":14042,"terminal":"t2d","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","kind":"permission","msg":"approve Bash: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/ok","state":"blocked"}},"seq":14054,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"blocked","turn":1},"seq":14055,"terminal":"t2c","type":"turn"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"Herdr-remote scratchpad probe ok"},"seq":14069,"terminal":"t2c","type":"title"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14132}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","kind":"permission","state":"blocked"}},"seq":14162,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"blocked","turn":1},"seq":14163,"terminal":"t2d","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14176}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"working"}},"seq":14188,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"working"}},"seq":14189,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"done"}},"seq":14210,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"done","turn":2},"seq":14211,"terminal":"t2c","type":"turn"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"done"}},"seq":14219,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"done","turn":2},"seq":14220,"terminal":"t2d","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14220}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14220}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"working"}},"seq":14222,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","kind":"permission","msg":"approve Write: /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/edit.txt","state":"blocked"}},"seq":14223,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"blocked","turn":3},"seq":14224,"terminal":"t2c","type":"turn"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"idle"}},"seq":14225,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"idle"}},"seq":14226,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"working"}},"seq":14227,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","kind":"permission","state":"blocked"}},"seq":14266,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"blocked","turn":3},"seq":14267,"terminal":"t2d","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14267}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"working"}},"seq":14268,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"codex","state":"idle"}},"seq":14271,"terminal":"t2d","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"idle","turn":4},"seq":14272,"terminal":"t2d","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14272}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14272}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"working"}},"seq":14274,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"done"}},"seq":14275,"terminal":"t2c","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"done","turn":4},"seq":14276,"terminal":"t2c","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14276}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"address":"t2f","argv":["claude","--permission-mode","auto","Use Bash to run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/auto-ok"],"cols":200,"created_ms":1794122889109,"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","die_with_parent":true,"exit_code":null,"finished_ms":null,"identity":"ghostty","keep":false,"labels":{},"name":"hr-probe-auto","notify":true,"parent":"t2b","pid":43832,"reason":null,"reported":false,"rm":false,"rows":120,"screen":"exact","signal":null,"state":"live","status":null,"status_ms":null,"template":null,"title":"","turn":0},"seq":14277,"terminal":"t2f","type":"created"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"\u2733 Claude Code"},"seq":14278,"terminal":"t2f","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"labels":{"where":"Herdr Remote / herdr-remote-impl"}},"seq":14279,"terminal":"t2f","type":"labels"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"\u25d0 Claude Code"},"seq":14280,"terminal":"t2f","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"argv":["claude","--permission-mode","auto","Use Bash to run: touch /private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe/auto-ok"],"cwd":"/private/tmp/claude-501/-Users-zeus-code-herdr-remote/b044d7ad-ca54-47d5-85dd-009b44313793/scratchpad/probe","name":"claude.exe","pid":43832},"seq":14281,"terminal":"t2f","type":"foreground"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"working"}},"seq":14282,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"title":"Claude Code"},"seq":14283,"terminal":"t2f","type":"title"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","msg":"Creating the auto-ok marker file","state":"working"}},"seq":14285,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":{"app":"claude-code","state":"done"}},"seq":14286,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"state":"done","turn":1},"seq":14287,"terminal":"t2f","type":"turn"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14287}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14287}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14287}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14287}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14287}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"cols":100,"rows":40},"seq":14289,"terminal":"t2c","type":"size"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"cols":200,"rows":120},"seq":14290,"terminal":"t2c","type":"size"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":null},"seq":14291,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":null},"seq":14292,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"records":{},"reported":true,"status":null},"seq":14293,"terminal":"t2f","type":"status"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14294}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"exit_code":129,"finished_ms":1794122977466,"reason":"killed","signal":null},"seq":14295,"terminal":"t2f","type":"finished"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{},"seq":14296,"terminal":"t2f","type":"removed"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14296}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14296}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14296}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"cols":100,"rows":40},"seq":14298,"terminal":"t2c","type":"size"}}
+{"jsonrpc":"2.0","method":"event","params":{"data":{"cols":200,"rows":120},"seq":14299,"terminal":"t2c","type":"size"}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14299}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14302}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14302}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14302}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14302}}
+{"jsonrpc":"2.0","method":"heartbeat","params":{"seq":14302}}

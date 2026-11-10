@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Pane app icon (docs/design.md): a split terminal pane. The red pane is an agent that waits. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#222736"
+        android:pathData="M35,33h38a4,4 0,0 1,4 4v34a4,4 0,0 1,-4 4h-38a4,4 0,0 1,-4 -4v-34a4,4 0,0 1,4 -4z"
+        android:strokeWidth="3.5"
+        android:strokeColor="#D8DEE9" />
+    <path
+        android:pathData="M56,33v42M56,54h21"
+        android:strokeWidth="3.5"
+        android:strokeColor="#D8DEE9" />
+    <path
+        android:fillColor="#BF616A"
+        android:pathData="M59.5,36.5h14v14h-14z" />
+    <path
+        android:pathData="M37,47l6,5l-6,5"
+        android:strokeWidth="3.5"
+        android:strokeColor="#88C0D0"
+        android:strokeLineCap="square" />
+    <path
+        android:fillColor="#A3BE8C"
+        android:pathData="M45,58h6v3.5h-6z" />
+</vector>

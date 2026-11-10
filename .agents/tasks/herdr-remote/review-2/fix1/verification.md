@@ -1,0 +1,11 @@
+# Review-2 fix turn verification (2026-11-09)
+- Implementer herdr-remote-impl3 (Claude Fable 5.1), turn 07:58:12Z to 08:30:10Z (32 min). Report review-2/fix1/report.md: fixes 1-4 done.
+- Commits since 429c512:
+  - e0dabd6 fix 1 (gate observer in Application, GateTest)
+  - e96ec0b fix 2 (bounded, vertically scrolling prompt block)
+  - f1d3a40 fix 3 (refresh after a decision keeps the action note, Texts.refreshError + test)
+  - fca5008 fix 4 (SSE Call cancelled in stop(); forgetMac stops WatchService; WatchService.onDestroy clears the ongoing notification)
+- Scope: Android files of each fix only; nothing under .agents/; no attribution; tree clean apart from .agents/.
+- Orchestrator run: ./gradlew testDebugUnitTest assembleDebug ok, 19 JVM tests in 6 suites, 0 failures; APK rebuilt 13:55. The daemon is unchanged since 429c512 (go test passed there).
+- Leftovers: no live hr-probe terminals, no emulator, no scratch daemon. A finished terminal t2t from the first implementer's run remains (not started by this turn).
+- Note for the fix check: the title line above the block shows a.msg without a height bound. The implementer's 45-line heredoc probe put the command in msg, and the buttons still sat at mid-screen (y 1396 to 1522 of 2400).
