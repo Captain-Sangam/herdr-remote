@@ -260,8 +260,9 @@ class WatchService : Service() {
             .build()
 
     /**
-     * An alert. A locked phone gets only [public], with no preview and no buttons. The public
-     * version says the same, for a lock screen that hides sensitive content.
+     * An alert. A locked phone (and so the watch) gets only the [title], the agent's name and what
+     * it needs: no prompt, no buttons. The public version says the same, for a lock screen that
+     * hides sensitive content.
      */
     private fun alert(
         channel: String,
@@ -269,17 +270,16 @@ class WatchService : Service() {
         locked: Boolean,
         title: String,
         text: String,
-        public: String,
     ): NotificationCompat.Builder =
         NotificationCompat.Builder(this, channel)
             .setSmallIcon(R.drawable.ic_stat_herdr)
-            .setContentTitle(if (locked) public else title)
+            .setContentTitle(title)
             .setContentText(if (locked) null else text)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(
                 NotificationCompat.Builder(this, channel)
                     .setSmallIcon(R.drawable.ic_stat_herdr)
-                    .setContentTitle(public)
+                    .setContentTitle(title)
                     .build()
             )
             .setAutoCancel(true)
@@ -299,7 +299,6 @@ class WatchService : Service() {
                 locked,
                 "${name(a)} needs ${if (p?.actionable == true) "approval" else "attention"}",
                 note ?: msg,
-                "An agent needs attention",
             )
         if (locked) return b
         // Expanded: the prompt as the Mac shows it.
@@ -321,7 +320,6 @@ class WatchService : Service() {
             locked,
             "${name(a)} ${if (a.state == "error") "stopped with an error" else "finished"}",
             a.title.ifEmpty { a.app },
-            "An agent finished",
         )
 
     /**
@@ -333,9 +331,9 @@ class WatchService : Service() {
         text: String,
         locked: Boolean,
     ): NotificationCompat.Builder =
-        alert(CHANNEL_ALERTS, address, locked, name, text, "An agent needs attention")
-            .setSilent(true)
-            .apply { if (Texts.kind(text) == NoteKind.Ok) setTimeoutAfter(10_000) }
+        alert(CHANNEL_ALERTS, address, locked, name, text).setSilent(true).apply {
+            if (Texts.kind(text) == NoteKind.Ok) setTimeoutAfter(10_000)
+        }
 
     /** Only on an unlocked phone's alert, and the phone must be unlocked to use it. */
     private fun action(a: Agent, p: PromptView, approve: Boolean): NotificationCompat.Action {
