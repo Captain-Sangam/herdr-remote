@@ -1,6 +1,6 @@
 # ADR 0013: Background alerts from a foreground service
 
-- **Status:** Accepted, 2026-11-08. Episode rule corrected 2026-11-10 (`6c8e729`).
+- **Status:** Accepted, 2026-11-08. Episode rule corrected 2026-11-10 (`6c8e729`). Alerts and the ongoing notification changed by [ADR 0019](0019-alert-preview-and-actions.md).
 - **Decision:** 13 in the [decision table](../history/technical-design.md#31-decision-table).
 
 ## Context
@@ -17,6 +17,7 @@
 - It shows one notification for each blocked episode. An episode starts when an agent becomes blocked, or shows another `msg` while blocked. The turn is not part of it.
 - After a reconnect, the snapshot shows the agents that are still blocked.
 - `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` receivers start the service again if the toggle is on.
+- **Added 2026-11-10:** the app also starts the service each time it opens, if the toggle is on. On the test phone (Android 17), the system skipped `MY_PACKAGE_REPLACED` after `adb install -r`.
 - Alerts come only while the service runs and is connected.
 
 ## Alternatives
@@ -29,7 +30,7 @@
 ## Consequences
 
 - No server outside the Mac.
-- The service shows an ongoing notification, "Watching N agents".
+- The service shows an ongoing notification. Since [ADR 0019](0019-alert-preview-and-actions.md), it says "Herdr Remote is watching" and never changes.
 - The app asks for an exemption from battery optimization. If notifications are denied, the toggle stays off and explains why.
 - If the OS stops the service, alerts stop. The criterion says "while the service runs and is connected".
 - On the phone tested, one alert came 3 to 4 s after a block, also after a reboot.

@@ -9,19 +9,24 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +37,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.herdrremote.HerdrRemoteApp
 import dev.herdrremote.net.Agent
@@ -51,6 +59,8 @@ import dev.herdrremote.ui.theme.PaneTabs
 import dev.herdrremote.ui.theme.PromptField
 import dev.herdrremote.ui.theme.StatusTag
 import dev.herdrremote.ui.theme.topRule
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
@@ -59,6 +69,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
     val prompt by vm.prompt.collectAsStateWithLifecycle()
     val note by vm.note.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val model = vm.transcript.collectAsStateWithLifecycle().value.model
     val state by app.repository.state.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
     var draft by remember { mutableStateOf("") }
@@ -75,7 +86,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
             PaneSubline {
                 StatusTag(a.state)
                 Text(
-                    listOf(a.app, a.space, a.kind.orEmpty())
+                    listOf(a.app, model, a.space, a.kind.orEmpty())
                         .filter { it.isNotEmpty() }
                         .joinToString(" · "),
                     maxLines = 1,
@@ -111,7 +122,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
             PaneNote(n, kind, Modifier.padding(Pane.space.s))
 
         PaneTabs(listOf("transcript", "live"), tab) { tab = it }
-        if (tab == 0) Transcript(vm, a.app, Modifier.weight(1f))
+        if (tab == 0) Transcript(vm, a.app, a.state == "working", Modifier.weight(1f))
         else
             Column(Modifier.weight(1f).fillMaxWidth().background(Pane.terminalBg)) {
                 LiveView(app, address, Modifier.weight(1f).fillMaxWidth())
@@ -231,42 +242,78 @@ fun Approval(
 }
 
 @Composable
-fun Transcript(vm: AgentViewModel, app: String, modifier: Modifier = Modifier) {
+fun Transcript(vm: AgentViewModel, app: String, working: Boolean, modifier: Modifier = Modifier) {
     val tr by vm.transcript.collectAsStateWithLifecycle()
     val c = Pane.colors
-    LazyColumn(
-        modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = Pane.space.m, vertical = Pane.space.s),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        if (tr.nextCursor.isNotEmpty())
-            item {
-                Box(
-                    Modifier.heightIn(min = Pane.space.touch).clickable(
-                        enabled = !tr.loading,
-                        role = Role.Button,
-                    ) {
-                        vm.loadOlder()
-                    },
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    Text(
-                        if (tr.loading) "Loading…" else "Load earlier",
-                        style = Pane.type.label,
-                        color = c.muted,
-                    )
+    val list = rememberLazyListState()
+    // Live: the newest page every 2 s while the agent works and the screen is in view.
+    // ponytail: polls the whole last page (about 60 KiB); add an "after" cursor if that costs too
+    // much.
+    val owner = LocalLifecycleOwner.current
+    LaunchedEffect(working) {
+        if (working)
+            owner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(2_000)
+                    vm.refresh()
                 }
             }
-        if (tr.source == "terminal")
-            item {
-                Text(
-                    "Terminal text" + (tr.hint?.let { " · $it" } ?: ""),
-                    style = Pane.type.caption,
-                    color = c.error,
-                )
+    }
+    // The end marker's index: the head items before tr.items, plus tr.items.
+    val end =
+        tr.items.size +
+            listOf(tr.nextCursor.isNotEmpty(), tr.source == "terminal", tr.error != null).count {
+                it
             }
-        tr.error?.let { item { PaneNote(it, NoteKind.Error) } }
-        items(tr.items) { TranscriptRow(it, app) }
+    // Like a terminal: new items scroll into view while the end is in view. Read before the new
+    // items are laid out, so it is the old layout's answer.
+    val atEnd = remember(tr.items) { !list.canScrollForward }
+    LaunchedEffect(tr.items) { if (atEnd) list.scrollToItem(end) }
+    val scope = rememberCoroutineScope()
+
+    Box(modifier.fillMaxWidth()) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            state = list,
+            contentPadding = PaddingValues(horizontal = Pane.space.m, vertical = Pane.space.s),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (tr.nextCursor.isNotEmpty())
+                item {
+                    Box(
+                        Modifier.heightIn(min = Pane.space.touch).clickable(
+                            enabled = !tr.loading,
+                            role = Role.Button,
+                        ) {
+                            vm.loadOlder()
+                        },
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Text(
+                            if (tr.loading) "Loading…" else "Load earlier",
+                            style = Pane.type.label,
+                            color = c.muted,
+                        )
+                    }
+                }
+            if (tr.source == "terminal")
+                item {
+                    Text(
+                        "Terminal text" + (tr.hint?.let { " · $it" } ?: ""),
+                        style = Pane.type.caption,
+                        color = c.error,
+                    )
+                }
+            tr.error?.let { item { PaneNote(it, NoteKind.Error) } }
+            items(tr.items) { TranscriptRow(it, app) }
+            item { Spacer(Modifier.height(1.dp)) }
+        }
+        if (list.canScrollForward)
+            KeyButton(
+                "Bottom ↓",
+                { scope.launch { list.animateScrollToItem(end) } },
+                Modifier.align(Alignment.BottomEnd).padding(Pane.space.m).background(c.bg),
+            )
     }
 }
 

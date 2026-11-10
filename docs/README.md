@@ -44,6 +44,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0016](adr/0016-spaces-and-agents.md)          | Spaces and agents from `herdr-app ls`.          | Accepted            |
 | [0017](adr/0017-logging-and-audit.md)          | Content-free logs and an audit log.             | Accepted            |
 | [0018](adr/0018-trust-boundary.md)             | Processes of the same user are trusted.         | Accepted            |
+| [0019](adr/0019-alert-preview-and-actions.md)  | Alert previews, Approve, finish alerts.         | Accepted            |
 
 To add a decision:
 

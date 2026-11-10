@@ -113,7 +113,7 @@ flowchart TD
 
 1. An agent on the Mac asks for a permission, for example to run a command or to edit a file.
 2. The phone shows a notification. The lock screen shows only "An agent needs attention".
-3. The user unlocks the phone and opens the agent.
+3. The user unlocks the phone and opens the agent. Or the user expands the notification, reads the prompt there and taps **Approve** or **Deny** (then skip to step 6).
 4. The app shows the request: the command or the file, and the text of the prompt.
 5. The user taps **Approve** or **Deny**.
 6. The app shows the result:
@@ -127,7 +127,7 @@ flowchart TD
 
 - **Browse:** Spaces, then a space, then an agent. The All agents view shows blocked agents first.
 - **Watch:** on the agent screen, the Live tab shows the terminal in color, like a screen share. The user can zoom with two fingers.
-- **Read:** the Transcript tab shows the user and assistant messages and the tool calls. The user scrolls up to load older pages.
+- **Read:** the Transcript tab shows the user and assistant messages and the tool calls. The user scrolls up to load older pages. While the agent works, new items appear and the list follows them. The header shows the model.
 - **Message:** the user types a message and taps Send. It arrives at the agent as a new prompt.
 - **Revoke:** on the Mac, the user opens the overlay and clicks **Revoke** next to the phone.
 
@@ -148,7 +148,7 @@ flowchart TD
 | FR-11 | The app refuses an approval, with the reason, in three cases. The prompt changed. Someone already answered it. Someone uses the Mac keyboard or mouse at that time.                                                                                                                                                |
 | FR-12 | Agent questions, login prompts and other agents' prompts are view-only. The app says "Answer this on the Mac".                                                                                                                                                                                                     |
 | FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself.                                                                                    |
-| FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode. Watching starts again after a reboot or an app update.                                                                                                                                                  |
+| FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode and one when an agent finishes. A blocked alert shows the prompt and has Approve and Deny. Watching starts again after a reboot, and after an app update at the latest when the app opens.               |
 | FR-15 | The phone connects over the LAN or over Tailscale, with the same pairing.                                                                                                                                                                                                                                          |
 
 ## 8. Security and privacy requirements

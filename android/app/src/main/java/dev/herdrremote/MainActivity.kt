@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import dev.herdrremote.ui.HerdrRemoteUi
 import dev.herdrremote.ui.LockedScreen
+import dev.herdrremote.watch.WatchService
 
 class MainActivity : FragmentActivity() {
     companion object {
@@ -50,6 +51,9 @@ class MainActivity : FragmentActivity() {
         if (locked) authenticate()
         val app = application as HerdrRemoteApp
         if (app.store.paired) app.repository.start()
+        // Android 17 skipped MY_PACKAGE_REPLACED after an update: opening the app starts watching
+        // again. A service that runs already ignores this.
+        if (app.store.paired && app.store.watch) WatchService.start(this)
     }
 
     private fun authenticate() {

@@ -32,6 +32,7 @@ type transcriptItem struct {
 type transcriptPage struct {
 	Source     string           `json:"source"` // claude, codex or terminal
 	Hint       string           `json:"hint,omitempty"`
+	Model      string           `json:"model,omitempty"` // the last model named in this page
 	Items      []transcriptItem `json:"items"`
 	NextCursor string           `json:"next_cursor"`
 }
@@ -393,6 +394,26 @@ func claudeItems(rec []byte) []transcriptItem {
 	return out
 }
 
+// recordModel returns the model a record names: message.model in Claude Code,
+// payload.model in a Codex turn_context. Claude's own "<synthetic>" is not a model.
+func recordModel(rec []byte) string {
+	if !bytes.Contains(rec, []byte(`"model"`)) {
+		return ""
+	}
+	var r struct {
+		Message struct {
+			Model string `json:"model"`
+		} `json:"message"`
+		Payload struct {
+			Model string `json:"model"`
+		} `json:"payload"`
+	}
+	if json.Unmarshal(rec, &r) != nil || r.Message.Model == "<synthetic>" {
+		return ""
+	}
+	return r.Message.Model + r.Payload.Model
+}
+
 // contentText flattens a string or a list of text blocks.
 func contentText(raw json.RawMessage) string {
 	var s string
@@ -509,6 +530,9 @@ func (tr *transcripts) filePage(source, path string, cur *cursor, parse func([]b
 		}
 		for _, rec := range recs {
 			pg.Items = append(pg.Items, parse(rec)...)
+			if m := recordModel(rec); m != "" {
+				pg.Model = m
+			}
 		}
 		pg.NextCursor = next
 		if !first || len(pg.Items) > 0 {

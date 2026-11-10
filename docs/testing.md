@@ -51,14 +51,14 @@ The tests use a fake `hc` binary that records each request, and a fake `ioreg`. 
 
 ## JVM tests
 
-| Test           | What it proves                                                                                                    |
-| -------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `PairingTest`  | The pairing link parse, refusals for a bad version, an expired link and missing fields, the code vectors, UUIDv7. |
-| `PinTest`      | The pin in the trust manager and in the hostname verifier. The gate after 5 minutes.                              |
-| `GateTest`     | The app lock at start, after 5 minutes away, and its one process-lifecycle observer.                              |
-| `ReducerTest`  | Snapshot, change, `agent_removed` and missed. Blocked first. One notification for each episode.                   |
-| `SentMarkTest` | A refused connection was never sent. A request with no reply may have arrived.                                    |
-| `TextsTest`    | The text of each result and reason, the note after a refresh, the note kinds, Wi-Fi or Tailscale endpoints.       |
+| Test           | What it proves                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PairingTest`  | The pairing link parse, refusals for a bad version, an expired link and missing fields, the code vectors, UUIDv7.                          |
+| `PinTest`      | The pin in the trust manager and in the hostname verifier. The gate after 5 minutes.                                                       |
+| `GateTest`     | The app lock at start, after 5 minutes away, and its one process-lifecycle observer.                                                       |
+| `ReducerTest`  | Snapshot, change, `agent_removed` and missed. Blocked first. One notification for each episode. Finish alerts, quiet refreshes and clears. |
+| `SentMarkTest` | A refused connection was never sent. A request with no reply may have arrived.                                                             |
+| `TextsTest`    | The text of each result and reason, the note after a refresh, the note kinds, Wi-Fi or Tailscale endpoints, the transcript merge.          |
 
 ## Emulator tests
 
@@ -138,7 +138,7 @@ The product is done when these 13 criteria pass on the emulator and on a real ph
 9. A revoke on the Mac ends the open streams of that phone within 2 s. Later handshakes fail, also when the phone tries to resume a TLS session.
 10. The same pairing works over Tailscale from a cellular connection.
 11. After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything.
-12. The recents screen shows no app content. The lock screen and the notification show only "An agent needs attention".
+12. The recents screen shows no app content. The lock screen shows only "An agent needs attention" or "An agent finished".
 13. `audit.log` has a line for every pairing event, revocation, decision and message. It contains no token, code, transcript text, terminal bytes or message text.
 
 ### Check for each criterion
