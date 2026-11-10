@@ -58,22 +58,19 @@ object Reducer {
 }
 
 /**
- * One notification for each blocked episode: the same (terminal, turn, msg) never notifies twice,
- * also across a reconnect's snapshot.
+ * One notification for each blocked episode: an agent that becomes blocked, or shows another prompt
+ * while blocked. Not the turn: hc sends the turn after the blocked status, so one episode has two
+ * turns. A reconnect's snapshot with the same prompt notifies nothing.
  */
 class BlockedNotifier {
-    private val seen = LinkedHashSet<String>()
-
-    private fun key(a: Agent) = "${a.address}|${a.turn}|${a.msg.orEmpty()}"
+    /** The prompt of each agent that is blocked now. */
+    private val blocked = HashMap<String, String>()
 
     /** The agents that just became blocked and were not notified yet. */
-    fun newEpisodes(agents: Collection<Agent>): List<Agent> {
-        val out = agents.filter { it.blocked && seen.add(key(it)) }
-        if (seen.size > 500)
-            seen.iterator().let {
-                it.next()
-                it.remove()
-            }
-        return out
+    fun newEpisodes(agents: Collection<Agent>): List<Agent> = agents.filter { a ->
+        if (!a.blocked) {
+            blocked.remove(a.address)
+            false
+        } else blocked.put(a.address, a.msg.orEmpty()) != a.msg.orEmpty()
     }
 }

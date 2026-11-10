@@ -80,11 +80,12 @@ class ReducerTest {
         assertEquals(0, n.newEpisodes(listOf(again)).size)
         // A reconnect snapshot with the same blocked agent: nothing new.
         assertEquals(0, n.newEpisodes(first.agents).size)
-        // The same terminal, a new turn: a new episode.
-        assertEquals(1, n.newEpisodes(listOf(again.copy(turn = 3))).size)
-        // Not blocked: never.
+        // hc sends the turn after the blocked status: the same episode.
+        assertEquals(0, n.newEpisodes(listOf(again.copy(turn = 3))).size)
+        // Another prompt while still blocked: another episode.
+        assertEquals(1, n.newEpisodes(listOf(again.copy(turn = 3, msg = "approve Write: y"))).size)
+        // Not blocked: never. The next block is a new episode, even with the same prompt.
         assertEquals(0, n.newEpisodes(listOf(again.copy(turn = 4, state = "working"))).size)
-        // The same turn, another prompt text: another episode.
-        assertEquals(1, n.newEpisodes(listOf(again.copy(msg = "approve Write: y"))).size)
+        assertEquals(1, n.newEpisodes(listOf(again.copy(turn = 5))).size)
     }
 }
