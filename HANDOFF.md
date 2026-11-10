@@ -42,6 +42,11 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `checkpoint-formatted` (`21e19c8`)
   - `checkpoint-pane` (`764495b`)
   - `checkpoint-device-tested` (the commit that adds this line)
+- **Done on 2026-11-10, last ([ADR 0020](docs/adr/0020-transcript-folds-and-scroll.md)):**
+  - The transcript folds each turn's tool steps into one row. Prompts and answers show.
+  - Follow stays on after a send and with the keyboard open. A scroll up turns it off.
+  - A fling stops at a message start, with a haptic tick. A scroll bar shows while scrolling.
+  - Checked on the phone over `adb`: folds, follow, "Bottom ↓", the keyboard, a fold that opens. Not checked: the tick, the bar, a send.
 - **Done on 2026-11-10, later (PRs #2 and #3):**
   - The transcript updates live while the agent works, follows new items and has "Bottom ↓". The header shows the model.
   - Alerts when an agent finishes. The blocked alert shows the prompt, with Approve and Deny ([ADR 0019](docs/adr/0019-alert-preview-and-actions.md)).

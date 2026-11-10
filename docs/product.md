@@ -127,7 +127,7 @@ flowchart TD
 
 - **Browse:** Spaces, then a space, then an agent. The All agents view shows blocked agents first.
 - **Watch:** on the agent screen, the Live tab shows the terminal in color, like a screen share. The user can zoom with two fingers.
-- **Read:** the Transcript tab shows the user and assistant messages and the tool calls. The user scrolls up to load older pages. While the agent works, new items appear and the list follows them. The header shows the model.
+- **Read:** the Transcript tab shows the prompts and the answers. The tool calls of each turn fold into one row that opens with a tap. The user scrolls up to load older pages; a fling stops at a message start. While the agent works, new items appear and the list follows them until the user scrolls up. The header shows the model.
 - **Message:** the user types a message and taps Send. It arrives at the agent as a new prompt.
 - **Revoke:** on the Mac, the user opens the overlay and clicks **Revoke** next to the phone.
 
