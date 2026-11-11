@@ -1,5 +1,6 @@
 package dev.herdrremote.ui.theme
 
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,26 +30,38 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 /*
  * The Pane building blocks (docs/design.md, section Components). Screens compose these; the
@@ -84,7 +97,10 @@ private fun Modifier.rule(color: Color, bottom: Boolean, dashed: Boolean) = draw
 fun StatusTag(state: String, modifier: Modifier = Modifier) {
     Text(
         TAG[state] ?: "IDLE",
-        modifier.background(Pane.colors.status(state)).padding(horizontal = 6.dp),
+        modifier
+            .alpha(statusAlpha(state))
+            .background(Pane.colors.status(state))
+            .padding(horizontal = 6.dp),
         style = Pane.type.caption.copy(fontWeight = FontWeight.Bold),
         color = Pane.colors.bg,
         maxLines = 1,
@@ -96,11 +112,58 @@ fun StatusTag(state: String, modifier: Modifier = Modifier) {
 fun StatusGlyph(state: String, modifier: Modifier = Modifier) {
     Text(
         "[${GLYPH[state] ?: ' '}]",
-        modifier.clearAndSetSemantics { contentDescription = state },
+        modifier.alpha(statusAlpha(state)).clearAndSetSemantics { contentDescription = state },
         style = Pane.type.body.copy(fontWeight = FontWeight.Bold),
         color = Pane.colors.status(state),
     )
 }
+
+/**
+ * A working status blinks like a terminal cursor: 530 ms bright, 530 ms dim. The wall clock keeps
+ * every blink on the screen in step.
+ */
+@Composable
+fun statusAlpha(state: String): Float {
+    if (state != "working" || animationsOff()) return 1f
+    var on by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val t = System.currentTimeMillis()
+            on = t / BLINK_MS % 2 == 0L
+            delay(BLINK_MS - t % BLINK_MS)
+        }
+    }
+    return if (on) 1f else 0.35f
+}
+
+private const val BLINK_MS = 530L
+
+/**
+ * The phone's "Remove animations": the animator duration scale is 0. Nothing then blinks or spins.
+ */
+@Composable
+private fun animationsOff(): Boolean {
+    val cr = LocalContext.current.contentResolver
+    return remember(cr) {
+        Settings.Global.getFloat(cr, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+}
+
+/** A braille spinner: the frame changes each 80 ms. */
+@Composable
+fun spinnerFrame(): Char {
+    if (animationsOff()) return SPINNER[0]
+    var frame by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(80)
+            frame++
+        }
+    }
+    return SPINNER[frame % SPINNER.length]
+}
+
+private const val SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 /** One bar for each agent of a space, in the colour of its state. */
 @Composable
@@ -109,7 +172,11 @@ fun StatusMeter(states: List<String>, modifier: Modifier = Modifier) {
         modifier.clearAndSetSemantics { contentDescription = states.joinToString() },
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        states.forEach { Box(Modifier.size(7.dp, 14.dp).background(Pane.colors.status(it))) }
+        states.forEach {
+            Box(
+                Modifier.size(7.dp, 14.dp).alpha(statusAlpha(it)).background(Pane.colors.status(it))
+            )
+        }
     }
 }
 
@@ -385,6 +452,8 @@ fun KeyButton(
     key: Char? = null,
     kind: KeyKind = KeyKind.Plain,
     enabled: Boolean = true,
+    detail: String? = null,
+    align: Alignment.Horizontal = Alignment.CenterHorizontally,
 ) {
     val c = Pane.colors
     val fg =
@@ -408,7 +477,7 @@ fun KeyButton(
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .heightIn(min = Pane.space.touch)
             .padding(horizontal = Pane.space.l),
-        horizontalArrangement = Arrangement.spacedBy(Pane.space.s, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(Pane.space.s, align),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (key != null)
@@ -424,7 +493,13 @@ fun KeyButton(
                     color = if (kind == KeyKind.Go) c.done else c.bg,
                 )
             }
-        Text(label, style = Pane.type.label.copy(fontWeight = FontWeight.Bold), color = fg)
+        val bold = Pane.type.label.copy(fontWeight = FontWeight.Bold)
+        if (detail == null) Text(label, style = bold, color = fg)
+        else
+            Column(Modifier.padding(vertical = Pane.space.xs)) {
+                Text(label, style = bold, color = fg)
+                Text(detail, style = Pane.type.caption, color = c.muted)
+            }
     }
 }
 
@@ -441,8 +516,13 @@ fun PromptField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     maxLength: Int = 4000,
+    onSkills: (() -> Unit)? = null,
 ) {
     val c = Pane.colors
+    var field by remember { mutableStateOf(TextFieldValue(value)) }
+    val focus = remember { FocusRequester() }
+    // A value set from outside (a skill, the clear after a send) puts the cursor at its end.
+    if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
     Row(
         modifier
             .fillMaxWidth()
@@ -458,9 +538,13 @@ fun PromptField(
             color = if (enabled) c.accent else c.muted,
         )
         BasicTextField(
-            value = value,
-            onValueChange = { onValueChange(it.take(maxLength)) },
-            modifier = Modifier.weight(1f),
+            value = field,
+            onValueChange = {
+                val t = it.text.take(maxLength)
+                field = if (t == it.text) it else TextFieldValue(t, TextRange(t.length))
+                onValueChange(t)
+            },
+            modifier = Modifier.weight(1f).focusRequester(focus),
             enabled = enabled,
             textStyle = Pane.type.body.copy(color = c.text),
             cursorBrush = SolidColor(c.accent),
@@ -477,6 +561,17 @@ fun PromptField(
         )
         if (value.isNotEmpty())
             Text("${value.length}/$maxLength", style = Pane.type.caption, color = c.muted)
+        if (onSkills != null)
+            KeyButton(
+                "/",
+                {
+                    onSkills()
+                    focus.requestFocus() // and the keyboard opens, to filter the list
+                },
+                Modifier.semantics { contentDescription = "Skills" },
+                kind = KeyKind.Quiet,
+                enabled = enabled,
+            )
         KeyButton("⏎ send", onSend, enabled = enabled && value.isNotBlank())
     }
 }

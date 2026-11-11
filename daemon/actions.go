@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -216,6 +217,80 @@ func hasMarkers(app, block string) bool {
 	return false
 }
 
+// questionBlock is a Claude Code question: from its header (the question tabs) to the end of
+// the screen, without the rules (docs/interfaces.md).
+func questionBlock(screen string) string {
+	lines := strings.Split(strings.TrimRight(screen, " \t\n"), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		tl := strings.TrimSpace(lines[i])
+		if !strings.HasPrefix(tl, "←") && !strings.HasPrefix(tl, "☐") && !strings.HasPrefix(tl, "☒") {
+			continue
+		}
+		var out []string
+		for _, l := range lines[i:] {
+			if strings.Trim(l, " ─…") != "" || l == "" {
+				out = append(out, strings.TrimRight(l, " \t"))
+			}
+		}
+		return strings.Join(out, "\n")
+	}
+	return ""
+}
+
+var optionRe = regexp.MustCompile(`^\s*(?:❯\s*)?([1-9])\.\s+(.+?)\s*$`)
+
+// parseQuestion splits a question block into the text above its options and its keys. The
+// options are the last numbered list that counts 1, 2, 3, each with the lines under it as its
+// detail. "tab" (Next) follows a multi-select. A list that skips a number gives no keys.
+// "Type something" is left out: it opens a text field that only the Mac can fill.
+func parseQuestion(block string) (string, []promptOption) {
+	lines := strings.Split(block, "\n")
+	var run []promptOption
+	start := 0
+	cur := -1 // the option that takes the next detail line
+	for i, l := range lines {
+		m := optionRe.FindStringSubmatch(l)
+		if m == nil {
+			// A description line is indented. A blank line or a key hint ends it.
+			if strings.TrimSpace(l) == "" || !strings.HasPrefix(l, " ") {
+				cur = -1
+			} else if cur >= 0 {
+				run[cur].Detail = strings.TrimSpace(run[cur].Detail + " " + strings.TrimSpace(l))
+			}
+			continue
+		}
+		if m[1] == "1" {
+			run, start = nil, i
+		}
+		if m[1] != strconv.Itoa(len(run)+1) {
+			return "", nil
+		}
+		run = append(run, promptOption{Key: m[1], Label: m[2]})
+		cur = len(run) - 1
+	}
+	if run == nil {
+		return "", nil
+	}
+	var out []promptOption
+	multi := false
+	for _, o := range run {
+		name := o.Label
+		if j := strings.Index(name, "] "); strings.HasPrefix(name, "[") && j >= 0 {
+			multi, name = true, name[j+2:]
+		}
+		if o.Detail == name {
+			o.Detail = "" // the screen repeats the label
+		}
+		if !strings.Contains(o.Label, "Type something") {
+			out = append(out, o)
+		}
+	}
+	if multi {
+		out = append(out, promptOption{Key: "tab", Label: "Next"})
+	}
+	return strings.TrimRight(strings.Join(lines[:start], "\n"), " \n"), out
+}
+
 func promptHash(app string, turn int64, msg, block string) string {
 	h := sha256.New()
 	for _, part := range []string{app, strconv.FormatInt(turn, 10), msg, block} {
@@ -225,15 +300,23 @@ func promptHash(app string, turn int64, msg, block string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+type promptOption struct {
+	Key    string `json:"key"`
+	Label  string `json:"label"`
+	Detail string `json:"detail,omitempty"` // the description under the option
+}
+
 type promptView struct {
-	App        string `json:"app"`
-	Kind       string `json:"kind"`
-	Msg        string `json:"msg"`
-	Block      string `json:"block"`
-	Turn       int64  `json:"turn"`
-	PromptHash string `json:"prompt_hash"`
-	Actionable bool   `json:"actionable"`
-	Reason     string `json:"reason,omitempty"`
+	App        string         `json:"app"`
+	Kind       string         `json:"kind"`
+	Msg        string         `json:"msg"`
+	Block      string         `json:"block"`
+	Question   string         `json:"question,omitempty"` // a question's block above its options
+	Options    []promptOption `json:"options,omitempty"`  // a question's keys
+	Turn       int64          `json:"turn"`
+	PromptHash string         `json:"prompt_hash"`
+	Actionable bool           `json:"actionable"`
+	Reason     string         `json:"reason,omitempty"`
 }
 
 // prompt reads the fresh facts and screen of a terminal and describes its dialog.
@@ -250,7 +333,7 @@ func (a *actions) prompt(ctx context.Context, t string) (*promptView, *Terminal,
 		v.App, v.Kind, v.Msg = term.Status.App, term.Status.Kind, term.Status.Msg
 		if term.Status.State != "blocked" {
 			v.Reason = "not_blocked"
-		} else if v.Kind != "permission" || (v.App != "claude-code" && v.App != "codex") {
+		} else if !(v.Kind == "permission" && (v.App == "claude-code" || v.App == "codex")) && !(v.Kind == "question" && v.App == "claude-code") {
 			v.Reason = "view_only"
 		}
 	} else {
@@ -261,10 +344,18 @@ func (a *actions) prompt(ctx context.Context, t string) (*promptView, *Terminal,
 		if err != nil {
 			return nil, term, err
 		}
-		v.Block = promptBlock(rr.Text)
-		if v.Block == "" || !hasMarkers(v.App, v.Block) {
+		ok := false
+		if v.Kind == "question" {
+			v.Block = questionBlock(rr.Text)
+			v.Question, v.Options = parseQuestion(v.Block)
+			ok = len(v.Options) > 0 && (strings.Contains(v.Block, "Esc to cancel") || strings.Contains(v.Block, "Submit answers"))
+		} else {
+			v.Block = promptBlock(rr.Text)
+			ok = v.Block != "" && hasMarkers(v.App, v.Block)
+		}
+		if !ok {
 			v.Reason = "no_markers"
-			v.Block = ""
+			v.Block, v.Question, v.Options = "", "", nil
 		} else {
 			v.Actionable = true
 		}
@@ -333,13 +424,15 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		RequestID  string `json:"request_id"`
 		Decision   string `json:"decision"`
+		Key        string `json:"key"` // the option, for an answer
 		Turn       int64  `json:"turn"`
 		PromptHash string `json:"prompt_hash"`
 	}
 	if !readBody(w, r, &body) {
 		return
 	}
-	if (body.Decision != "approve" && body.Decision != "deny") || body.PromptHash == "" || body.Turn < 0 {
+	answer := body.Decision == "answer"
+	if (body.Decision != "approve" && body.Decision != "deny" && !answer) || answer != (body.Key != "") || body.PromptHash == "" || body.Turn < 0 {
 		apiError(w, 400, "bad body", "")
 		return
 	}
@@ -384,7 +477,8 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 		writeHCError(w, err)
 		return
 	}
-	if !v.Actionable {
+	// An answer is for a question, approve and deny for a permission.
+	if !v.Actionable || answer != (v.Kind == "question") {
 		refuse(409, "prompt is not actionable", "not_actionable", nil)
 		return
 	}
@@ -395,6 +489,25 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 	if v.PromptHash != body.PromptHash {
 		refuse(409, "the prompt changed", "changed", nil)
 		return
+	}
+	key := KeyEsc
+	switch {
+	case answer:
+		key = ""
+		for _, o := range v.Options {
+			if o.Key == body.Key {
+				key = Key(o.Key)
+			}
+		}
+		if key == "" {
+			a.release(body.RequestID, e)
+			apiError(w, 400, "no such option", "")
+			return
+		}
+	case body.Decision == "approve" && v.App == "codex":
+		key = KeyY
+	case body.Decision == "approve":
+		key = KeyOne
 	}
 	a.mu.Lock()
 	m, used := a.consumed[t]
@@ -423,7 +536,11 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 
 	// Rule 6: a durable dispatching line before any key.
 	turn := v.Turn
-	if err := d.audit.write(auditLine{Action: "decision", State: "dispatching", DeviceID: dev.ID, Terminal: t, Turn: &turn, RequestID: body.RequestID, Decision: body.Decision, PromptHash: v.PromptHash}); err != nil {
+	decision := body.Decision
+	if answer {
+		decision += ":" + body.Key // the key only, never the option's text
+	}
+	if err := d.audit.write(auditLine{Action: "decision", State: "dispatching", DeviceID: dev.ID, Terminal: t, Turn: &turn, RequestID: body.RequestID, Decision: decision, PromptHash: v.PromptHash}); err != nil {
 		a.release(body.RequestID, e)
 		apiError(w, 503, "audit write failed", "")
 		return
@@ -433,14 +550,6 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	a.consumed[t] = marker{v.Turn, v.PromptHash}
 	a.mu.Unlock()
-	key := KeyEsc
-	if body.Decision == "approve" {
-		if v.App == "codex" {
-			key = KeyY
-		} else {
-			key = KeyOne
-		}
-	}
 	// From here on the phone may give up, but the key and the result still land.
 	// hc holds the key while someone types at the Mac, so the wait covers that
 	// queue and the idle check after the key runs when hc delivers it.
@@ -456,8 +565,9 @@ func (d *Daemon) handleDecision(w http.ResponseWriter, r *http.Request) {
 			result = "sent_unconfirmed"
 			deadline := time.Now().Add(a.settle)
 			for time.Now().Before(deadline) {
-				cur, err := d.hc.Get(ctx, t)
-				if err == nil && (cur.Turn != v.Turn || cur.Status == nil || cur.Status.State != "blocked") {
+				// A question stays blocked between its steps: a new screen shows the key landed.
+				cur, _, err := a.prompt(ctx, t)
+				if err == nil && (cur.Reason == "not_blocked" || cur.Turn != v.Turn || cur.PromptHash != v.PromptHash) {
 					result = "applied"
 					break
 				}

@@ -68,7 +68,7 @@ flowchart LR
 - The allowed hc use is fixed in the code ([ADR 0003](adr/0003-allowed-hc-use.md)):
   - `hello`, `terminal.list`, `terminal.get`, `terminal.read`, `events.subscribe`
   - `terminal.send` with `force: false` and no `caller`
-  - `terminal.keys` with exactly one of `["1"]`, `["y"]` or `["esc"]`, from the approval code only
+  - `terminal.keys` with exactly one key, `1` to `9`, `y`, `esc` or `tab`, from the approval code only ([ADR 0021](adr/0021-answer-questions.md))
   - `hc attach --observe`.
 - A target must match `^t[0-9a-z]+$` (no `machine/` prefix), be `live`, and have `reported: true`. Each check fails toward a refusal.
 
@@ -245,9 +245,10 @@ flowchart TD
 
 The rules, in order. The comments in `daemon/actions.go` use these rule numbers.
 
-1. The approval applies only when `state = blocked`, `kind = permission`, and `app` is `claude-code` or `codex`. Other prompts are view-only ([ADR 0011](adr/0011-view-only-prompts.md)).
+1. The approval applies only when `state = blocked`, and either `kind = permission` with `app` `claude-code` or `codex`, or `kind = question` with `app` `claude-code` ([ADR 0021](adr/0021-answer-questions.md)). Other prompts are view-only ([ADR 0011](adr/0011-view-only-prompts.md)). Approve and deny need a permission. An answer needs a question.
 2. `GET /prompt` returns `block` and `prompt_hash`:
    - `block` is the screen region from the line that starts the dialog (`Do you want` or `Would you like`) to the line with `Esc to cancel` or `Press enter to confirm`. It keeps the leading spaces of the screen and trims trailing spaces.
+   - For a question, `block` goes from the question tabs to the end of the screen, without the rule lines. `options` lists its numbered options and, after a multi-select, `tab`.
    - `prompt_hash` is SHA-256 of `app`, `turn`, `msg` and `block`, each followed by a NUL byte.
 3. `POST /decision` checks `request_id` first:
    - An ID whose UUIDv7 time is more than 5 minutes from the daemon clock returns 409 `expired_request`.
@@ -256,17 +257,18 @@ The rules, in order. The comments in `daemon/actions.go` use these rule numbers.
 4. Under a per-terminal lock, the daemon reads `terminal.get` and `terminal.read(lines 0)` again. It requires all of these:
    - the same state, kind, app and turn
    - the same `prompt_hash`
-   - the option markers on the screen. Claude: `1. Yes` and `Esc to cancel`. Codex: `Yes, proceed (y)` and `(esc)`.
+   - the option markers on the screen. Claude: `1. Yes` and `Esc to cancel`. Codex: `Yes, proceed (y)` and `(esc)`. A question: options that count from 1, and `Esc to cancel` or `Submit answers`.
+   - for an answer, a `key` that is one of the fresh options. If not, the daemon returns 400.
    - a consumed marker for the terminal that is not already `{turn, prompt_hash}`.
 5. **The Mac-in-use guard (a heuristic), the last check:**
    - If `HIDIdleTime` is less than `mac_idle_seconds` (default 10), the daemon returns 409 `mac_in_use` with `idle_ms` and audits the refusal. A value of 0 turns the guard off.
    - If `ioreg` fails, or its output does not parse, the daemon refuses (fail closed).
    - The guard sees local keyboard and mouse input. It does not see SSH sessions, or `hc send` and `hc keys` from other terminals and agents. hc's 3 s quiet rule covers those. Remote-desktop input is not verified.
 6. The daemon appends `{action: decision, state: dispatching, request_id, terminal, turn, prompt_hash, decision}` to `audit.log` and fsyncs it. If the write fails, it returns 503 and presses no key.
-7. The daemon sets the consumed marker and presses one key: Claude `1` or `esc`, Codex `y` or `esc`. It waits up to 120 s for `terminal.keys`, because hc holds a key while someone types at the Mac.
+7. The daemon sets the consumed marker and presses one key: Claude `1` or `esc`, Codex `y` or `esc`, or the answer's `key`. It waits up to 120 s for `terminal.keys`, because hc holds a key while someone types at the Mac.
 8. The daemon reads `HIDIdleTime` again:
    - If the new idle time is less than the time since the idle check in rule 5, the Mac had input during the call. The result is `uncertain`.
-   - If not, the daemon reads the status for up to 3 s. The result is `applied` if the status or turn moved, or `sent_unconfirmed` if not.
+   - If not, the daemon reads the prompt for up to 3 s. The result is `applied` if the status, the turn or the prompt hash moved, or `sent_unconfirmed` if not. A question stays blocked between its steps, so the hash shows that the key landed.
 9. The daemon appends the result line. It never presses a key again for that request.
 10. Retention:
     - The daemon keeps every accepted request ID for 10 minutes. That is longer than the 5-minute window in which an ID is valid.
@@ -294,7 +296,7 @@ More rules:
 
 | Package or file              | Content                                                                                       |
 | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| `MainActivity.kt`, `Gate.kt` | The single activity, `FLAG_SECURE`, and the app lock.                                         |
+| `MainActivity.kt`, `Gate.kt` | The single activity, the blank recents card, and the app lock.                                |
 | `HerdrRemoteApp.kt`          | Process-wide objects. No DI framework.                                                        |
 | `net/`                       | The Keystore key, the pinned TLS client, the API, the pairing link, UUIDv7, the store.        |
 | `watch/`                     | The SSE repository, the reducer, the watch service and the boot receiver.                     |
@@ -313,16 +315,16 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 
 ### 4.2 Screens
 
-| Screen     | Content                                                                                                                                           |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lock       | The app icon, the name and Unlock. No agent data.                                                                                                 |
-| Pair       | Code scanner or a pasted link, the 6-digit code, a wait for Allow.                                                                                |
-| Spaces     | Agents that need the user, then the spaces with agent counts and the most urgent status.                                                          |
-| Space      | Agents in the space, with status and tab name.                                                                                                    |
-| All agents | Every agent. Blocked agents first.                                                                                                                |
-| Agent      | Tabs: Transcript, Live. A prompt card with Approve and Deny when actionable. A message box.                                                       |
-| Transcript | The model in the header. It follows new items while the end shows, with a Bottom button. It reloads the last page each 2 s while the agent works. |
-| Settings   | Paired Mac, background watching, Forget this Mac.                                                                                                 |
+| Screen     | Content                                                                                                                                                                                                                                                               |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lock       | The app icon, the name and Unlock. No agent data.                                                                                                                                                                                                                     |
+| Pair       | Code scanner or a pasted link, the 6-digit code, a wait for Allow.                                                                                                                                                                                                    |
+| Spaces     | Agents that need the user, then the spaces with agent counts and the most urgent status.                                                                                                                                                                              |
+| Space      | Agents in the space, with status and tab name.                                                                                                                                                                                                                        |
+| All agents | Every agent. Blocked agents first.                                                                                                                                                                                                                                    |
+| Agent      | Tabs: Transcript, Live. A prompt card with Approve and Deny, or a key for each option of a question. A message box with a skill list after "/".                                                                                                                       |
+| Transcript | The model in the header. It follows new items while the end shows, with a Bottom button. It reloads the last page at once and then each 1 s while the agent works. A spinner row at the end shows the seconds since the last item. A long press selects text to copy. |
+| Settings   | Paired Mac, background watching, Forget this Mac.                                                                                                                                                                                                                     |
 
 ### 4.3 Key and TLS client
 
@@ -401,27 +403,27 @@ The stack ([ADR 0015](adr/0015-android-stack.md)), with minSdk 31 and targetSdk 
 
 ### 6.2 Threats and controls
 
-| Threat                                | Control                                                                                                                                                                       | Requirement |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| A device on the network               | Port 7766 completes TLS only for a paired key. TLS 1.3, `RequireAnyClientCert`, no session tickets, checks in `VerifyConnection` ([ADR 0004](adr/0004-two-tls-listeners.md)). | SR-1        |
-| A fake Mac                            | The phone pins the SPKI SHA-256 from the QR code. Certificate names play no part.                                                                                             | SR-3        |
-| A leaked QR code                      | Port 7767 opens only in a 120 s window that the user starts. The token binds to one key. The user compares a 6-digit code and clicks Allow ([ADR 0006](adr/0006-pairing.md)). | SR-1        |
-| A compromised phone app               | The daemon allows a fixed set of hc calls and three keys. No command, file or program access ([ADR 0003](adr/0003-allowed-hc-use.md)).                                        | SR-2        |
-| A stolen phone key                    | The private key stays in Android Keystore.                                                                                                                                    | SR-4        |
-| A lost phone                          | Revoke closes its connections and live views. A resumed TLS session fails ([ADR 0007](adr/0007-revocation.md)). The app lock asks for a biometric.                            | SR-5, SR-10 |
-| A retry, a second phone, a replay     | UUIDv7 request IDs with a 5-minute window, a consumed marker, the audit log, a rate limit ([ADR 0010](adr/0010-approval-guard.md)).                                           | SR-6        |
-| A prompt that changed under the user  | Turn, prompt hash and marker checks, the Mac-in-use guard, the `uncertain` result.                                                                                            | SR-7        |
-| No record of what a phone did         | An audit line for each pairing event, revocation, decision, refusal and message ([ADR 0017](adr/0017-logging-and-audit.md)).                                                  | SR-8        |
-| Secrets or content in logs            | No log has tokens, codes, keys, transcript text, terminal bytes or message text.                                                                                              | SR-9        |
-| Content on the lock screen or recents | `FLAG_SECURE`. Alerts on a locked phone show only the agent name and what it needs, with no prompt ([ADR 0019](adr/0019-alert-preview-and-actions.md)).                       | SR-11       |
-| Content at rest on the phone          | Transcripts and terminal bytes stay in memory only.                                                                                                                           | SR-12       |
-| Hostile terminal bytes                | The WebView loads only bundled files and cannot send input. The message filter removes control characters. Transcript paths must be under two roots.                          | SR-13       |
+| Threat                                | Control                                                                                                                                                                                                    | Requirement |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| A device on the network               | Port 7766 completes TLS only for a paired key. TLS 1.3, `RequireAnyClientCert`, no session tickets, checks in `VerifyConnection` ([ADR 0004](adr/0004-two-tls-listeners.md)).                              | SR-1        |
+| A fake Mac                            | The phone pins the SPKI SHA-256 from the QR code. Certificate names play no part.                                                                                                                          | SR-3        |
+| A leaked QR code                      | Port 7767 opens only in a 120 s window that the user starts. The token binds to one key. The user compares a 6-digit code and clicks Allow ([ADR 0006](adr/0006-pairing.md)).                              | SR-1        |
+| A compromised phone app               | The daemon allows a fixed set of hc calls and keys (`1` to `9`, `y`, `esc`, `tab`), each behind the approval guard. No command, file or program access ([ADR 0003](adr/0003-allowed-hc-use.md)).           | SR-2        |
+| A stolen phone key                    | The private key stays in Android Keystore.                                                                                                                                                                 | SR-4        |
+| A lost phone                          | Revoke closes its connections and live views. A resumed TLS session fails ([ADR 0007](adr/0007-revocation.md)). The app lock asks for a biometric.                                                         | SR-5, SR-10 |
+| A retry, a second phone, a replay     | UUIDv7 request IDs with a 5-minute window, a consumed marker, the audit log, a rate limit ([ADR 0010](adr/0010-approval-guard.md)).                                                                        | SR-6        |
+| A prompt that changed under the user  | Turn, prompt hash and marker checks, the Mac-in-use guard, the `uncertain` result.                                                                                                                         | SR-7        |
+| No record of what a phone did         | An audit line for each pairing event, revocation, decision, refusal and message ([ADR 0017](adr/0017-logging-and-audit.md)).                                                                               | SR-8        |
+| Secrets or content in logs            | No log has tokens, codes, keys, transcript text, terminal bytes or message text.                                                                                                                           | SR-9        |
+| Content on the lock screen or recents | A blank recents card ([ADR 0024](adr/0024-allow-screenshots.md)). Alerts on a locked phone show only the agent name and what it needs, with no prompt ([ADR 0019](adr/0019-alert-preview-and-actions.md)). | SR-11       |
+| Content at rest on the phone          | Transcripts and terminal bytes stay in memory only.                                                                                                                                                        | SR-12       |
+| Hostile terminal bytes                | The WebView loads only bundled files and cannot send input. The message filter removes control characters. Transcript paths must be under two roots.                                                       | SR-13       |
 
 The SR numbers are the security requirements in [product.md](product.md#8-security-and-privacy-requirements).
 
 ### 6.3 Phone privacy
 
-- The activity sets `FLAG_SECURE`. Screenshots and the recents card show no content.
+- The activity calls `setRecentsScreenshotEnabled(false)`, so the recents card shows no content. Screenshots are allowed. Before Android 13 it sets `FLAG_SECURE` instead ([ADR 0024](adr/0024-allow-screenshots.md)).
 - Notifications use `VISIBILITY_PRIVATE`. The public version has only the title: the agent name and what it needs ([ADR 0019](adr/0019-alert-preview-and-actions.md)).
   - On a locked phone, the service also replaces each alert with its title only, with no prompt and no buttons. The default lock screen setting shows private text, so the public version alone is not enough.
   - On an unlocked phone, an alert shows the agent name and the prompt. Approve and Deny need the phone to be unlocked.

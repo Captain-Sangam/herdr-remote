@@ -20,19 +20,20 @@
 
 All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the table says otherwise.
 
-| Method and path                                    | Request                                     | Response                                                                                                             |
-| -------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `POST /v1/enroll` (7767 only)                      | `{token, name}`                             | 200 `{device_id}` after Allow. 403 on Deny, a wrong token, or a token bound to another key. 410 on expiry or cancel. |
-| `GET /v1/hello`                                    | none                                        | `{daemon_version, server_time_ms, endpoints[]}`                                                                      |
-| `GET /v1/spaces`                                   | none                                        | `[{id, name, agents[]}]`                                                                                             |
-| `GET /v1/agents`                                   | none                                        | `[agent]`                                                                                                            |
-| `GET /v1/terminals/{t}`                            | none                                        | `agent` plus `{cols, rows}`                                                                                          |
-| `GET /v1/events`                                   | none                                        | SSE. See [Events](#events).                                                                                          |
-| `GET /v1/terminals/{t}/live`                       | none                                        | Chunked `application/octet-stream` from `hc attach --observe --history 500`.                                         |
-| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none                                        | `{source, hint?, model?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`.                        |
-| `GET /v1/terminals/{t}/prompt`                     | none                                        | `{app, kind, msg, block, turn, prompt_hash, actionable, reason?}`                                                    |
-| `POST /v1/terminals/{t}/decision`                  | `{request_id, decision, turn, prompt_hash}` | `{result}`: `applied`, `sent_unconfirmed`, `uncertain` or `outcome_unknown`                                          |
-| `POST /v1/terminals/{t}/message`                   | `{request_id, text}`                        | `{result}`: `sent` or `outcome_unknown`                                                                              |
+| Method and path                                    | Request                                           | Response                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `POST /v1/enroll` (7767 only)                      | `{token, name}`                                   | 200 `{device_id}` after Allow. 403 on Deny, a wrong token, or a token bound to another key. 410 on expiry or cancel. |
+| `GET /v1/hello`                                    | none                                              | `{daemon_version, server_time_ms, endpoints[]}`                                                                      |
+| `GET /v1/spaces`                                   | none                                              | `[{id, name, agents[]}]`                                                                                             |
+| `GET /v1/agents`                                   | none                                              | `[agent]`                                                                                                            |
+| `GET /v1/terminals/{t}`                            | none                                              | `agent` plus `{cols, rows}`                                                                                          |
+| `GET /v1/events`                                   | none                                              | SSE. See [Events](#events).                                                                                          |
+| `GET /v1/terminals/{t}/live`                       | none                                              | Chunked `application/octet-stream` from `hc attach --observe --history 500`.                                         |
+| `GET /v1/terminals/{t}/transcript?cursor=<opaque>` | none                                              | `{source, hint?, model?, items[], next_cursor}`. `source` is `claude`, `codex` or `terminal`.                        |
+| `GET /v1/terminals/{t}/prompt`                     | none                                              | `{app, kind, msg, block, question?, options?, turn, prompt_hash, actionable, reason?}`                               |
+| `GET /v1/terminals/{t}/skills`                     | none                                              | `{skills[]}`: a Claude Code agent's skill names, from its transcript and its skill folders. Empty for other agents.  |
+| `POST /v1/terminals/{t}/decision`                  | `{request_id, decision, key?, turn, prompt_hash}` | `{result}`: `applied`, `sent_unconfirmed`, `uncertain` or `outcome_unknown`                                          |
+| `POST /v1/terminals/{t}/message`                   | `{request_id, text}`                              | `{result}`: `sent` or `outcome_unknown`                                                                              |
 
 ## Shapes
 
@@ -47,7 +48,12 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 - **`request_id`:** a UUIDv7 that the phone makes for each user action.
   - The daemon refuses an ID more than 5 minutes from its clock (`expired_request`).
   - The phone sets the UUIDv7 time from its own clock plus the offset to `server_time_ms` from `/v1/hello`.
-- **`decision`:** `approve` or `deny`.
+- **`decision`:** `approve` or `deny` for a permission prompt. `answer` for a Claude Code question, with `key` set to one of the prompt's `options` ([ADR 0021](adr/0021-answer-questions.md)).
+- **`question`:** a question's `block` above its options. The phone shows it, and the options as keys, so no option shows twice.
+- **`options`:** a question's keys, `[{key, label, detail?}]`.
+  - `key` is a digit from `1` to `9`. After a multi-select, the last key is `tab`, with the label `Next`.
+  - `label` is the option's text as the screen shows it.
+  - `detail` is the description under the option. It is empty when the screen repeats the label.
 - **`text`:** at most 4000 characters. The daemon removes C0 and C1 control characters, but keeps `\n` and `\t`.
 
 [Architecture: approvals](architecture.md#35-approvals) gives the rules behind `prompt_hash` and each result.
@@ -69,7 +75,7 @@ Errors are `{error, reason}`.
 
 | Status | Use                                                                                                                                                                                                      |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | Bad target, bad body, text too long.                                                                                                                                                                     |
+| 400    | Bad target, bad body, text too long, an answer `key` that is not an option.                                                                                                                              |
 | 401    | Unknown or revoked device (after the handshake).                                                                                                                                                         |
 | 404    | No such terminal.                                                                                                                                                                                        |
 | 409    | Guard failure. `reason` is `stale`, `changed`, `already_answered`, `mac_in_use`, `not_actionable`, `blocked`, `not_agent`, `cursor`, `expired_request` or `live_limit`. `mac_in_use` also has `idle_ms`. |

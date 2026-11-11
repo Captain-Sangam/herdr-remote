@@ -297,7 +297,7 @@ class WatchService : Service() {
                 CHANNEL_ALERTS,
                 a.address,
                 locked,
-                "${name(a)} needs ${if (p?.actionable == true) "approval" else "attention"}",
+                "${name(a)} needs ${if (p?.approvable == true) "approval" else "attention"}",
                 note ?: msg,
             )
         if (locked) return b
@@ -309,7 +309,7 @@ class WatchService : Service() {
                     listOfNotNull(note, msg, block).filter { it.isNotEmpty() }.joinToString("\n\n")
                 )
         )
-        if (p?.actionable == true) b.addAction(action(a, p, true)).addAction(action(a, p, false))
+        if (p?.approvable == true) b.addAction(action(a, p, true)).addAction(action(a, p, false))
         return b
     }
 

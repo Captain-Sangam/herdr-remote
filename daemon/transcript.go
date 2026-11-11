@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
@@ -547,6 +548,87 @@ func (tr *transcripts) filePage(source, path string, cur *cursor, parse func([]b
 		}
 		cur = &c
 	}
+}
+
+// skillNames lists the skills that Claude Code gave the agent, from the skill_listing records of
+// its transcript. An initial record starts the list again. A later one adds skills.
+func skillNames(path string) []string {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 64<<10), 64<<20)
+	var names []string
+	seen := map[string]bool{}
+	for sc.Scan() {
+		if !bytes.Contains(sc.Bytes(), []byte(`"skill_listing"`)) {
+			continue
+		}
+		var r struct {
+			Attachment struct {
+				Type      string   `json:"type"`
+				IsInitial bool     `json:"isInitial"`
+				Names     []string `json:"names"`
+			} `json:"attachment"`
+		}
+		if json.Unmarshal(sc.Bytes(), &r) != nil || r.Attachment.Type != "skill_listing" {
+			continue
+		}
+		if r.Attachment.IsInitial {
+			names, seen = nil, map[string]bool{}
+		}
+		for _, n := range r.Attachment.Names {
+			if !seen[n] {
+				seen[n] = true
+				names = append(names, n)
+			}
+		}
+	}
+	return names
+}
+
+// skillFolders lists the skills in each folder: the subfolders that hold a SKILL.md. The folder
+// name is the command. A skill that only the user may start (disable-model-invocation) is here,
+// but not in the transcript's list.
+func skillFolders(dirs ...string) []string {
+	var out []string
+	for _, d := range dirs {
+		m, _ := filepath.Glob(filepath.Join(d, "*", "SKILL.md"))
+		for _, p := range m {
+			out = append(out, filepath.Base(filepath.Dir(p)))
+		}
+	}
+	return out
+}
+
+// handleSkills lists a Claude Code agent's skills, for the phone's skill picker: the transcript's
+// list, then the personal and project skill folders. Other agents have none.
+func (d *Daemon) handleSkills(w http.ResponseWriter, r *http.Request) {
+	term, ok := d.agentTarget(w, r)
+	if !ok {
+		return
+	}
+	names := []string{}
+	if term.Status != nil && term.Status.App == "claude-code" {
+		var all []string
+		if p := d.transcripts.claudeFile(term); p != "" {
+			all = skillNames(p)
+		}
+		dirs := []string{filepath.Join(d.transcripts.claudeDir, "skills")}
+		if term.Foreground != nil && term.Foreground.Cwd != "" {
+			dirs = append(dirs, filepath.Join(term.Foreground.Cwd, ".claude", "skills"))
+		}
+		seen := map[string]bool{}
+		for _, n := range append(all, skillFolders(dirs...)...) {
+			if !seen[n] {
+				seen[n] = true
+				names = append(names, n)
+			}
+		}
+	}
+	writeJSON(w, 200, map[string]any{"skills": names})
 }
 
 func (d *Daemon) handleTranscript(w http.ResponseWriter, r *http.Request) {

@@ -28,7 +28,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | ----------------------------------------------- | ----------------------------------------------- | ------------------- |
 | [0001](adr/0001-go-daemon.md)                   | One Go daemon is the only network listener.     | Accepted            |
 | [0002](adr/0002-hc-subprocesses-and-helper.md)  | Three hc connections and one subprocess helper. | Accepted            |
-| [0003](adr/0003-allowed-hc-use.md)              | A fixed list of allowed hc calls.               | Accepted            |
+| [0003](adr/0003-allowed-hc-use.md)              | A fixed list of allowed hc calls.               | Accepted, amended   |
 | [0004](adr/0004-two-tls-listeners.md)           | Two TLS listeners with a pinned key.            | Accepted            |
 | [0005](adr/0005-http-sse-and-streams.md)        | HTTP with SSE and chunked streams.              | Accepted, amended   |
 | [0006](adr/0006-pairing.md)                     | QR pairing with a code and Allow on the Mac.    | Accepted            |
@@ -36,7 +36,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0008](adr/0008-live-view.md)                   | Live view from hc attach in xterm.js.           | Accepted            |
 | [0009](adr/0009-transcripts.md)                 | Transcripts from exact sources only.            | Accepted, amended   |
 | [0010](adr/0010-approval-guard.md)              | The approval guard.                             | Accepted, amended   |
-| [0011](adr/0011-view-only-prompts.md)           | Questions and unknown prompts are view-only.    | Accepted            |
+| [0011](adr/0011-view-only-prompts.md)           | Questions and unknown prompts are view-only.    | Replaced in part    |
 | [0012](adr/0012-messages.md)                    | Messages arrive as plain prompts, at most once. | Accepted            |
 | [0013](adr/0013-background-alerts.md)           | Background alerts from a foreground service.    | Accepted, corrected |
 | [0014](adr/0014-phone-key-and-privacy.md)       | The phone key, the app lock and privacy.        | Accepted, amended   |
@@ -46,6 +46,10 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0018](adr/0018-trust-boundary.md)              | Processes of the same user are trusted.         | Accepted            |
 | [0019](adr/0019-alert-preview-and-actions.md)   | Alert previews, Approve, finish alerts.         | Accepted            |
 | [0020](adr/0020-transcript-folds-and-scroll.md) | Transcript folds, follow, message steps.        | Accepted            |
+| [0021](adr/0021-answer-questions.md)            | The phone answers Claude Code questions.        | Accepted            |
+| [0022](adr/0022-skill-picker.md)                | A skill picker from the transcript's list.      | Accepted            |
+| [0023](adr/0023-copy-transcript-text.md)        | Transcript text can be copied.                  | Accepted            |
+| [0024](adr/0024-allow-screenshots.md)           | Screenshots allowed, recents card blank.        | Accepted            |
 
 To add a decision:
 

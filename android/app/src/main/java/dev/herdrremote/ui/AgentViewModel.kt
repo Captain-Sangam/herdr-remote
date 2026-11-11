@@ -131,6 +131,9 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
     val note = _note.asStateFlow()
     private val _busy = MutableStateFlow(false)
     val busy = _busy.asStateFlow()
+    private val _skills = MutableStateFlow<List<String>?>(null)
+    /** The agent's skills, for the picker. Null until [loadSkills] gets them. */
+    val skills = _skills.asStateFlow()
 
     private var lastTurn: Long = -1
 
@@ -146,6 +149,9 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
             }
         }
     }
+
+    /** The Mac's clock, which the transcript times use. */
+    fun now(): Long = app.api()?.now() ?: System.currentTimeMillis()
 
     fun loadTranscript() {
         viewModelScope.launch { refresh() }
@@ -212,8 +218,20 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
         }
     }
 
+    fun loadSkills() {
+        if (_skills.value != null) return
+        viewModelScope.launch {
+            _skills.value = runCatching { app.api()!!.skills(address).skills }.getOrNull()
+        }
+    }
+
     /** Approve or deny. Never retried by the app: an unknown outcome is shown as such. */
-    fun decide(approve: Boolean) {
+    fun decide(approve: Boolean) = act(if (approve) "approve" else "deny", null)
+
+    /** Presses a question's option, or Next. Guarded like [decide]. */
+    fun answer(key: String) = act("answer", key)
+
+    private fun act(decision: String, key: String?) {
         val p = _prompt.value ?: return
         if (Gate.locked) {
             _note.value = "Unlock the app first."
@@ -230,14 +248,10 @@ class AgentViewModel(private val app: HerdrRemoteApp, val address: String) : Vie
                 val res =
                     api.decide(
                         address,
-                        DecisionRequest(
-                            Uuid7.make(api.now()),
-                            if (approve) "approve" else "deny",
-                            p.turn,
-                            p.promptHash,
-                        ),
+                        DecisionRequest(Uuid7.make(api.now()), decision, p.turn, p.promptHash, key),
                     )
-                _note.value = Texts.result(res)
+                // An answer that landed shows as the question's next screen, not as a note.
+                _note.value = if (key != null && res == "applied") null else Texts.result(res)
             } catch (e: Exception) {
                 _note.value = Texts.actionError(e)
                 resyncIfExpired(e, api)

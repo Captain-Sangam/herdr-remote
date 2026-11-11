@@ -1,6 +1,6 @@
 # ADR 0003: A fixed list of allowed hc calls
 
-- **Status:** Accepted, 2026-11-08.
+- **Status:** Accepted, 2026-11-08. Amended 2026-11-12: [ADR 0021](0021-answer-questions.md) adds the keys `2` to `9` and `tab`.
 - **Decision:** 3 in the [decision table](../history/technical-design.md#31-decision-table).
 
 ## Context
@@ -15,7 +15,7 @@ The daemon may use only:
 
 - `hello`, `terminal.list`, `terminal.get`, `terminal.read`, `events.subscribe`
 - `terminal.send` with `force: false` and no `caller`
-- `terminal.keys` with exactly one of `["1"]`, `["y"]` or `["esc"]`, called only from the approval code
+- `terminal.keys` with exactly one key, called only from the approval code: `1` to `9`, `y`, `esc` or `tab` (amended by [ADR 0021](0021-answer-questions.md))
 - `hc attach --observe`.
 
 A target must:

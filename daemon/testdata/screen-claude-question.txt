@@ -1,0 +1,21 @@
+ ▐▛███▛█   Claude Code v2.1.295
+▝▜██████▀  Opus 5.5 with xhigh effort · Claude Team
+
+❯ Use the AskUserQuestion tool to ask me one question: 'Which colour?' with options Red, Green, Blue.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ☐ Colour
+
+Which colour?
+
+❯ 1. Red
+     Red
+  2. Green
+     Green
+  3. Blue
+     Blue
+  4. Type something.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  5. Chat about this
+
+Enter to select · ↑/↓ to navigate · Esc to cancel
+

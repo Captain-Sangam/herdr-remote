@@ -64,7 +64,7 @@ herdr-remote is an Android app that controls the Herdr.app sessions on one Mac.
 **Out of scope:**
 
 - Keyboard input into a terminal.
-- Answers to agent questions (multiple choice) and to login prompts.
+- Answers to login prompts, to Codex questions, and free-text answers to questions.
 - Interrupts.
 - Start or stop of agents, spaces or tabs.
 - Agents on remote machines that Herdr reaches over SSH.
@@ -146,7 +146,7 @@ flowchart TD
 | FR-9  | The app shows a live, colored, read-only view of the terminal of an agent.                                                                                                                                                                                                                                         |
 | FR-10 | The user can approve or deny a permission prompt from Claude Code or Codex. This covers commands and file edits.                                                                                                                                                                                                   |
 | FR-11 | The app refuses an approval, with the reason, in three cases. The prompt changed. Someone already answered it. Someone uses the Mac keyboard or mouse at that time.                                                                                                                                                |
-| FR-12 | Agent questions, login prompts and other agents' prompts are view-only. The app says "Answer this on the Mac".                                                                                                                                                                                                     |
+| FR-12 | The user can answer a Claude Code question from the phone, with a key for each option, under the approval guard. Login prompts, Codex questions and other agents' prompts are view-only. The app says "Answer this on the Mac".                                                                                    |
 | FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself.                                                                                    |
 | FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode and one when an agent finishes. A blocked alert shows the prompt and has Approve and Deny. Watching starts again after a reboot, and after an app update at the latest when the app opens.               |
 | FR-15 | The phone connects over the LAN or over Tailscale, with the same pairing.                                                                                                                                                                                                                                          |
@@ -165,7 +165,7 @@ flowchart TD
 | SR-8  | The daemon writes an audit line for each pairing event, revocation, decision, refusal and message.                                                                                                                                                                                 |
 | SR-9  | No log on the Mac or the phone contains tokens, pairing codes, keys, transcript text, terminal bytes or message text.                                                                                                                                                              |
 | SR-10 | After 5 minutes in the background, the app asks for a biometric or the device credential before it shows anything.                                                                                                                                                                 |
-| SR-11 | The recents screen and screenshots show no app content. The lock screen shows no command and no prompt. It can show the agent name.                                                                                                                                                |
+| SR-11 | The recents screen shows no app content. Screenshots can show it ([ADR 0024](adr/0024-allow-screenshots.md)). The lock screen shows no command and no prompt. It can show the agent name.                                                                                          |
 | SR-12 | The phone keeps transcripts and terminal data in memory only.                                                                                                                                                                                                                      |
 | SR-13 | The live view shows terminal bytes in a WebView that can load only bundled files and cannot send input.                                                                                                                                                                            |
 

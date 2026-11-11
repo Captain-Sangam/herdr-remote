@@ -19,7 +19,7 @@ herdr-remote lets you watch and unblock the coding agents in Herdr.app on your M
   </tr>
 </table>
 
-These are screens from the Pane design, rendered from [`design/viewer.html`](design/viewer.html). The app sets `FLAG_SECURE`, so real screenshots are black.
+These are screens from the Pane design, rendered from [`design/viewer.html`](design/viewer.html). Real screenshots of the app are allowed ([ADR 0024](docs/adr/0024-allow-screenshots.md)).
 
 ## Prerequisites
 

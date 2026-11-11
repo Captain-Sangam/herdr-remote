@@ -471,3 +471,31 @@ func TestTranscriptFallsBackAndPagesPastEmptyPages(t *testing.T) {
 		t.Fatalf("cursor into an unreadable file: %d %v", st, raw)
 	}
 }
+
+func TestSkillNames(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "s.jsonl")
+	lines := []string{
+		`{"type":"attachment","attachment":{"type":"skill_listing","isInitial":true,"names":["old"]}}`,
+		`{"type":"user","message":{"content":"the skill_listing word in a prompt"}}`,
+		`{"type":"attachment","attachment":{"type":"skill_listing","isInitial":true,"names":["herdr","language"]}}`,
+		`{"type":"attachment","attachment":{"type":"skill_listing","isInitial":false,"names":["ponytail:ponytail","herdr"]}}`,
+	}
+	os.WriteFile(p, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
+	if got := strings.Join(skillNames(p), ","); got != "herdr,language,ponytail:ponytail" {
+		t.Fatal(got)
+	}
+	if skillNames(filepath.Join(t.TempDir(), "none.jsonl")) != nil {
+		t.Fatal("a missing file has skills")
+	}
+}
+
+func TestSkillFolders(t *testing.T) {
+	home, proj := t.TempDir(), t.TempDir()
+	for _, p := range []string{home + "/council/SKILL.md", home + "/herdr/SKILL.md", proj + "/deploy/SKILL.md", home + "/notes/README.md"} {
+		os.MkdirAll(filepath.Dir(p), 0o700)
+		os.WriteFile(p, []byte("---\nname: x\n---\n"), 0o600)
+	}
+	if got := strings.Join(skillFolders(home, proj, filepath.Join(proj, "none")), ","); got != "council,herdr,deploy" {
+		t.Fatal(got)
+	}
+}

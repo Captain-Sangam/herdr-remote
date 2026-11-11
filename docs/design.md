@@ -147,10 +147,14 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
   - Show the command or diff in a `CodeBlock`, at most one third of the screen high.
   - Show the keys under it: Approve (`y`, Go), Deny (`n`, Stop), Reload (`r`, Quiet).
   - Show a refusal as a `PaneNote` of kind Error, above the keys.
-- **View-only prompt:** use `PaneBox("question", color = working)`, a "? " prefix and the line "» Answer this on the Mac." in the error colour. Show no keys.
+- **Question:** use `PaneBox("question", color = working)` and a "? " prefix. Show the question text (not the options) in a `CodeBlock`, then one full-width Plain key for each option, with the option's number as the key hint and its description on a second line. Show Next (`⇥`) after a multi-select, then Reload. A landed answer shows no note: the next screen of the question is the feedback.
+- **View-only prompt:** use the question pane, with the line "» Answer this on the Mac." in the error colour. Show no keys.
+- **Skills:** when the draft starts with "/" and has no space, show `PaneBox("skills")` above the message box. List `/name` for each skill that matches, at most one third of the screen high. A tap puts `/name ` in the draft. The Quiet "/" key beside Send starts the list.
+- **Copy:** a long press on a transcript message selects its text. Each copy is marked sensitive, so Android hides its preview.
 - **Result of an action:** show a `PaneNote` under the header. Use Ok for applied, Warn for sent but not confirmed, uncertain or outcome unknown, and Error for a refusal.
 - **Not connected:** show a `PaneBanner` with the age of the data. Show "○ offline" in the header. Dim the old content to 45%.
 - **Loading:** show a short terminal log, not a spinner. Show `$ herdr-remote connect`, one line for each endpoint that the phone tries, and a block cursor.
+- **Working:** a working status (the glyph, the tag and the meter bar) blinks like a terminal cursor, 530 ms bright and 530 ms dim, in step on the whole screen. Nothing blinks or spins when "Remove animations" is on. While an agent works, end its transcript with a braille spinner in the working colour and "working · 14 s", the seconds since the last item. The transcript gets a message only when it is complete, so the row shows that the agent has not stopped.
 - **Empty:** show a small box drawing, the title in `head` and one line that says what to do.
 - **Pairing code:** use `Pane.type.code` in the done colour. Show two groups of three digits, each group in a 1 dp box.
 - **Key hints:** the chips (`y`, `n`, `r`) are visual only today.
@@ -196,4 +200,4 @@ Checks:
 
 - The JVM tests pass, and `Texts.kind()` and `endpointKind()` have tests.
 - The pair screen was checked on the emulator with `uiautomator dump` at font scale 1.0 and 1.3, in dark mode. Keys and fields are 48 dp high.
-- The other screens need a paired phone. FLAG_SECURE blocks screenshots, so check them by eye on the phone in light and dark mode, at font scale 1.3, with 3-button navigation.
+- The other screens need a paired phone. Check them on the phone in light and dark mode, at font scale 1.3, with 3-button navigation. `adb exec-out screencap -p` takes a screenshot.

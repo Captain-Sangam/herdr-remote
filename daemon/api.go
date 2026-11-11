@@ -20,6 +20,7 @@ func (d *Daemon) routes() {
 	d.mux.HandleFunc("GET /v1/terminals/{t}/live", d.handleLive)
 	d.mux.HandleFunc("GET /v1/terminals/{t}/transcript", d.handleTranscript)
 	d.mux.HandleFunc("GET /v1/terminals/{t}/prompt", d.handlePrompt)
+	d.mux.HandleFunc("GET /v1/terminals/{t}/skills", d.handleSkills)
 	d.mux.HandleFunc("POST /v1/terminals/{t}/decision", d.handleDecision)
 	d.mux.HandleFunc("POST /v1/terminals/{t}/message", d.handleMessage)
 }

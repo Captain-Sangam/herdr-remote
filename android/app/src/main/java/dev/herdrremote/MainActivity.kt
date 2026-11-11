@@ -1,5 +1,6 @@
 package dev.herdrremote
 
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -26,11 +27,15 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Nothing from this app in the recents screen or in screenshots.
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE,
-        )
+        // Nothing from this app in the recents screen. Screenshots are allowed (ADR 0024). Before
+        // Android 13 only FLAG_SECURE blanks the recents card, so it also blocks screenshots there.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            setRecentsScreenshotEnabled(false)
+        else
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
         setContent {
             if (locked) LockedScreen(note = gateNote, onUnlock = { authenticate() })
             else
