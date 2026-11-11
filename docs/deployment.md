@@ -178,7 +178,7 @@ Outside the repo, it changes only Homebrew packages and the SDK directory. The b
    ```
 
 - The app is sideloaded. There is no Play Store release.
-- Every build keeps `FLAG_SECURE`. Do not turn it off to take screenshots. [Design](design.md) has the mockups.
+- Every build keeps the recents card blank. Screenshots of the app are allowed ([ADR 0024](adr/0024-allow-screenshots.md)). [Design](design.md) has the mockups.
 
 ## Pair a phone
 

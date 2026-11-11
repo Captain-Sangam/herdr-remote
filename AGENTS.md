@@ -51,4 +51,4 @@ Read [`HANDOFF.md`](HANDOFF.md) first for the state of the work. Everything else
 - **Reviews:** do not nitpick. Surface only what matters.
 - **Docs:** plan and design docs follow the house style (the `language` skill).
 - **Decisions:** a new design decision gets a new ADR in `docs/adr/`. Update the docs that describe the code in the same commit.
-- **Secrets:** do not print `server.key`. `FLAG_SECURE` stays on in every build.
+- **Secrets:** do not print `server.key`. The recents card stays blank in every build. Screenshots are allowed ([ADR 0024](docs/adr/0024-allow-screenshots.md)).

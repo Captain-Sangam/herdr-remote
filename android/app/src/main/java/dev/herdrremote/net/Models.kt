@@ -40,17 +40,32 @@ data class TranscriptPage(
     @SerialName("next_cursor") val nextCursor: String = "",
 )
 
+/**
+ * One key of a question: a digit for an option, or "tab" for Next after a multi-select. [detail] is
+ * the description under the option.
+ */
+@Serializable data class PromptOption(val key: String, val label: String, val detail: String = "")
+
 @Serializable
 data class PromptView(
     val app: String = "",
     val kind: String? = null,
     val msg: String = "",
     val block: String = "",
+    /** A question's block above its options: the options show as keys, not twice. */
+    val question: String = "",
+    val options: List<PromptOption> = emptyList(),
     val turn: Long = 0,
     @SerialName("prompt_hash") val promptHash: String = "",
     val actionable: Boolean = false,
     val reason: String? = null,
-)
+) {
+    /** A permission prompt that Approve and Deny answer. A question has [options] instead. */
+    val approvable
+        get() = actionable && options.isEmpty()
+}
+
+@Serializable data class Skills(val skills: List<String> = emptyList())
 
 @Serializable
 data class Hello(
@@ -68,12 +83,14 @@ data class ErrorBody(
     @SerialName("idle_ms") val idleMs: Long? = null,
 )
 
+/** [decision] is approve, deny or answer. An answer names the option's [key]. */
 @Serializable
 data class DecisionRequest(
     @SerialName("request_id") val requestId: String,
     val decision: String,
     val turn: Long,
     @SerialName("prompt_hash") val promptHash: String,
+    val key: String? = null,
 )
 
 @Serializable

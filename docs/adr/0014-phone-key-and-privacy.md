@@ -1,6 +1,6 @@
 # ADR 0014: The phone key, the app lock and privacy
 
-- **Status:** Accepted, 2026-11-08. Amended 2026-11-09 after the code reviews. Notifications changed by [ADR 0019](0019-alert-preview-and-actions.md).
+- **Status:** Accepted, 2026-11-08. Amended 2026-11-09 after the code reviews. Notifications changed by [ADR 0019](0019-alert-preview-and-actions.md). Copy added by [ADR 0023](0023-copy-transcript-text.md). Screenshots allowed by [ADR 0024](0024-allow-screenshots.md).
 - **Decision:** 14 in the [decision table](../history/technical-design.md#31-decision-table).
 
 ## Context

@@ -118,6 +118,30 @@ Verified with probe agents in `--permission-mode default`:
 - **Markers that the daemon checks:** `1. Yes` and `Esc to cancel`.
 - **Auto mode:** Claude in `--permission-mode auto` ran `touch` with no prompt. So auto-mode prompts were not seen.
 
+## Claude Code questions
+
+Verified on 2026-11-12 with a probe agent that called `AskUserQuestion` ([ADR 0021](adr/0021-answer-questions.md)):
+
+- **Status:** `{app: "claude-code", kind: "question", msg: "answer: Which colour? (Red · Green · Blue)", state: "blocked"}`. `msg` names only the first question, also while a later question shows. The turn does not change between the questions.
+- **Screen:** at the bottom of the screen, under a rule:
+  - The question tabs: ` ☐ Colour` for one question, or `←  ☒ Colour  ☐ Sizes  ✔ Submit  →`. `☒` marks an answered question.
+  - The question text, then `❯ 1. Red` (the cursor), `2. Green`, and so on. A description line under an option has no number.
+  - `4. Type something.` and, under a rule, `5. Chat about this`.
+  - `Enter to select · ↑/↓ to navigate · Esc to cancel`, or `Tab/Arrow keys to navigate` with tabs.
+  - A multi-select option shows `[ ]` or `[✔]`, and a `Submit` line with no number.
+  - The review screen: `Review your answers`, the answers, `Ready to submit your answers?`, `1. Submit answers`, `2. Cancel`. It has no key hint line.
+- **Keys:**
+  - A digit picks a single-choice option. The dialog goes to the next question, or ends after the last. The status went to `done`, and the turn went from 1 to 2.
+  - A digit toggles a multi-select option. The cursor stays.
+  - `tab` goes to the next question, and from the last question to the review screen.
+  - On the review screen, `1` submits. `2` declines ("User declined to answer questions"), and the status goes to `idle`.
+  - "Chat about this" declines the question and tells Claude that the user wants to clarify. The agent then stops.
+  - "Type something" opens a text field on the Mac.
+- **Markers that the daemon checks:**
+  - the question tabs
+  - numbered options that count from 1 with no gap
+  - `Esc to cancel` or `Submit answers`.
+
 ## Codex approval prompts
 
 Verified with `codex --no-daemon -s read-only -a on-request`. This version rejects `-a untrusted`.
@@ -138,6 +162,8 @@ Verified with `codex --no-daemon -s read-only -a on-request`. This version rejec
 - `sessionId` leads to `~/.claude/projects/<slug>/<sessionId>.jsonl`.
 - Records with `type` `user` or `assistant` have `message.content`. It is a string, or a list of `text`, `thinking`, `tool_use` and `tool_result` blocks. Other types (`attachment`, `mode`, `ai-title` and more) are not messages.
 - The sessions file appears after the first prompt.
+- An `attachment` record with `attachment.type: "skill_listing"` lists the agent's skills in `attachment.names`. The first has `isInitial: true`. A later one, with `isInitial: false`, adds skills.
+  - The list leaves out a skill whose `SKILL.md` has `disable-model-invocation: true`, such as `council`. The user can still start it with `/council`.
 
 ### Codex with `--no-daemon`
 

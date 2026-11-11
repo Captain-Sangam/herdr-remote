@@ -1,6 +1,6 @@
 # Handoff: herdr-remote
 
-Read this first in a new session. It gives the state on 2026-11-10 and what is left. Nothing is in flight: no agents run, and the tree is clean.
+Read this first in a new session. It gives the state on 2026-11-12 and what is left. Nothing is in flight: no agents run, and the tree is clean.
 
 ## What this is
 
@@ -33,7 +33,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
 | Android SDK    | `/opt/homebrew/share/android-commandlinetools`. `adb` is in `platform-tools/` and is not on the PATH                                                                |
 | Emulator       | AVD `herdr-remote` (API 35, 3-button navigation on). Start it with `emulator -avd herdr-remote -no-window` from `emulator/`                                         |
 
-## State on 2026-11-10
+## State on 2026-11-12
 
 - **Checkpoint tags:**
   - `checkpoint-pre-review` (`f858d27`)
@@ -42,6 +42,13 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `checkpoint-formatted` (`21e19c8`)
   - `checkpoint-pane` (`764495b`)
   - `checkpoint-device-tested` (the commit that adds this line)
+- **Done on 2026-11-12 (ADRs [0021](docs/adr/0021-answer-questions.md) to [0024](docs/adr/0024-allow-screenshots.md)):**
+  - The phone answers Claude Code questions: a key for each option, Next after a multi-select, the full approval guard. "Type something" stays on the Mac. "Chat about this" then a message gives a free answer.
+  - A skill picker: a draft that starts with "/" lists the agent's skills, from its transcript and its skill folders (so `council` shows).
+  - A long press selects transcript text to copy. Each copy is marked sensitive.
+  - Screenshots are allowed. The recents card stays blank.
+  - Working agents blink on every screen. The transcript ends with a spinner and the seconds since the last item, and reloads each 1 s.
+  - Checked on the phone with screenshots: questions (single, two questions, multi-select, review), the picker with `/coun` and `/deb`, the working row, a long press and Copy ("Copied."). Not checked: that the clipboard preview hides the text.
 - **Done on 2026-11-10, last ([ADR 0020](docs/adr/0020-transcript-folds-and-scroll.md)):**
   - The transcript folds each turn's tool steps into one row. Prompts and answers show.
   - Follow stays on after a send and with the keyboard open. A scroll up turns it off.
@@ -79,7 +86,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
   - `cd daemon && go test ./...`
   - `cd android && ./gradlew testDebugUnitTest assembleDebug`, with `JAVA_HOME=/opt/homebrew/opt/openjdk@17` and `ANDROID_HOME=/opt/homebrew/share/android-commandlinetools`
   - `scripts/format.sh --check`
-- **How the phone was tested:** `adb` and `uiautomator dump` for the screens, and the WebView debugging port for the live view (a debug build only). FLAG_SECURE blocks screenshots of the app. A plain terminal shows on the phone as an agent if it prints `ESC ] 7501 ; state=idle BEL`.
+- **How the phone was tested:** `adb` and `uiautomator dump` for the screens, and the WebView debugging port for the live view (a debug build only). Screenshots of the app work since ADR 0024 (`adb exec-out screencap -p`). A plain terminal shows on the phone as an agent if it prints `ESC ] 7501 ; state=idle BEL`.
 - **The emulator** was paired once to reproduce the crash, then revoked on the Mac. Its app still thinks that it is paired.
 
 ## What is left, in order
@@ -90,7 +97,7 @@ Read this first in a new session. It gives the state on 2026-11-10 and what is l
    - The Galaxy Watch 8 gets the alerts: Herdr Remote is on in Galaxy Wearable. The bridge holds an alert while the phone is in use (`pending:USING_PHONE`). Check by eye that the watch shows the agent name after a phone lock. The logs did not confirm it.
    - Approve on the watch needs a new decision: a watch button skips the phone unlock.
 1. **After a Mac reboot:** `launchctl print gui/$(id -u)/dev.herdr-remote | grep state` shows running. `audit.log` holds lines with no secrets or content.
-2. **Look at the screens by eye** in light mode. FLAG_SECURE blocked a check of the colours.
+2. **Look at the screens by eye** in light mode. Screenshots work now (ADR 0024).
 3. **Optional:**
    - A revoked phone keeps its last data on the screen with "Not connected" and retries for good. It does not say that it was removed or offer to pair again.
    - The phone learns new Mac addresses only while it is connected. Without Tailscale, a new Wi-Fi address on the Mac needs a new pairing.

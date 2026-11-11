@@ -82,13 +82,13 @@ func TestSendRefusesUnreportedAndFinished(t *testing.T) {
 	}
 }
 
-func TestKeysOnlyThreeKeys(t *testing.T) {
+func TestKeysOnlyAllowedKeys(t *testing.T) {
 	f := newFake(t)
 	f.setTerminal(liveAgent("t7", "claude-code", "blocked", 1))
 	h := newHC(f.r)
 	defer h.Close()
 	ctx := testCtx(t)
-	for _, k := range []Key{"enter", "2", "4", "ctrl+c", "", "1 "} {
+	for _, k := range []Key{"enter", "0", "10", "ctrl+c", "", "1 ", "up", "a"} {
 		if _, err := h.Keys(ctx, "t7", k); err == nil {
 			t.Fatalf("key %q accepted", k)
 		}
@@ -96,16 +96,16 @@ func TestKeysOnlyThreeKeys(t *testing.T) {
 	if len(f.requestsFor("terminal.keys")) != 0 {
 		t.Fatal("a refused key reached hc")
 	}
-	for _, k := range []Key{KeyOne, KeyY, KeyEsc} {
+	for _, k := range []Key{KeyOne, KeyY, KeyEsc, "9", "tab"} {
 		if _, err := h.Keys(ctx, "t7", k); err != nil {
 			t.Fatal(err)
 		}
 	}
 	reqs := f.requestsFor("terminal.keys")
-	if len(reqs) != 3 {
+	if len(reqs) != 5 {
 		t.Fatalf("%d keys requests", len(reqs))
 	}
-	for i, want := range []string{"1", "y", "esc"} {
+	for i, want := range []string{"1", "y", "esc", "9", "tab"} {
 		keys, _ := reqs[i].Params["keys"].([]any)
 		if len(keys) != 1 || keys[0] != want {
 			t.Fatalf("request %d keys %v", i, reqs[i].Params["keys"])

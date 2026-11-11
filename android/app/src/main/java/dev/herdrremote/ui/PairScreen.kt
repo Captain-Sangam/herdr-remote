@@ -16,9 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,8 +50,8 @@ import dev.herdrremote.ui.theme.Pane
 import dev.herdrremote.ui.theme.PaneField
 import dev.herdrremote.ui.theme.PaneNote
 import dev.herdrremote.ui.theme.bottomRule
+import dev.herdrremote.ui.theme.spinnerFrame
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -266,27 +264,18 @@ private fun marked(text: String) = buildAnnotatedString {
 /** A braille spinner and what the phone waits for. */
 @Composable
 private fun Waiting(text: String) {
-    var frame by remember { mutableIntStateOf(0) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(80)
-            frame++
-        }
-    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            SPINNER[frame % SPINNER.length].toString(),
+            spinnerFrame().toString(),
             style = Pane.type.head,
             color = Pane.colors.accent,
         )
         Text(text, style = Pane.type.label, color = Pane.colors.muted)
     }
 }
-
-private const val SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 /** The Mac shows a QR code and the phone scans it (PAIR_ART in design/mockups.js). */
 @Composable

@@ -136,7 +136,8 @@ func TestPromptBlocksAndHashes(t *testing.T) {
 	if v2 := f.prompt(t, "t1"); v2.PromptHash == v.PromptHash || v2.Turn != 2 {
 		t.Fatal("hash ignores the turn")
 	}
-	// Not blocked, a question, an unknown app, missing markers: view only.
+	// Not blocked, a question with no question on the screen, an unknown app, missing markers:
+	// view only.
 	idle := f.prompt(t, "t3")
 	if idle.Actionable || idle.Reason != "not_blocked" || idle.Block != "" {
 		t.Fatalf("%+v", idle)
@@ -144,7 +145,13 @@ func TestPromptBlocksAndHashes(t *testing.T) {
 	q := liveAgent("t1", "claude-code", "blocked", 1)
 	q.Status.Kind, q.Status.Msg = "question", "Which option?"
 	f.d.f.setTerminal(q)
-	if p := f.prompt(t, "t1"); p.Actionable || p.Reason != "view_only" {
+	if p := f.prompt(t, "t1"); p.Actionable || p.Reason != "no_markers" || p.Options != nil {
+		t.Fatalf("%+v", p)
+	}
+	cq := liveAgent("t2", "codex", "blocked", 1)
+	cq.Status.Kind = "question"
+	f.d.f.setTerminal(cq)
+	if p := f.prompt(t, "t2"); p.Actionable || p.Reason != "view_only" {
 		t.Fatalf("%+v", p)
 	}
 	pi := liveAgent("t1", "pi", "blocked", 1)
@@ -163,6 +170,102 @@ func TestPromptBlocksAndHashes(t *testing.T) {
 	f.d.f.setTerminal(auth)
 	if p := f.prompt(t, "t1"); p.Actionable || p.Reason != "view_only" {
 		t.Fatalf("%+v", p)
+	}
+}
+
+func TestQuestionOptions(t *testing.T) {
+	keys := func(block string) string {
+		_, opts := parseQuestion(block)
+		var out []string
+		for _, o := range opts {
+			out = append(out, o.Key+"="+o.Label+strings.Repeat("/"+o.Detail, min(len(o.Detail), 1)))
+		}
+		return strings.Join(out, ",")
+	}
+	one := questionBlock(screenFixture(t, "screen-claude-question.txt"))
+	if !strings.HasPrefix(one, " ☐ Colour") || !strings.HasSuffix(one, "Esc to cancel") || strings.Contains(one, "──") || strings.Contains(one, "Claude Code v") {
+		t.Fatalf("block %q", one)
+	}
+	if got := keys(one); got != "1=Red,2=Green,3=Blue,5=Chat about this" {
+		t.Fatal(got)
+	}
+	// The text above the options shows once: the keys show the options.
+	if q, _ := parseQuestion(one); q != " ☐ Colour\n\nWhich colour?" {
+		t.Fatalf("question %q", q)
+	}
+	multi := questionBlock(screenFixture(t, "screen-claude-multi.txt"))
+	if got := keys(multi); got != "1=[✔] Small,2=[ ] Medium,3=[✔] Large,5=Chat about this,tab=Next" {
+		t.Fatal(got)
+	}
+	review := questionBlock(screenFixture(t, "screen-claude-review.txt"))
+	if got := keys(review); got != "1=Submit answers,2=Cancel" {
+		t.Fatal(got)
+	}
+	if q, _ := parseQuestion(review); !strings.Contains(q, "→ Medium") || !strings.HasSuffix(q, "Ready to submit your answers?") {
+		t.Fatalf("question %q", q)
+	}
+	// A description under an option is its detail.
+	if got := keys(" ☐ Cache\n❯ 1. LRU\n     Least recently used,\n     simple\n  2. TTL\n\nEsc to cancel"); got != "1=LRU/Least recently used, simple,2=TTL" {
+		t.Fatal(got)
+	}
+	// A numbered list in the question itself: the options are the last list.
+	if got := keys(" ☐ Plan\n\nWhich step?\n1. build\n2. test\n\n❯ 1. First\n  2. Second\nEsc to cancel"); got != "1=First,2=Second" {
+		t.Fatal(got)
+	}
+	// A list that skips a number gives no keys.
+	if _, got := parseQuestion(" ☐ Plan\n❯ 1. First\n  3. Third\nEsc to cancel"); got != nil {
+		t.Fatal(got)
+	}
+}
+
+func TestDecisionAnswersAQuestion(t *testing.T) {
+	f := setupActions(t)
+	q := liveAgent("t1", "claude-code", "blocked", 3)
+	q.Status.Kind, q.Status.Msg = "question", "answer: Which colour? (Red · Green · Blue)"
+	f.d.f.setTerminal(q)
+	f.d.f.setRead("t1", screenFixture(t, "screen-claude-question.txt"))
+	v := f.prompt(t, "t1")
+	if !v.Actionable || v.Kind != "question" || len(v.Options) != 4 {
+		t.Fatalf("%+v", v)
+	}
+	answer := func(key string) (int, map[string]any) {
+		return f.post(t, "/v1/terminals/t1/decision", map[string]any{"request_id": uuid7(time.Now()), "decision": "answer", "key": key, "turn": v.Turn, "prompt_hash": v.PromptHash}, 0)
+	}
+	for _, c := range []struct {
+		name   string
+		call   func() (int, map[string]any)
+		status int
+	}{
+		{"approve on a question", func() (int, map[string]any) {
+			return f.decide(t, "t1", uuid7(time.Now()), "approve", v.Turn, v.PromptHash)
+		}, 409},
+		{"Type something", func() (int, map[string]any) { return answer("4") }, 400},
+		{"no Next on a single choice", func() (int, map[string]any) { return answer("tab") }, 400},
+		{"no key", func() (int, map[string]any) { return answer("") }, 400},
+	} {
+		if st, res := c.call(); st != c.status {
+			t.Fatalf("%s: %d %v", c.name, st, res)
+		}
+	}
+	// A step of the question: it stays blocked on the same turn, and the prompt changes.
+	f.d.f.onKeys("t1", `{"status":{"app":"claude-code","state":"blocked","kind":"question","msg":"answer: Which sizes?"}}`)
+	if st, res := answer("2"); st != 200 || res["result"] != "applied" {
+		t.Fatalf("%d %v", st, res)
+	}
+	keys := f.keys()
+	if len(keys) != 1 || keys[0].Params["keys"].([]any)[0] != "2" {
+		t.Fatalf("keys %v", keys)
+	}
+	// An answer on a permission prompt is refused.
+	f.d.f.setTerminal(claudeBlocked(4))
+	f.d.f.setRead("t1", screenFixture(t, "screen-claude-cmd.txt"))
+	p := f.prompt(t, "t1")
+	if st, res := f.post(t, "/v1/terminals/t1/decision", map[string]any{"request_id": uuid7(time.Now()), "decision": "answer", "key": "1", "turn": p.Turn, "prompt_hash": p.PromptHash}, 0); st != 409 {
+		t.Fatalf("%d %v", st, res)
+	}
+	a := f.audit(t)
+	if !strings.Contains(a, `"decision":"answer:2"`) || strings.Contains(a, "Green") || strings.Contains(a, "colour") {
+		t.Fatalf("audit: %s", a)
 	}
 }
 

@@ -1,5 +1,7 @@
 package dev.herdrremote.ui
 
+import android.content.ClipDescription
+import android.os.PersistableBundle
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -26,8 +28,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -48,6 +54,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -77,6 +86,7 @@ import dev.herdrremote.ui.theme.PaneSubline
 import dev.herdrremote.ui.theme.PaneTabs
 import dev.herdrremote.ui.theme.PromptField
 import dev.herdrremote.ui.theme.StatusTag
+import dev.herdrremote.ui.theme.spinnerFrame
 import dev.herdrremote.ui.theme.topRule
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -88,6 +98,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
     val prompt by vm.prompt.collectAsStateWithLifecycle()
     val note by vm.note.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
+    val skills by vm.skills.collectAsStateWithLifecycle()
     val model = vm.transcript.collectAsStateWithLifecycle().value.model
     val state by app.repository.state.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
@@ -136,13 +147,17 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
                 busy,
                 refusal,
                 onDecide = { vm.decide(it) },
+                onAnswer = { vm.answer(it) },
                 onReload = { vm.refreshPrompt() },
             )
         if (n != null && kind != null && refusal == null)
             PaneNote(n, kind, Modifier.padding(Pane.space.s))
 
         PaneTabs(listOf("transcript", "live"), tab) { tab = it }
-        if (tab == 0) Transcript(vm, a.app, a.state == "working", follow, Modifier.weight(1f))
+        if (tab == 0)
+            SensitiveClipboard {
+                Transcript(vm, a.app, a.state == "working", follow, Modifier.weight(1f))
+            }
         else
             Column(Modifier.weight(1f).fillMaxWidth().background(Pane.terminalBg)) {
                 LiveView(app, address, Modifier.weight(1f).fillMaxWidth())
@@ -161,9 +176,16 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
                 )
             }
 
+        // A draft that starts with "/" lists the agent's skills that match, like Claude Code.
+        val query = draft.takeIf { it.startsWith("/") && ' ' !in it }?.drop(1)
+        if (query != null && !a.blocked) {
+            LaunchedEffect(Unit) { vm.loadSkills() }
+            SkillList(skills, query) { draft = "/$it " }
+        }
         PromptField(
             value = draft,
             onValueChange = { draft = it },
+            onSkills = { if (draft.isEmpty()) draft = "/" },
             onSend = {
                 if (!busy) {
                     follow.value = true
@@ -178,7 +200,7 @@ fun AgentScreen(app: HerdrRemoteApp, address: String, onBack: () -> Unit) {
 
 /**
  * The prompt of a blocked agent: a red "permission" pane with the command and the keys, or a blue
- * "question" pane when only the Mac can answer it.
+ * "question" pane with a key for each option. A prompt that only the Mac can answer shows no keys.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -188,13 +210,15 @@ fun Approval(
     busy: Boolean,
     refusal: String?,
     onDecide: (Boolean) -> Unit,
+    onAnswer: (String) -> Unit,
     onReload: () -> Unit,
 ) {
     val c = Pane.colors
     val ask = p != null && !p.actionable
-    val color = if (ask) c.working else c.blocked
+    val question = if (p != null) !p.approvable else a.kind == "question"
+    val color = if (question) c.working else c.blocked
     PaneBox(
-        if (ask) "question" else "permission",
+        if (question) "question" else "permission",
         Modifier.padding(horizontal = Pane.space.s, vertical = Pane.space.xs),
         color = color,
     ) {
@@ -203,13 +227,16 @@ fun Approval(
             verticalArrangement = Arrangement.spacedBy(Pane.space.s),
         ) {
             Column {
-                Text(
-                    (if (ask) "? " else "! ") +
-                        (a.msg?.ifEmpty { null }
-                            ?: "Waiting for a decision (${a.kind ?: "blocked"})"),
-                    style = Pane.type.body.copy(fontWeight = FontWeight.Bold),
-                    color = color,
-                )
+                // A question with keys shows its own text below. The status names only its first
+                // question, so the title would repeat it.
+                if (p?.options.isNullOrEmpty())
+                    Text(
+                        (if (question) "? " else "! ") +
+                            (a.msg?.ifEmpty { null }
+                                ?: "Waiting for a decision (${a.kind ?: "blocked"})"),
+                        style = Pane.type.body.copy(fontWeight = FontWeight.Bold),
+                        color = color,
+                    )
                 if (p != null)
                     Text(
                         listOfNotNull(
@@ -228,8 +255,9 @@ fun Approval(
             }
             // At most a third of the screen, so Approve and Deny stay in reach under a long
             // command.
-            if (p.block.isNotEmpty())
-                CodeBlock(p.block, maxHeight = (LocalConfiguration.current.screenHeightDp / 3).dp)
+            val text = if (p.options.isEmpty()) p.block else p.question
+            if (text.isNotEmpty())
+                CodeBlock(text, maxHeight = (LocalConfiguration.current.screenHeightDp / 3).dp)
             if (ask) {
                 Text(
                     "» Answer this on the Mac.",
@@ -239,6 +267,26 @@ fun Approval(
                 return@Column
             }
             if (refusal != null) PaneNote(refusal, NoteKind.Error)
+            if (p.options.isNotEmpty()) {
+                // No number chips: the phone presses each option's own key, and the numbers have a
+                // gap where "Type something" is. Next (tab) ends a multi-select.
+                for (o in p.options) KeyButton(
+                    o.label + if (o.key == "tab") " ⇥" else "",
+                    { onAnswer(o.key) },
+                    Modifier.fillMaxWidth(),
+                    enabled = !busy,
+                    detail = o.detail.ifEmpty { null },
+                    align = Alignment.Start,
+                )
+                if (p.options.any { it.label == "Chat about this" })
+                    Text(
+                        "» To type your own answer, pick Chat about this, then send a message.",
+                        style = Pane.type.caption,
+                        color = c.muted,
+                    )
+                KeyButton("Reload", onReload, key = 'r', kind = KeyKind.Quiet)
+                return@Column
+            }
             // Reload moves to a second line when the three keys do not fit (large font scale).
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -302,7 +350,8 @@ fun Transcript(
     val tr by vm.transcript.collectAsStateWithLifecycle()
     val c = Pane.colors
     val list = rememberLazyListState()
-    // Live: the newest page every 2 s while the agent works and the screen is in view.
+    // Live: the newest page at once and then each second while the agent works and the screen is
+    // in view.
     // ponytail: polls the whole last page (about 60 KiB); add an "after" cursor if that costs too
     // much.
     val owner = LocalLifecycleOwner.current
@@ -310,8 +359,8 @@ fun Transcript(
         if (working)
             owner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
-                    delay(2_000)
                     vm.refresh()
+                    delay(1_000)
                 }
             }
     }
@@ -417,6 +466,7 @@ fun Transcript(
                 }
                 if (shown) items(e.items) { TranscriptRow(it, app) }
             }
+            if (working) item { WorkingRow(tr.items.lastOrNull()?.ts ?: 0, vm::now) }
             item { Spacer(Modifier.height(1.dp)) }
         }
         if (!follow.value)
@@ -514,6 +564,31 @@ fun StepsRow(steps: List<TranscriptItem>, open: Boolean, onToggle: () -> Unit) {
     }
 }
 
+/**
+ * The end of the transcript while the agent works: a spinner and the time since the last item. The
+ * transcript gets a message only when it is complete, so this shows that the agent has not stopped.
+ */
+@Composable
+fun WorkingRow(since: Long, now: () -> Long) {
+    val c = Pane.colors
+    // The spinner recomposes the row each frame, so the seconds count too.
+    val frame = spinnerFrame()
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            "  $frame",
+            Modifier.width(labelWidth()),
+            style = Pane.type.label.copy(fontWeight = FontWeight.Bold),
+            color = c.working,
+        )
+        Text(
+            if (since > 0) "working · ${((now() - since) / 1000).coerceAtLeast(0)} s"
+            else "working",
+            style = Pane.type.label,
+            color = c.muted,
+        )
+    }
+}
+
 /** Nine cells at the label size; sp, so it grows with the font scale. */
 @Composable private fun labelWidth() = with(LocalDensity.current) { 66.sp.toDp() }
 
@@ -538,6 +613,56 @@ fun TranscriptRow(it: TranscriptItem, app: String) {
                 color = labelColor,
                 maxLines = 1,
             )
-        Text(it.text, style = Pane.type.label, color = textColor)
+        // A long press selects the text, for Copy.
+        SelectionContainer { Text(it.text, style = Pane.type.label, color = textColor) }
     }
+}
+
+/** The agent's skills that match the [query] after the "/". A tap puts "/name " in the draft. */
+@Composable
+fun SkillList(skills: List<String>?, query: String, onPick: (String) -> Unit) {
+    val c = Pane.colors
+    val shown = skills.orEmpty().filter { it.contains(query, ignoreCase = true) }
+    PaneBox("skills", Modifier.padding(horizontal = Pane.space.s, vertical = Pane.space.xs)) {
+        Column(
+            Modifier.heightIn(max = (LocalConfiguration.current.screenHeightDp / 3).dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            if (shown.isEmpty())
+                Text(
+                    if (skills == null) "Loading…" else "No skills match.",
+                    Modifier.padding(Pane.space.m),
+                    style = Pane.type.label,
+                    color = c.muted,
+                )
+            for (name in shown) Box(
+                Modifier.fillMaxWidth()
+                    .heightIn(min = Pane.space.touch)
+                    .clickable(role = Role.Button) { onPick(name) }
+                    .padding(horizontal = Pane.space.m),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Text("/$name", style = Pane.type.label, color = c.accent)
+            }
+        }
+    }
+}
+
+/** The clipboard, with each copy marked sensitive: Android then hides its preview. */
+@Composable
+fun SensitiveClipboard(content: @Composable () -> Unit) {
+    val base = LocalClipboard.current
+    val clip =
+        remember(base) {
+            object : Clipboard by base {
+                override suspend fun setClipEntry(clipEntry: ClipEntry?) {
+                    clipEntry?.clipData?.description?.extras =
+                        PersistableBundle().apply {
+                            putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+                        }
+                    base.setClipEntry(clipEntry)
+                }
+            }
+        }
+    CompositionLocalProvider(LocalClipboard provides clip, content = content)
 }

@@ -1,6 +1,6 @@
 # ADR 0011: Questions and unknown prompts are view-only
 
-- **Status:** Accepted, 2026-11-08.
+- **Status:** Accepted, 2026-11-08. Replaced for Claude Code questions by [ADR 0021](0021-answer-questions.md) on 2026-11-12.
 - **Decision:** 11 in the [decision table](../history/technical-design.md#31-decision-table).
 
 ## Context

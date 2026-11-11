@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// Key is one of the three keys the daemon may press.
+// Key is one of the keys the daemon may press: 1 to 9, y, esc or tab (docs/adr/0021).
 type Key string
 
 const (
@@ -22,6 +22,10 @@ const (
 	KeyY   Key = "y"
 	KeyEsc Key = "esc"
 )
+
+func allowedKey(k Key) bool {
+	return k == KeyY || k == KeyEsc || k == "tab" || len(k) == 1 && k[0] >= '1' && k[0] <= '9'
+}
 
 var (
 	errBadTarget   = errors.New("bad target")
@@ -517,11 +521,9 @@ func (h *HC) Send(ctx context.Context, t, text string) (*SendResult, error) {
 	return &res, nil
 }
 
-// Keys presses exactly one of the three allowed keys.
+// Keys presses exactly one allowed key.
 func (h *HC) Keys(ctx context.Context, t string, k Key) (*KeysResult, error) {
-	switch k {
-	case KeyOne, KeyY, KeyEsc:
-	default:
+	if !allowedKey(k) {
 		return nil, fmt.Errorf("key %q is not allowed", string(k))
 	}
 	if _, err := h.agentTarget(ctx, t); err != nil {

@@ -174,6 +174,10 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
         get(calls, "$it/v1/terminals/$t/prompt")
     }
 
+    suspend fun skills(t: String): Skills = withEndpoint {
+        get(calls, "$it/v1/terminals/$t/skills")
+    }
+
     /** The Mac's clock, for UUIDv7 request ids. */
     fun now(): Long = System.currentTimeMillis() + store.clockOffsetMs
 

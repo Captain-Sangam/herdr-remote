@@ -108,6 +108,7 @@ Use probe agents to make real prompts. Use a scratch folder. Remove each probe a
 
 - **Claude command:** `hc run --bg --name hr-probe-claude --cwd <repo> -- claude --permission-mode default "Use Bash to run: touch <scratch>/ok"`.
 - **Claude edit:** the same, with "Use the Write tool to create <scratch>/edit.txt containing hi".
+- **Claude question:** the same, with "Use AskUserQuestion with two questions in one call: 'Which colour?' (Red, Green, Blue), and 'Which sizes?' with multiSelect true (Small, Medium, Large)".
 - **Codex command:** `hc run --bg --name hr-probe-codex --cwd <repo> -- codex --no-daemon -s read-only -a on-request "Run: touch <scratch>/ok"`.
 - **Codex edit:** the same, with "Use apply_patch to create <scratch>/edit.txt containing hi".
 - **A plain agent:** a terminal shows on the phone as an agent if it prints `ESC ] 7501 ; state=idle BEL`, for example `printf '\033]7501;state=idle\007'`.
@@ -181,7 +182,7 @@ The phone is a Samsung S26 (SM-S942B), Android 17, 3-button navigation, dark mod
 | Revoke: the Mac drops the phone in 0.21 s. Pairing again works.                                                                                   | Pass   |
 | Wi-Fi off: the app connects over Tailscale.                                                                                                       | Pass   |
 | After a Mac reboot, the LaunchAgent runs, and `audit.log` holds no secrets or content. See [operations](operations.md#checks-after-a-mac-reboot). | Open   |
-| The screens in light mode, by eye. FLAG_SECURE blocked a check of the colours.                                                                    | Open   |
+| The screens in light mode, by eye. Screenshots now work for this check.                                                                           | Open   |
 
 ### How the phone was tested
 
@@ -189,7 +190,7 @@ The checks used `adb` from a Mac with the phone on USB.
 
 - **Screens:** `uiautomator dump` gives the view tree with the bounds of each element. It shows the layout, the text and the tap target sizes, also when screenshots are black.
 - **Live view:** the WebView debugging port shows the xterm.js page. A debug build only, because Android turns on WebView debugging only for a debuggable app.
-- **Screenshots:** FLAG_SECURE blocks screenshots of the app, and the recents card is blank. This is by design. Do not turn FLAG_SECURE off in any build.
+- **Screenshots:** `adb exec-out screencap -p > shot.png` takes a screenshot of the app. The recents card stays blank ([ADR 0024](adr/0024-allow-screenshots.md)).
 - **Agents:** probe agents on the Mac, or a plain terminal that prints `ESC ] 7501 ; state=idle BEL`.
 - **The emulator** was paired once to reproduce a crash, then revoked on the Mac. Its app still thinks that it is paired.
 
