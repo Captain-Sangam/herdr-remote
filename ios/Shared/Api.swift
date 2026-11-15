@@ -144,3 +144,38 @@ final class HerdrApi: Sendable {
     throw UnreachableError(last?.localizedDescription ?? "No endpoint is reachable")
   }
 }
+
+/// Enrollment on the enrollment port (docs/architecture.md section 3.1, rule 5), as one request
+/// (decision 5). The trust challenge of that request checks the pin and gives the server key,
+/// so the 6-digit code shows before the long-poll ends. A wrong pin cancels the challenge: no
+/// code shows and the token never goes out. The token goes only to the enroll port.
+enum Enroll {
+  static func run(
+    link: PairingLink, name: String, identity: SecIdentity,
+    onCode: @escaping @Sendable (String) -> Void
+  ) async throws -> String {
+    guard let client = DeviceKey.spki(identity) else { throw UnreachableError("no device key") }
+    let tls = PinnedTLS(pin: link.pin, identity: identity) {
+      onCode(Pairing.code(serverSpki: $0, clientSpki: client))
+    }
+    let session = tls.session(idle: 130)
+    defer { session.finishTasksAndInvalidate() }
+    let body = try JSONEncoder().encode(EnrollRequest(token: link.token, name: name))
+    var last = "The Mac is not reachable"
+    for host in link.endpoints {
+      var req = URLRequest(url: HerdrApi.url(host, link.enrollPort, "/v1/enroll"))
+      req.httpMethod = "POST"
+      req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      req.httpBody = body
+      do {
+        let (data, resp) = try await session.data(
+          for: req, delegate: TaskProbe(connect: HerdrApi.connectTimeout))
+        return try JSONDecoder().decode(EnrollResponse.self, from: HerdrApi.body(data, resp))
+          .deviceId
+      } catch let e as URLError {
+        last = tls.pinMismatch ? Pairing.pinMismatch : e.localizedDescription
+      }
+    }
+    throw UnreachableError(last)
+  }
+}

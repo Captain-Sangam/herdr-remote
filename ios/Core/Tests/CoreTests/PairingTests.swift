@@ -62,3 +62,34 @@ let good =
   #expect(Int64(String(id[0..<8] + id[9..<13]), radix: 16) == 1_794_122_774_714)
   #expect(Uuid7.make(nowMs: 1) != Uuid7.make(nowMs: 1))
 }
+
+@Test func aDeviceNameFollowsTheDaemonsRule() {
+  #expect(Pairing.validName("iPad (iPad13,18)"))
+  #expect(Pairing.validName("Ajay’s iPad ✓"))
+  #expect(Pairing.validName(String(repeating: "a", count: 64)))
+  #expect(!Pairing.validName(String(repeating: "a", count: 65)))
+  #expect(!Pairing.validName(""))
+  #expect(!Pairing.validName("tab\there"))
+  #expect(!Pairing.validName("new\nline"))
+  #expect(Pairing.defaultName(model: "iPad", machine: "iPad13,18") == "iPad (iPad13,18)")
+  #expect(Pairing.defaultName(model: "iPhone", machine: "") == "iPhone")
+  #expect(Pairing.defaultName(model: String(repeating: "x", count: 70), machine: "").count == 64)
+}
+
+@Test func pairingFailuresUseTheAndroidWords() {
+  #expect(Pairing.failure(ApiError(status: 403, error: "denied")) == "The Mac denied this phone.")
+  #expect(
+    Pairing.failure(ApiError(status: 403, error: "wrong token"))
+      == "The Mac refused this code: wrong token.")
+  #expect(
+    Pairing.failure(ApiError(status: 410, error: "expired"))
+      == "The pairing window closed before Allow. Click Pair a phone again on the Mac.")
+  #expect(
+    Pairing.failure(ApiError(status: 400, error: "bad name")) == "The Mac answered 400: bad name")
+  #expect(
+    Pairing.failure(UnreachableError(Pairing.pinMismatch))
+      == "Could not reach the Mac: The Mac's key does not match the pairing")
+  #expect(
+    Pairing.failure(PairingError(message: "The pairing code is incomplete"))
+      == "The pairing code is incomplete")
+}

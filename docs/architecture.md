@@ -497,3 +497,9 @@ The iOS app is a second client of the same API and the same pairing flow ([ADR 0
 
 - Each action has its own session, so no stale connection from an earlier call can make URLSession send it again.
 - An action tries the next endpoint only if the request never started: a connect-phase error, and no `requestStartDate` in the task metrics. In every other case the app shows "Outcome unknown" and never posts again.
+
+### 9.4 Pairing
+
+- The pair screen has a QR scanner (`AVCaptureMetadataOutput`) and a paste field.
+- Enroll is one request to the enrollment port. Its server trust challenge checks the pin and gives the server key, so the 6-digit code shows before the long-poll ends. A wrong pin cancels the challenge: no code shows and the token never goes out.
+- The default device name is the model and the hardware identifier, for example "iPad (iPad13,18)". The app checks the daemon's rule: 1 to 64 printable characters.

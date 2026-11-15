@@ -86,6 +86,29 @@ The AVD is `herdr-remote` (API 35, 3-button navigation on).
 - `PairingEmulatorTest` skips itself if `pairText` is not given.
 - To keep the emulator app paired after the test, add `-Pandroid.testInstrumentationRunnerArguments.keep=1` and `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`.
 
+## iOS tests
+
+The iOS app ([ADR 0025](adr/0025-ios-app.md)) has three layers.
+
+| Layer                    | Where            | What it proves                                                                                          |
+| ------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| Core tests               | `ios/Core/Tests` | The pure logic, with a case for each JVM test case. The pairing vectors are the shared ones.            |
+| XCTests in the simulator | `ios/Tests`      | The transport spike, the API against a fake TLS server, the device key, and enroll against the harness. |
+| UI tests                 | `ios/UITests`    | Pairing by a pasted link, the code while the Mac waits, and the expired-link text.                      |
+
+```sh
+swift test --package-path ios/Core
+cd ios && xcodegen generate
+xcodebuild test -scheme HerdrRemote -destination 'platform=iOS Simulator,name=iPhone 17' -collect-test-diagnostics never
+```
+
+- The keychain needs a signed build. `CODE_SIGNING_ALLOWED=NO` gives `errSecMissingEntitlement` (`-34018`). The default ad-hoc simulator signing works.
+- `-collect-test-diagnostics never` stops a 10-minute `simctl diagnose` after a failed test.
+- The harness tests skip themselves unless `TEST_RUNNER_HR_MANUAL_DIR` names the harness folder. The simulator reads the Mac's files.
+- `TEST_RUNNER_HR_SPIKE_NAME` adds a DNS name for the spike. It must reach the harness and be under the ATS exception domain.
+- `TEST_RUNNER_HR_PAIR_LINK` is a fresh link from the harness with `HR_MANUAL_AUTOALLOW=1`: `HERDR_REMOTE_STATE_DIR=$TMPDIR/hr-manual herdr-remoted pair --json`. The tests set its endpoint to `127.0.0.1`, because the harness listens only there.
+- `TEST_RUNNER_HR_PAIR_LINK_WAIT` is a fresh link from a harness without auto-allow. The test waits for the code, and `herdr-remoted pair cancel` then gives the 410 text. `TEST_RUNNER_HR_UI_OUT` names a file for the code, to compare with `herdr-remoted pair status --json`.
+
 ## Manual harness
 
 `TestManualServe` in `daemon/manual_test.go` runs a scratch daemon for manual checks. It skips itself unless `HR_MANUAL_DIR` is set.

@@ -58,4 +58,49 @@ public enum Pairing {
     let s = String(n % 1_000_000)
     return String(repeating: "0", count: 6 - s.count) + s
   }
+
+  /// The daemon's rule for a device name (`validName` in daemon/pair.go): 1 to 64 Unicode
+  /// scalars, each a letter, mark, number, punctuation, symbol or the ASCII space.
+  public static func validName(_ name: String) -> Bool {
+    let scalars = name.unicodeScalars
+    guard (1...64).contains(scalars.count) else { return false }
+    return scalars.allSatisfy { u in
+      if u == " " { return true }
+      switch u.properties.generalCategory {
+      case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
+        .nonspacingMark, .spacingMark, .enclosingMark, .decimalNumber, .letterNumber, .otherNumber,
+        .connectorPunctuation, .dashPunctuation, .openPunctuation, .closePunctuation,
+        .initialPunctuation, .finalPunctuation, .otherPunctuation, .mathSymbol, .currencySymbol,
+        .modifierSymbol, .otherSymbol:
+        return true
+      default: return false
+      }
+    }
+  }
+
+  /// The default device name: the model and the hardware identifier, "iPad (iPad13,18)".
+  public static func defaultName(model: String, machine: String) -> String {
+    let name = machine.isEmpty ? model : "\(model) (\(machine))"
+    return String(name.unicodeScalars.prefix(64).map(Character.init))
+  }
+
+  /// What the pair screen says when enroll fails: the words of `ui/PairScreen.kt`.
+  public static func failure(_ e: Error) -> String {
+    if let e = e as? ApiError {
+      switch e.status {
+      case 403:
+        return e.error == "denied"
+          ? "The Mac denied this phone." : "The Mac refused this code: \(e.error)."
+      case 410:
+        return "The pairing window closed before Allow. Click Pair a phone again on the Mac."
+      default: return "The Mac answered \(e.status): \(e.error)"
+      }
+    }
+    if let e = e as? PairingError { return e.message }
+    let message = (e as? UnreachableError)?.message ?? e.localizedDescription
+    return "Could not reach the Mac: \(message)"
+  }
+
+  /// The failure when the Mac's key does not match the pin: no code shows, no token goes out.
+  public static let pinMismatch = "The Mac's key does not match the pairing"
 }

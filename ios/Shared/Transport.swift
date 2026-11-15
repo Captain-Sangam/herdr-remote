@@ -9,11 +9,20 @@ import Security
 final class PinnedTLS: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   let pin: String
   let identity: SecIdentity
+  /// Gets the server's SPKI DER once the pin matches, before any request byte goes out.
+  /// Enroll shows the 6-digit code from it (decision 5).
+  private let onServer: (@Sendable (Data) -> Void)?
+  private let lock = NSLock()
+  private var mismatch = false
 
-  init(pin: String, identity: SecIdentity) {
+  init(pin: String, identity: SecIdentity, onServer: (@Sendable (Data) -> Void)? = nil) {
     self.pin = pin
     self.identity = identity
+    self.onServer = onServer
   }
+
+  /// True once a server showed a key that is not the pinned one.
+  var pinMismatch: Bool { lock.withLock { mismatch } }
 
   /// A new session. `idle` is the read timeout: the most time between two packets.
   func session(idle: TimeInterval) -> URLSession {
@@ -34,9 +43,14 @@ final class PinnedTLS: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
     switch challenge.protectionSpace.authenticationMethod {
     case NSURLAuthenticationMethodServerTrust:
-      guard let trust = challenge.protectionSpace.serverTrust, Self.matches(trust, pin: pin) else {
+      guard let trust = challenge.protectionSpace.serverTrust,
+        let point = Self.serverPoint(trust), Spki.matches(p256Point: point, pin: pin),
+        let spki = Spki.der(p256Point: point)
+      else {
+        lock.withLock { mismatch = true }
         return (.cancelAuthenticationChallenge, nil)
       }
+      onServer?(spki)
       return (.useCredential, URLCredential(trust: trust))
     case NSURLAuthenticationMethodClientCertificate:
       return (
@@ -64,10 +78,6 @@ final class PinnedTLS: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     return SecKeyCopyExternalRepresentation(key, nil) as Data?
   }
 
-  static func matches(_ trust: SecTrust, pin: String) -> Bool {
-    guard let point = serverPoint(trust) else { return false }
-    return Spki.matches(p256Point: point, pin: pin)
-  }
 }
 
 /// A per-task delegate. It records whether the request started (decision 6), and it ends a

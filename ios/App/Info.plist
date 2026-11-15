@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>The camera reads the pairing QR code that the Mac shows.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Herdr Remote connects to Herdr Remote on your Mac over the local network.</string>
 	<key>HRKeychainGroup</key>
 	<string>$(AppIdentifierPrefix)dev.herdrremote.shared</string>
 	<key>NSAppTransportSecurity</key>

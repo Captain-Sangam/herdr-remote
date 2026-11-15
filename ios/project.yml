@@ -56,6 +56,17 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.herdrremote.tests
         GENERATE_INFOPLIST_FILE: YES
+  HerdrRemoteUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: HerdrRemote
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.herdrremote.uitests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   HerdrRemote:
     build:
@@ -64,3 +75,4 @@ schemes:
     test:
       targets:
         - HerdrRemoteTests
+        - HerdrRemoteUITests
