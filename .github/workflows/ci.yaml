@@ -10,11 +10,12 @@ permissions:
   contents: read
 
 jobs:
-  # Each check has a cap of 30 s. timeout-minutes counts only whole
-  # minutes, so it is the backstop for the setup steps.
+  # The format check runs on macOS arm64: swift-format comes with Xcode
+  # (ADR 0025). macOS has no GNU timeout, so the check step has its own cap
+  # of 1 minute, and the job a cap of 5 minutes for the setup steps.
   format:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    runs-on: macos-26
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -29,8 +30,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: timeout 30 scripts/format.sh --check
+      - run: scripts/format.sh --check
+        timeout-minutes: 1
 
+  # Each daemon check has a cap of 30 s. timeout-minutes counts only whole
+  # minutes, so it is the backstop for the setup steps.
   # -short skips the 60 s pairing long-poll and the 10 s keepalive. The full
   # suite and the app tests and build run locally before each commit
   # (AGENTS.md): Gradle alone takes minutes on a fresh runner.

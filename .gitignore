@@ -10,3 +10,6 @@ daemon/herdr-remoted
 daemon/*.test
 node_modules/
 .tools/
+ios/*.xcodeproj
+ios/build/
+ios/Core/.build/

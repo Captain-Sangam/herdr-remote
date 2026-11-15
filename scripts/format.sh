@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Formats the repo with pinned tools: Prettier (md, json, yaml, js, html, css),
-# gofmt (go), ktfmt (kt, kts) and shfmt (sh).
+# gofmt (go), ktfmt (kt, kts), shfmt (sh) and swift-format (swift, from Xcode,
+# default configuration).
 #   scripts/format.sh                   format every file
 #   scripts/format.sh --check           change nothing; list unformatted files, exit 1 if any
 #   scripts/format.sh PATH...           format only these files or directories
@@ -29,7 +30,7 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 files=$(git ls-files --full-name -co --exclude-standard -- "$@" | sort -u |
   awk 'NR == FNR { if (!/^(#|$)/) skip[n++] = $0; next }
     { for (i = 0; i < n; i++) if (index($0, skip[i]) == 1) next; print }' "$root/.prettierignore" - |
-  grep -E '\.(md|json|ya?ml|js|html|css|go|kts?|sh)$' || true)
+  grep -E '\.(md|json|ya?ml|js|html|css|go|kts?|sh|swift)$' || true)
 cd "$root"
 files=$(for f in $files; do [ ! -f "$f" ] || echo "$f"; done)
 
@@ -43,6 +44,7 @@ prettier_files=$(pick 'md|json|ya?ml|js|html|css')
 go_files=$(pick go)
 kt_files=$(pick 'kts?')
 sh_files=$(pick sh)
+swift_files=$(pick swift)
 
 fetch() { # URL SHA256 FILE: download once and verify
   [ ! -f "$3" ] || return 0
@@ -60,6 +62,7 @@ fetch() { # URL SHA256 FILE: download once and verify
 prettier() { node_modules/.bin/prettier "$@"; }
 ktfmt() { java -jar ".tools/ktfmt-$KTFMT_VERSION.jar" --kotlinlang-style "$@"; }
 shfmt() { ".tools/shfmt-$SHFMT_VERSION" -i 2 "$@"; }
+swift_format() { xcrun swift-format "$@"; }
 
 if [ -n "$prettier_files" ] && [ ! -x node_modules/.bin/prettier ]; then
   npm ci --no-audit --no-fund --loglevel=error
@@ -94,6 +97,7 @@ if [ $mode = check ]; then
   [ -z "$go_files" ] || check gofmt -l $go_files
   [ -z "$kt_files" ] || check ktfmt --dry-run $kt_files
   [ -z "$sh_files" ] || check shfmt -l $sh_files
+  [ -z "$swift_files" ] || check swift_format lint --strict $swift_files
   [ $fail = 0 ] || echo "format.sh: run scripts/format.sh to fix the files above" >&2
   exit $fail
 fi
@@ -103,3 +107,4 @@ fi
 # ktfmt 0.64 can need a second pass to settle (it did on net/Api.kt).
 [ -z "$kt_files" ] || { ktfmt --quiet $kt_files && ktfmt --quiet $kt_files; }
 [ -z "$sh_files" ] || shfmt -w $sh_files
+[ -z "$swift_files" ] || swift_format format -i $swift_files

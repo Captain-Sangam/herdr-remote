@@ -1,0 +1,65 @@
+# The iOS app (ADR 0025). xcodegen makes HerdrRemote.xcodeproj from this file:
+#   cd ios && xcodegen generate
+# The .xcodeproj is not in git.
+name: HerdrRemote
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  Core:
+    path: Core
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.1"
+targets:
+  HerdrRemote:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - Shared
+      # One copy of xterm.js and live.html for both apps (decision 9).
+      - path: ../android/app/src/main/assets/xterm
+        type: folder
+        buildPhase: resources
+      - path: ../android/app/src/main/res/font/jetbrains_mono_regular.ttf
+        buildPhase: resources
+      - path: ../android/app/src/main/res/font/jetbrains_mono_bold.ttf
+        buildPhase: resources
+      - path: ../android/app/src/main/assets/licenses/JetBrainsMono-OFL.txt
+        buildPhase: resources
+    dependencies:
+      - package: Core
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.herdrremote
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Herdr Remote
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  HerdrRemoteTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: HerdrRemote
+      - package: Core
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.herdrremote.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  HerdrRemote:
+    build:
+      targets:
+        HerdrRemote: all
+    test:
+      targets:
+        - HerdrRemoteTests

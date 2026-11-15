@@ -60,6 +60,7 @@ herdr-remote is an Android app that controls the Herdr.app sessions on one Mac.
 - Notifications for blocked agents while the app is in the background.
 - Revocation of a phone from the Mac.
 - Access over Wi-Fi and over Tailscale.
+- An iOS and iPadOS app with the same features as the Android app ([ADR 0025](adr/0025-ios-app.md)).
 
 **Out of scope:**
 
@@ -68,7 +69,7 @@ herdr-remote is an Android app that controls the Herdr.app sessions on one Mac.
 - Interrupts.
 - Start or stop of agents, spaces or tabs.
 - Agents on remote machines that Herdr reaches over SSH.
-- iOS.
+- An App Store or TestFlight release of the iOS app.
 - A relay server or a push service.
 - A Play Store release.
 - Changes to Herdr.app or to its shipped mods.

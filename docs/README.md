@@ -50,6 +50,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0022](adr/0022-skill-picker.md)                | A skill picker from the transcript's list.      | Accepted            |
 | [0023](adr/0023-copy-transcript-text.md)        | Transcript text can be copied.                  | Accepted            |
 | [0024](adr/0024-allow-screenshots.md)           | Screenshots allowed, recents card blank.        | Accepted            |
+| [0025](adr/0025-ios-app.md)                     | The iOS app.                                    | Accepted            |
 
 To add a decision:
 
