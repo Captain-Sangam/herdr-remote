@@ -1,6 +1,14 @@
 # Handoff: herdr-remote
 
-Read this first in a new session. It gives the state on 2026-11-12 and what is left. Nothing is in flight: no agents run, and the tree is clean.
+Read this first in a new session. It gives the state on 2026-11-12 and what is left. One task is in flight: the iOS app (next section).
+
+## In flight: the iOS app (2026-11-16)
+
+- **Goal:** an iOS and iPadOS app with full parity with the Android app ([ADR 0025](docs/adr/0025-ios-app.md)). The plan is [`.agents/tasks/ios-app/plan.md`](.agents/tasks/ios-app/plan.md). The council record is `.agents/tasks/ios-app/record.md`.
+- **Done:** plan steps 1 to 5 (`61522c2` to `4b100f8`): the `ios/` project, the core logic, the Secure Enclave key and the API client, the Pane design system and pairing. All checks pass.
+- **Paused at step 6:** a check on the user's iPad. Before it, the user signs in to Xcode with an Apple ID, connects and trusts the iPad, and turns on Developer Mode.
+- **Resume:** run `/council resume ios-app`. Steps 7 to 14 and 16 follow the iPad check.
+- **Paid:** background alerts with the app closed (step 15) need the Apple Developer Program (USD 99 a year). Steps 13 and 14 build the push code without it.
 
 ## What this is
 
