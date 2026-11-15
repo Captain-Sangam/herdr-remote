@@ -4,6 +4,8 @@
 
 herdr-remote lets you watch and unblock the coding agents in Herdr.app on your Mac from an Android phone. The phone talks over Wi-Fi or Tailscale to a small daemon on the Mac, with mutual TLS and no relay server.
 
+herdr-remote is an independent project. It is not made by, or affiliated with, the makers of Herdr.
+
 ## Screens
 
 <table>
@@ -93,7 +95,15 @@ The script builds `~/.local/bin/herdr-remoted`, loads the LaunchAgent `dev.herdr
 - For full Codex transcripts, set Herdr's Codex launcher to `["codex", "--no-daemon"]` in Herdr settings (`new-menu.agents`).
 - For access away from home, sign in to Tailscale on both devices before you pair.
 
+## Security
+
+A paired phone can approve commands and send messages to the agents on your Mac. Pair only phones that you own. If you lose a phone, revoke it at once ([`docs/operations.md`](docs/operations.md#revoke-a-phone)). The security model is in [`docs/architecture.md`](docs/architecture.md). To report a vulnerability, see [`SECURITY.md`](SECURITY.md).
+
 ## More
 
 - [`docs/`](docs/README.md): the product, the architecture, the decisions (ADRs), the API, deployment, operations and testing.
 - [`AGENTS.md`](AGENTS.md): the build, test and format commands, and the conventions for this repo.
+
+## License
+
+[MIT](LICENSE). The bundled xterm.js (MIT) and JetBrains Mono (OFL 1.1) keep their own licenses, in `android/app/src/main/assets/`.
