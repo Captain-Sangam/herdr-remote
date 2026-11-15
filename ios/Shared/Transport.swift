@@ -69,3 +69,38 @@ final class PinnedTLS: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     return Spki.matches(p256Point: point, pin: pin)
   }
 }
+
+/// A per-task delegate. It records whether the request started (decision 6), and it ends a
+/// task that has not connected after `connect` seconds: URLSession has no connect timeout of
+/// its own, only a read timeout.
+final class TaskProbe: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+  private let lock = NSLock()
+  private var _started = false
+  private let connect: TimeInterval?
+
+  /// True once a transaction has a `requestStartDate`: the Mac may have the request.
+  var started: Bool { lock.withLock { _started } }
+
+  init(connect: TimeInterval?) {
+    self.connect = connect
+  }
+
+  func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+    guard let connect else { return }
+    DispatchQueue.global().asyncAfter(deadline: .now() + connect) {
+      // Nothing sent and nothing received: the connection never came up.
+      if task.state == .running, task.response == nil, task.countOfBytesSent == 0,
+        task.countOfBytesReceived == 0
+      {
+        task.cancel()
+      }
+    }
+  }
+
+  func urlSession(
+    _ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics
+  ) {
+    let started = metrics.transactionMetrics.contains { $0.requestStartDate != nil }
+    lock.withLock { _started = started }
+  }
+}

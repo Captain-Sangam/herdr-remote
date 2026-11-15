@@ -467,3 +467,33 @@ Set `mac_idle_seconds` to 0 if a device such as a mouse jiggler keeps the Mac al
 - The phone needs Google Play services for the code scanner.
 - The macOS firewall can ask once to allow incoming connections to `herdr-remoted`.
 - Some facts come from undocumented files and screens. [Interfaces: assumptions](interfaces.md#assumptions) lists them, with the fallback for each one.
+
+## 9. iOS app
+
+The iOS app is a second client of the same API and the same pairing flow ([ADR 0025](adr/0025-ios-app.md)). It is in `ios/`. This section gives only what differs from the Android app.
+
+### 9.1 Code
+
+| Folder       | Content                                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `ios/Core`   | A Swift package with the pure logic: the pairing link and code, the API shapes, the SSE parser, the reducer, `Notifier`, texts and gate. |
+| `ios/Shared` | The code that the app and its extensions share: TLS (`Transport.swift`), the key and the store (`Device.swift`), the API (`Api.swift`).  |
+| `ios/App`    | The SwiftUI app.                                                                                                                         |
+| `ios/Tests`  | XCTests in the simulator: the transport spike, the API against a fake TLS server, and checks against the manual harness.                 |
+
+### 9.2 Key and TLS client
+
+- **Key:** a Secure Enclave P-256 key, `AfterFirstUnlockThisDeviceOnly`, with no user presence. Simulator builds use a software key.
+- **Certificate:** the app builds a self-signed certificate in DER (CN=herdr-remote, ten years) and signs it with the key. The key and the certificate form a keychain identity.
+- **Access group:** the key, the certificate and the store item are in `$(AppIdentifierPrefix)dev.herdrremote.shared`, so the extensions can use them.
+- **TLS client:** URLSession with an ephemeral configuration and TLS 1.3 as the minimum.
+  - The client certificate challenge gets the identity.
+  - The server trust challenge passes only if the leaf key's SPKI SHA-256 equals the pin.
+  - The delegate refuses every redirect. A 3xx reply is an error.
+- **Connect timeout:** URLSession has only a read timeout. A per-task probe cancels a task that has sent and received nothing after 10 s.
+- **Store:** one keychain item (a generic password that holds JSON) with the pin, the endpoints, the last good endpoint, the port, the device ID, the Mac name, the watching toggle and the clock offset.
+
+### 9.3 Actions
+
+- Each action has its own session, so no stale connection from an earlier call can make URLSession send it again.
+- An action tries the next endpoint only if the request never started: a connect-phase error, and no `requestStartDate` in the task metrics. In every other case the app shows "Outcome unknown" and never posts again.

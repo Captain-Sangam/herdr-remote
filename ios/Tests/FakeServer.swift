@@ -50,3 +50,32 @@ final class FakeServer: @unchecked Sendable {
       + "Connection: close\r\n\r\n\(body)"
   }
 }
+
+/// A plain TCP listener on [::1] that accepts and never answers: an endpoint that never
+/// finishes the TLS handshake.
+final class SilentServer: @unchecked Sendable {
+  private let listener: NWListener
+  private let queue = DispatchQueue(label: "silent")
+  private var held: [NWConnection] = []  // only on `queue`
+
+  init(port: Int) throws {
+    let params = NWParameters.tcp
+    params.requiredLocalEndpoint = NWEndpoint.hostPort(
+      host: "::1", port: NWEndpoint.Port(rawValue: UInt16(port))!)
+    listener = try NWListener(using: params)
+    let ready = DispatchSemaphore(value: 0)
+    listener.stateUpdateHandler = { if case .ready = $0 { ready.signal() } }
+    listener.newConnectionHandler = { [weak self] c in
+      guard let self else { return }
+      self.held.append(c)
+      c.start(queue: self.queue)
+    }
+    listener.start(queue: queue)
+    _ = ready.wait(timeout: .now() + 5)
+  }
+
+  func stop() {
+    queue.sync { for c in held { c.cancel() } }
+    listener.cancel()
+  }
+}
