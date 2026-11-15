@@ -3,6 +3,7 @@
 - **Status:** Chosen on 9 November 2026.
 - **Owner:** Ajay.
 - **Code:** `android/app/src/main/java/dev/herdrremote/ui/theme/`: `PaneTheme.kt` (tokens) and `PaneComponents.kt` (components).
+- **iOS code:** `ios/App/Pane.swift` (tokens) and `ios/App/PaneComponents.swift` (components), with the same names. Launch a debug build with `-panePreview` to see every component on one screen.
 - **Mockups:** [`design/viewer.html`](../design/viewer.html) shows one screen at a time. [`design/options.html`](../design/options.html) shows all screens, the tokens and the components. Both use [`design/mockups.js`](../design/mockups.js) and [`design/mockups.css`](../design/mockups.css).
 
 ## 1. Summary

@@ -4,7 +4,21 @@ import SwiftUI
 struct HerdrRemoteApp: App {
   var body: some Scene {
     WindowGroup {
-      Text("Herdr Remote")
+      Root().modifier(PaneTheme())
     }
+  }
+}
+
+struct Root: View {
+  var body: some View {
+    #if DEBUG
+      if ProcessInfo.processInfo.arguments.contains("-panePreview") {
+        PanePreview()
+      } else {
+        Text("Herdr Remote")
+      }
+    #else
+      Text("Herdr Remote")
+    #endif
   }
 }
