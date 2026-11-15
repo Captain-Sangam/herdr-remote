@@ -474,12 +474,13 @@ The iOS app is a second client of the same API and the same pairing flow ([ADR 0
 
 ### 9.1 Code
 
-| Folder       | Content                                                                                                                                  |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `ios/Core`   | A Swift package with the pure logic: the pairing link and code, the API shapes, the SSE parser, the reducer, `Notifier`, texts and gate. |
-| `ios/Shared` | The code that the app and its extensions share: TLS (`Transport.swift`), the key and the store (`Device.swift`), the API (`Api.swift`).  |
-| `ios/App`    | The SwiftUI app.                                                                                                                         |
-| `ios/Tests`  | XCTests in the simulator: the transport spike, the API against a fake TLS server, and checks against the manual harness.                 |
+| Folder                    | Content                                                                                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ios/Core`                | A Swift package with the pure logic: the pairing link and code, the API shapes, the SSE parser, the reducer, `Notifier`, texts and gate.            |
+| `ios/Shared`              | The code that the app and its extensions share: TLS (`Transport.swift`), the key and the store (`Device.swift`), the API (`Api.swift`).             |
+| `ios/App`                 | The SwiftUI app.                                                                                                                                    |
+| `ios/NotificationContent` | The notification content extension. It reads the store item from the shared keychain group. The prompt and the buttons come in step 11 of the plan. |
+| `ios/Tests`               | XCTests in the simulator: the transport spike, the API against a fake TLS server, and checks against the manual harness.                            |
 
 ### 9.2 Key and TLS client
 

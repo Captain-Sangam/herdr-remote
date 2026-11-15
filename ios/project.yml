@@ -11,6 +11,9 @@ packages:
     path: Core
 settings:
   base:
+    # The app's bundle ID. The extensions add a suffix. A free team that cannot register
+    # dev.herdrremote builds the device app with HR_BUNDLE_ID=<unique id>.
+    HR_BUNDLE_ID: dev.herdrremote
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     TARGETED_DEVICE_FAMILY: "1,2"
@@ -35,15 +38,33 @@ targets:
         buildPhase: resources
     dependencies:
       - package: Core
+      - target: HerdrRemoteNotificationContent
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.herdrremote
+        PRODUCT_BUNDLE_IDENTIFIER: $(HR_BUNDLE_ID)
         INFOPLIST_FILE: App/Info.plist
         CODE_SIGN_ENTITLEMENTS: App/HerdrRemote.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Herdr Remote
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  HerdrRemoteNotificationContent:
+    type: app-extension
+    platform: iOS
+    sources:
+      - NotificationContent
+      - Shared
+    dependencies:
+      - package: Core
+      - sdk: UserNotifications.framework
+      - sdk: UserNotificationsUI.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(HR_BUNDLE_ID).content
+        INFOPLIST_FILE: NotificationContent/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Herdr Remote
+        CODE_SIGN_ENTITLEMENTS: NotificationContent/NotificationContent.entitlements
   HerdrRemoteTests:
     type: bundle.unit-test
     platform: iOS

@@ -1,5 +1,6 @@
 import Core
 import SwiftUI
+import UserNotifications
 
 @main
 struct HerdrRemoteApp: App {
@@ -35,7 +36,7 @@ struct Root: View {
 }
 
 /// What a paired app shows until the lists come (step 7 of the plan): the Mac, a check of
-/// /v1/hello over the device identity, and Forget.
+/// /v1/hello over the device identity, a test alert for the content extension, and Forget.
 struct PairedScreen: View {
   let model: AppModel
   @State private var note: (text: String, kind: NoteKind)?
@@ -71,10 +72,41 @@ struct PairedScreen: View {
               busy = false
             }
           }
+          KeyButton("Send a test alert in 5 s") {
+            Task { note = (await TestAlert.send(), .ok) }
+          }
           KeyButton("Forget this Mac", kind: .stop) { model.forget() }
         }
         .padding(PaneSpace.s)
       }
     }
+  }
+}
+
+/// A local alert in the category of the content extension (step 6 of the plan): expanded, it
+/// shows whether the extension reads the store item.
+enum TestAlert {
+  static func send() async -> String {
+    let center = UNUserNotificationCenter.current()
+    guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else {
+      return "Notifications are off for Herdr Remote. Turn them on in Settings."
+    }
+    center.setNotificationCategories([
+      UNNotificationCategory(
+        identifier: "agent", actions: [], intentIdentifiers: [], options: [.hiddenPreviewsShowTitle]
+      )
+    ])
+    let content = UNMutableNotificationContent()
+    content.title = "Test alert"
+    content.categoryIdentifier = "agent"
+    let request = UNNotificationRequest(
+      identifier: "test", content: content,
+      trigger: UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false))
+    do {
+      try await center.add(request)
+    } catch {
+      return "The test alert failed: \(error.localizedDescription)"
+    }
+    return "A test alert comes in 5 s. Leave the app, then expand the alert."
   }
 }
