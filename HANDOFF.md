@@ -18,7 +18,7 @@ Read this first in a new session. It gives the state on 2026-11-12 and what is l
 
 | What           | Where                                                                                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`. Remote: `Captain-Sangam/herdr-remote` on GitHub (private). Work lands through pull requests                         |
+| Repo           | `/Users/zeus/code/herdr-remote`, branch `main`. Remote: `Captain-Sangam/herdr-remote` on GitHub. Work lands through pull requests                                   |
 | Docs           | `docs/` (index `docs/README.md`), `AGENTS.md`, `README.md`. Images in `docs/assets/`                                                                                |
 | Daemon code    | `daemon/` (Go)                                                                                                                                                      |
 | Android app    | `android/` (Kotlin, Compose). The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`                                                                     |
@@ -62,7 +62,7 @@ Read this first in a new session. It gives the state on 2026-11-12 and what is l
   - CI runs the format check and the short daemon tests (`go test -short`), each capped at 30 s. The full daemon suite and the app tests and build run locally.
 - **Done since 2026-11-09:**
   - `install.sh` waits for `bootout` to finish before `bootstrap` (`52ee7fe`).
-  - Tailscale runs on the Mac (`macbook-pro-5`, `100.107.60.83`) and on the phone (`ajays-s26`, `100.111.88.15`), with the same account.
+  - Tailscale runs on the Mac and on the phone, with the same account.
   - Two app fixes (`d3cd35f`):
     - "Notify me" crashed: biometric 1.1.0 pulls `fragment` 1.2.5, which rejects the permission request code. `fragment` 1.8.6 is now pinned.
     - Content sat under the 3-button navigation bar. The root now uses `safeDrawingPadding()`, with `adjustResize`.

@@ -52,7 +52,7 @@ const A = {
   },
   billing: {
     tab: "billing-webhooks",
-    space: "docket-api",
+    space: "shop-api",
     app: "claude",
     state: "blocked",
     kind: "permission",
@@ -62,7 +62,7 @@ const A = {
   },
   migr: {
     tab: "migrations",
-    space: "docket-api",
+    space: "shop-api",
     app: "codex",
     state: "working",
     title: "Migration 0042: refresh tokens",
@@ -70,7 +70,7 @@ const A = {
   },
   auth: {
     tab: "auth-refresh",
-    space: "docket-api",
+    space: "shop-api",
     app: "claude",
     state: "idle",
     title: "Refresh token flow",
@@ -103,7 +103,7 @@ const A = {
 };
 const SPACES = [
   { name: "herdr-remote", agents: ["daemon", "android", "docs", "review"] },
-  { name: "docket-api", agents: ["billing", "migr", "auth"] },
+  { name: "shop-api", agents: ["billing", "migr", "auth"] },
   { name: "website", agents: ["pricing", "og"] },
   { name: "infra", agents: ["alerts"] },
 ];
