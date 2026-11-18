@@ -25,7 +25,7 @@ func items(_ t: String...) -> [TranscriptItem] {
   #expect(mergeTail(items("a", "b"), items("c")) == nil)
 }
 
-@Test func stepsFoldBetweenThePromptAndTheAnswer() {
+@Test func onlyToolStepsFold() {
   let ask = TranscriptItem(role: "user", kind: "text", text: "ask")
   let note = TranscriptItem(role: "assistant", kind: "text", text: "let me look")
   let call = TranscriptItem(role: "assistant", kind: "tool_call", text: "Bash ls")
@@ -33,13 +33,16 @@ func items(_ t: String...) -> [TranscriptItem] {
   let answer = TranscriptItem(role: "assistant", kind: "text", text: "done")
   let run = TranscriptItem(role: "assistant", kind: "tool_call", text: "Bash make")
   #expect(
-    fold([ask, note, call, out, answer, ask, note, run]) == [
+    fold([ask, call, out, note, run, answer, ask, note, run]) == [
       Entry([ask], steps: false),
-      Entry([note, call, out], steps: true),
+      Entry([call, out], steps: true),
+      Entry([note], steps: false),
+      Entry([run], steps: true),
       Entry([answer], steps: false),
-      // A turn that runs: all of it folds.
+      // A turn that runs: its text shows, and its last run of steps folds.
       Entry([ask], steps: false),
-      Entry([note, run], steps: true),
+      Entry([note], steps: false),
+      Entry([run], steps: true),
     ])
   // No tool steps (terminal text, or a plain answer): nothing folds.
   #expect(fold([answer]) == [Entry([answer], steps: false)])

@@ -9,6 +9,7 @@ Read this first in a new session. It gives the state on 2026-11-12 and what is l
 - **Paused at step 6:** a check on the user's iPad. Before it, the user signs in to Xcode with an Apple ID, connects and trusts the iPad, and turns on Developer Mode.
 - **Resume:** run `/council resume ios-app`. Steps 7 to 14 and 16 follow the iPad check.
 - **Paid:** background alerts with the app closed (step 15) need the Apple Developer Program (USD 99 a year). Steps 13 and 14 build the push code without it.
+- **Transcript text (2026-11-18, [ADR 0026](docs/adr/0026-show-agent-text.md)):** all agent text shows, and only tool steps fold. The Android part is on the branch `transcript-show-text`, for a pull request. The iOS `fold` already matches. The iOS transcript view must also show the light markdown, for example with `AttributedString(markdown:)` and `.inlineOnlyPreservingWhitespace`.
 
 ## What this is
 

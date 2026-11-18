@@ -80,7 +80,7 @@ public func mergeTail(_ old: [TranscriptItem], _ page: [TranscriptItem]) -> [Tra
   return nil
 }
 
-/// A transcript list entry: one message, or the steps of a turn in one fold.
+/// A transcript list entry: one message, or a run of tool steps in one fold.
 public struct Entry: Equatable, Sendable {
   public let items: [TranscriptItem]
   public let steps: Bool
@@ -91,30 +91,21 @@ public struct Entry: Equatable, Sendable {
   }
 }
 
-/// Folds a transcript like Claude does: the prompts and each turn's answer show, and the steps
-/// between them (tool calls, results and the text between them) go into one fold per turn.
+/// Folds a transcript: every text shows, and each run of tool calls and results between two texts
+/// goes into one fold.
 public func fold(_ items: [TranscriptItem]) -> [Entry] {
   var out: [Entry] = []
-  var turn: [TranscriptItem] = []
-  func flush() {
-    // The answer is the text after the last tool step.
-    if let last = turn.lastIndex(where: { $0.kind != "text" }) {
-      out.append(Entry(Array(turn[...last]), steps: true))
-      out += turn[(last + 1)...].map { Entry([$0], steps: false) }
-    } else {
-      out += turn.map { Entry([$0], steps: false) }
-    }
-    turn.removeAll()
-  }
+  var run: [TranscriptItem] = []
   for it in items {
-    if it.kind == "text" && it.role == "user" {
-      flush()
+    if it.kind == "text" {
+      if !run.isEmpty { out.append(Entry(run, steps: true)) }
+      run.removeAll()
       out.append(Entry([it], steps: false))
     } else {
-      turn.append(it)
+      run.append(it)
     }
   }
-  flush()
+  if !run.isEmpty { out.append(Entry(run, steps: true)) }
   return out
 }
 

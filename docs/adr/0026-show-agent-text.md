@@ -15,6 +15,7 @@
 - **Markdown:** the messages get light markdown. `# heading` and `**bold**` show bold, and `` `code` `` shows in the accent colour. Their marks go.
   - Lists, tables and fenced code stay as written.
   - Tool calls, tool results and terminal text stay as written, because their marks are part of the output.
+- The iOS fold is the same. Its transcript view is not built yet.
 
 ## Alternatives
 
