@@ -9,7 +9,9 @@ Read this first in a new session. It gives the state on 2026-11-12 and what is l
 - **Paused at step 6:** a check on the user's iPad. Before it, the user signs in to Xcode with an Apple ID, connects and trusts the iPad, and turns on Developer Mode.
 - **Resume:** run `/council resume ios-app`. Steps 7 to 14 and 16 follow the iPad check.
 - **Paid:** background alerts with the app closed (step 15) need the Apple Developer Program (USD 99 a year). Steps 13 and 14 build the push code without it.
-- **Transcript text (2026-11-18, [ADR 0026](docs/adr/0026-show-agent-text.md)):** all agent text shows, and only tool steps fold. The Android part is on the branch `transcript-show-text`, for a pull request. The iOS `fold` already matches. The iOS transcript view must also show the light markdown, for example with `AttributedString(markdown:)` and `.inlineOnlyPreservingWhitespace`.
+- **Transcript text (2026-11-18, [ADR 0026](docs/adr/0026-show-agent-text.md)):** all agent text shows, and only tool steps fold. The Android part is merged (PR #8). The iOS `fold` already matches. The iOS transcript view must also show the light markdown, for example with `AttributedString(markdown:)` and `.inlineOnlyPreservingWhitespace`.
+- **Usage limits (2026-11-18, [ADR 0027](docs/adr/0027-usage-limits.md)):** a gauge icon on `~/spaces` opens a right panel with the Claude Code and Codex limits and a refresh key. The daemon reads them from local files (`GET /v1/usage`). Built by Codex from `.agents/tasks/usage-limits/brief.md`. The checks pass, but the panel is not checked on the phone yet. iOS has no usage panel yet.
+- **Next features:** the ranked list of 14 features is `.agents/tasks/app-features/plan.md`. The user approved feature 1 (reply from the finished alert).
 
 ## What this is
 
