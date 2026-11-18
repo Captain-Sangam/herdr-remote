@@ -45,12 +45,13 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0017](adr/0017-logging-and-audit.md)           | Content-free logs and an audit log.             | Accepted            |
 | [0018](adr/0018-trust-boundary.md)              | Processes of the same user are trusted.         | Accepted            |
 | [0019](adr/0019-alert-preview-and-actions.md)   | Alert previews, Approve, finish alerts.         | Accepted            |
-| [0020](adr/0020-transcript-folds-and-scroll.md) | Transcript folds, follow, message steps.        | Accepted            |
+| [0020](adr/0020-transcript-folds-and-scroll.md) | Transcript folds, follow, message steps.        | Accepted, amended   |
 | [0021](adr/0021-answer-questions.md)            | The phone answers Claude Code questions.        | Accepted            |
 | [0022](adr/0022-skill-picker.md)                | A skill picker from the transcript's list.      | Accepted            |
 | [0023](adr/0023-copy-transcript-text.md)        | Transcript text can be copied.                  | Accepted            |
 | [0024](adr/0024-allow-screenshots.md)           | Screenshots allowed, recents card blank.        | Accepted            |
 | [0025](adr/0025-ios-app.md)                     | The iOS app.                                    | Accepted            |
+| [0026](adr/0026-show-agent-text.md)             | All agent text shows; only tool steps fold.     | Accepted            |
 
 To add a decision:
 
