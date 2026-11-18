@@ -25,6 +25,7 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 | `POST /v1/enroll` (7767 only)                      | `{token, name}`                                   | 200 `{device_id}` after Allow. 403 on Deny, a wrong token, or a token bound to another key. 410 on expiry or cancel. |
 | `GET /v1/hello`                                    | none                                              | `{daemon_version, server_time_ms, endpoints[]}`                                                                      |
 | `GET /v1/spaces`                                   | none                                              | `[{id, name, agents[]}]`                                                                                             |
+| `GET /v1/usage`                                    | none                                              | `{claude, codex}`. A source with no data is `null`.                                                                  |
 | `GET /v1/agents`                                   | none                                              | `[agent]`                                                                                                            |
 | `GET /v1/terminals/{t}`                            | none                                              | `agent` plus `{cols, rows}`                                                                                          |
 | `GET /v1/events`                                   | none                                              | SSE. See [Events](#events).                                                                                          |
@@ -40,6 +41,10 @@ All endpoints except `/v1/enroll` are on port 7766. Bodies are JSON unless the t
 - **`agent`:** `{address, space, tab, where, app, state, kind, msg, turn, title}`.
   - `state` is the hc status word: `idle`, `working`, `done`, `blocked` or `error`.
   - `kind` and `msg` are set only when the agent is blocked.
+- **Usage source** has `as_of`, an optional `plan`, and `windows`.
+  - `as_of` is the time of the source reading in Unix milliseconds.
+  - Each window has `name`, `used_percent` and `resets_at`. Names include `5h` and `7d`. `resets_at` is in Unix milliseconds.
+  - The daemon reads both sources on each request and returns any available data. It writes no audit entry for this GET.
 - **Transcript page:** `model` is the last model that the page names: `message.model` in Claude Code, `turn_context` in Codex. Terminal text has none.
 - **Transcript item:** `{role, kind, text, ts}`.
   - `kind` is `text`, `tool_call` or `tool_result`.

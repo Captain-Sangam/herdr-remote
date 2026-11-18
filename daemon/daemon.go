@@ -18,7 +18,8 @@ import (
 )
 
 type config struct {
-	MacIdleSeconds *float64 `json:"mac_idle_seconds"`
+	MacIdleSeconds  *float64 `json:"mac_idle_seconds"`
+	ClaudeUsageFile string   `json:"claude_usage_file"`
 }
 
 func (c config) macIdle() time.Duration {
