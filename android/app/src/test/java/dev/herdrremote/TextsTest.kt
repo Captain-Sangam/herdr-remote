@@ -1,5 +1,8 @@
 package dev.herdrremote
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
 import dev.herdrremote.net.ApiException
 import dev.herdrremote.net.TranscriptItem
 import dev.herdrremote.net.UnreachableException
@@ -7,6 +10,7 @@ import dev.herdrremote.ui.Entry
 import dev.herdrremote.ui.Texts
 import dev.herdrremote.ui.endpointKind
 import dev.herdrremote.ui.fold
+import dev.herdrremote.ui.markdown
 import dev.herdrremote.ui.mergeTail
 import dev.herdrremote.ui.theme.NoteKind
 import java.io.IOException
@@ -39,7 +43,7 @@ class TextsTest {
     }
 
     @Test
-    fun stepsFoldBetweenThePromptAndTheAnswer() {
+    fun onlyToolStepsFold() {
         val ask = TranscriptItem("user", "text", "ask")
         val note = TranscriptItem("assistant", "text", "let me look")
         val call = TranscriptItem("assistant", "tool_call", "Bash ls")
@@ -49,16 +53,39 @@ class TextsTest {
         assertEquals(
             listOf(
                 Entry(listOf(ask), false),
-                Entry(listOf(note, call, out), true),
+                Entry(listOf(call, out), true),
+                Entry(listOf(note), false),
+                Entry(listOf(run), true),
                 Entry(listOf(answer), false),
-                // A turn that runs: all of it folds.
+                // A turn that runs: its text shows, and its last run of steps folds.
                 Entry(listOf(ask), false),
-                Entry(listOf(note, run), true),
+                Entry(listOf(note), false),
+                Entry(listOf(run), true),
             ),
-            fold(listOf(ask, note, call, out, answer, ask, note, run)),
+            fold(listOf(ask, call, out, note, run, answer, ask, note, run)),
         )
         // No tool steps (terminal text, or a plain answer): nothing folds.
         assertEquals(listOf(Entry(listOf(answer), false)), fold(listOf(answer)))
+    }
+
+    @Test
+    fun markdownMarksGo() {
+        val md =
+            markdown(
+                "# Head\nRun `git status`, **then** 2 * 3 and ```fence``` `` `x` ``",
+                Color.Red,
+            )
+        assertEquals("Head\nRun git status, then 2 * 3 and ```fence``` `x`", md.text)
+        val styles = md.spanStyles.map { md.text.substring(it.start, it.end) to it.item }
+        assertEquals(
+            listOf(
+                "Head" to SpanStyle(fontWeight = FontWeight.Bold),
+                "git status" to SpanStyle(color = Color.Red),
+                "then" to SpanStyle(fontWeight = FontWeight.Bold),
+                "`x`" to SpanStyle(color = Color.Red),
+            ),
+            styles,
+        )
     }
 
     @Test
