@@ -29,6 +29,23 @@ data class Agent(
 data class Space(val id: String, val name: String, val agents: List<Agent> = emptyList())
 
 @Serializable
+data class UsageResponse(val claude: UsageSource? = null, val codex: UsageSource? = null)
+
+@Serializable
+data class UsageSource(
+    @SerialName("as_of") val asOf: Long,
+    val plan: String? = null,
+    val windows: List<UsageWindow> = emptyList(),
+)
+
+@Serializable
+data class UsageWindow(
+    val name: String,
+    @SerialName("used_percent") val usedPercent: Double,
+    @SerialName("resets_at") val resetsAt: Long,
+)
+
+@Serializable
 data class TranscriptItem(val role: String, val kind: String, val text: String, val ts: Long = 0)
 
 @Serializable

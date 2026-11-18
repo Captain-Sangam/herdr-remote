@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.herdrremote.HerdrRemoteApp
@@ -129,12 +130,20 @@ fun HerdrRemoteUi(app: HerdrRemoteApp, initialAddress: String? = null) {
                     BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
                     val home = { screen = Screen.Home }
                     val onAgent = { address: String -> screen = Screen.AgentDetail(address) }
-                    Column(Modifier.fillMaxSize()) {
+                    val usage = if (screen == Screen.Home) rememberSpacesUsage(app) else null
+                    Column(
+                        Modifier.fillMaxSize()
+                            .then(
+                                if (usage?.open == true) Modifier.clearAndSetSemantics {}
+                                else Modifier
+                            )
+                    ) {
                         Box(Modifier.weight(1f)) {
                             when (val s = screen) {
                                 Screen.Home ->
                                     SpacesScreen(
                                         app,
+                                        usage = checkNotNull(usage),
                                         onSpace = { screen = Screen.SpaceDetail(it) },
                                         onAgent = onAgent,
                                     )
@@ -163,6 +172,7 @@ fun HerdrRemoteUi(app: HerdrRemoteApp, initialAddress: String? = null) {
                             )
                         }
                     }
+                    if (usage != null) UsageOverlay(usage)
                 }
             }
         }

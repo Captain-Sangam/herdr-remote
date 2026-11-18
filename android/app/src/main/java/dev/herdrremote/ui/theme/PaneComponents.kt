@@ -311,13 +311,13 @@ fun PaneHeader(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        actions()
         if (online != null)
             Text(
                 if (online) "● online" else "○ offline",
                 style = Pane.type.caption,
                 color = if (online) c.done else c.blocked,
             )
+        actions()
     }
 }
 
