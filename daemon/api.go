@@ -14,6 +14,7 @@ func apiError(w http.ResponseWriter, status int, msg, reason string) {
 func (d *Daemon) routes() {
 	d.mux.HandleFunc("GET /v1/hello", d.handleHello)
 	d.mux.HandleFunc("GET /v1/spaces", d.handleSpaces)
+	d.mux.HandleFunc("GET /v1/usage", d.handleUsage)
 	d.mux.HandleFunc("GET /v1/agents", d.handleAgents)
 	d.mux.HandleFunc("GET /v1/terminals/{t}", d.handleTerminal)
 	d.mux.HandleFunc("GET /v1/events", d.handleEvents)

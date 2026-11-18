@@ -52,6 +52,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0024](adr/0024-allow-screenshots.md)           | Screenshots allowed, recents card blank.        | Accepted            |
 | [0025](adr/0025-ios-app.md)                     | The iOS app.                                    | Accepted            |
 | [0026](adr/0026-show-agent-text.md)             | All agent text shows; only tool steps fold.     | Accepted            |
+| [0027](adr/0027-usage-limits.md)                | Read usage limits from local files.             | Accepted            |
 
 To add a decision:
 

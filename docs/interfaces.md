@@ -184,6 +184,11 @@ Verified with `codex --no-daemon -s read-only -a on-request`. This version rejec
 - A match by folder can pick the session of another Codex client: one outside Herdr, one that exited, or one that was resumed. So herdr-remote shows terminal text for daemon-mode Codex ([ADR 0009](adr/0009-transcripts.md)).
 - Herdr's own launcher for Codex runs plain `codex`: `~/.config/herdr-app/shared.json`, `new-menu.agents[1].run = ["codex"]`. `hc --skill` says that Codex under hc must run with `--no-daemon`.
 
+## Usage limits
+
+- The Claude Code status line receives `rate_limits.five_hour` and `rate_limits.seven_day`. Each has `used_percentage` and `resets_at` in Unix seconds. The status line writes these values with its reading time in `at`.
+- Codex writes `event_msg` records whose `payload.type` is `token_count`. A non-null `payload.rate_limits` can carry `primary`, `secondary` and `plan_type`. Each window has `used_percent`, `window_minutes` and `resets_at` in Unix seconds. The event's `timestamp` gives its reading time.
+
 ## macOS
 
 - `ioreg -c IOHIDSystem -d 4` prints `HIDIdleTime`: the nanoseconds since the last keyboard or mouse input on the Mac.
