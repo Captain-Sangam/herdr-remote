@@ -129,7 +129,12 @@ fun AgentRow(a: Agent, withSpace: Boolean, tag: Boolean = true, onClick: () -> U
 }
 
 @Composable
-fun SpacesScreen(app: HerdrRemoteApp, onSpace: (Space) -> Unit, onAgent: (String) -> Unit) {
+internal fun SpacesScreen(
+    app: HerdrRemoteApp,
+    usage: SpacesUsage,
+    onSpace: (Space) -> Unit,
+    onAgent: (String) -> Unit,
+) {
     val state by app.repository.state.collectAsStateWithLifecycle()
     var spaces by remember { mutableStateOf<List<Space>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -146,7 +151,7 @@ fun SpacesScreen(app: HerdrRemoteApp, onSpace: (Space) -> Unit, onAgent: (String
     }
     val loading = spaces.isEmpty() && state.updatedAt == 0L
     Column(Modifier.fillMaxSize()) {
-        PaneHeader("~/spaces", online = state.connected)
+        PaneHeader("~/spaces", online = state.connected) { UsageKey(usage) }
         PaneSubline {
             Text(if (loading) "Connecting to the Mac…" else counts(state.agents.values.toList()))
         }

@@ -154,6 +154,10 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
 - **Copy:** a long press on a transcript message selects its text. Each copy is marked sensitive, so Android hides its preview.
 - **Result of an action:** show a `PaneNote` under the header. Use Ok for applied, Warn for sent but not confirmed, uncertain or outcome unknown, and Error for a refusal.
 - **Not connected:** show a `PaneBanner` with the age of the data. Show "○ offline" in the header. Dim the old content to 45%.
+- **Usage limits:** on Android, the gauge beside "● online" on `~/spaces` opens a narrow pane from the right. Tap outside it, press Back, or tap `[x]` to close it. See the [Side meter mockup](../design/usage.html).
+  - Show a bar, the percentage used, and the reset time in each source pane. Show the Codex plan if available. The "Mac read" line gives the reading time and age. If the sources have different times, show the older time in its source pane.
+  - Use `[!]` and the warning colour at 90% or more. Use `[x]` and the blocked colour at 100% or more. After 30 min, mark the reading as stale and dim its values. When a reset time passes, show "Reset" and the scheduled time. Show "No data" for a missing source.
+  - Read usage when Spaces opens, when the pane opens, and when the user taps the Quiet `[r]` Refresh key. The key shows "Loading…" while the phone waits. The readings stay in memory.
 - **Loading:** show a short terminal log, not a spinner. Show `$ herdr-remote connect`, one line for each endpoint that the phone tries, and a block cursor.
 - **Working:** a working status (the glyph, the tag and the meter bar) blinks like a terminal cursor, 530 ms bright and 530 ms dim, in step on the whole screen. Nothing blinks or spins when "Remove animations" is on. While an agent works, end its transcript with a braille spinner in the working colour and "working · 14 s", the seconds since the last item. The transcript gets a message only when it is complete, so the row shows that the agent has not stopped.
 - **Empty:** show a small box drawing, the title in `head` and one line that says what to do.

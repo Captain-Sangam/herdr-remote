@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Usage limits · herdr-remote</title>
+    <link rel="stylesheet" href="mockups.css" />
+    <style>
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("../android/app/src/main/res/font/jetbrains_mono_regular.ttf")
+          format("truetype");
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "JetBrains Mono";
+        src: url("../android/app/src/main/res/font/jetbrains_mono_bold.ttf")
+          format("truetype");
+        font-weight: 700;
+        font-display: swap;
+      }
+      :root {
+        --phone-width: min(360px, calc(100vw - 32px));
+        --frame-gap: 16px;
+        --touch: 48px;
+        font-feature-settings:
+          "calt" 0,
+          "liga" 0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--tx);
+        font: var(--T-body);
+        scrollbar-color: var(--ln) var(--bg);
+      }
+      ::selection {
+        color: var(--onac);
+        background: var(--ac);
+      }
+      :focus-visible {
+        outline: 2px solid var(--ac);
+        outline-offset: 2px;
+      }
+      .gallery {
+        width: min(calc(100% - 32px), 1024px);
+        margin: auto;
+        padding: 32px 0 48px;
+      }
+      .gallery-head {
+        border-bottom: 1px solid var(--ln);
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+      }
+      .gallery-head h1 {
+        margin: 0 0 4px;
+        font: 700 28px/36px var(--fm);
+      }
+      .gallery-head p {
+        margin: 0;
+        color: var(--mu);
+      }
+      .comparison {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 736px;
+        gap: 24px;
+        align-items: start;
+      }
+      .controls {
+        position: sticky;
+        top: 16px;
+        min-width: 0;
+      }
+      .controls form {
+        display: grid;
+        gap: 16px;
+      }
+      .controls fieldset {
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        margin: 0;
+      }
+      .controls legend {
+        padding: 0;
+        margin-bottom: 8px;
+        font: var(--T-title);
+      }
+      .choices {
+        display: grid;
+        gap: 1px;
+      }
+      .choices.inline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .choice {
+        display: grid;
+        position: relative;
+        cursor: pointer;
+      }
+      .choice input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+      }
+      .choice > span {
+        min-height: var(--touch);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid var(--ln);
+        background: var(--sf);
+      }
+      .choice-mark::before {
+        content: "[ ]";
+        color: var(--mu);
+        white-space: pre;
+      }
+      .choice input:checked + span {
+        border-color: var(--ac);
+        font-weight: 700;
+      }
+      .choice input:checked + span .choice-mark::before {
+        content: "[x]";
+        color: var(--ac);
+      }
+      .choice:hover > span {
+        background: var(--sf2);
+      }
+      .choice input:focus-visible + span {
+        outline: 2px solid var(--ac);
+        outline-offset: -3px;
+      }
+      .variant-head {
+        margin-bottom: 12px;
+      }
+      .variant-head h2 {
+        margin: 0 0 2px;
+        font: var(--T-head);
+      }
+      .variant-head p {
+        font: var(--T-label);
+      }
+      .frame-track {
+        display: grid;
+        grid-template-columns: repeat(2, var(--phone-width));
+        gap: var(--frame-gap);
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+      }
+      .frame {
+        margin: 0;
+        scroll-snap-align: start;
+      }
+      .frame-caption {
+        margin-bottom: 4px;
+        color: var(--mu);
+        font: var(--T-cap);
+      }
+      .pair-help {
+        display: none;
+        margin: 0 0 8px;
+        color: var(--mu);
+        font: var(--T-cap);
+      }
+      .usage-phone.phone {
+        width: 100%;
+        height: 704px;
+        border: 1px solid var(--ln);
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .usage-phone .sb {
+        padding-inline: 12px;
+        font-family: var(--fm);
+      }
+      .usage-phone .body {
+        overflow-y: auto;
+      }
+      .usage-phone.s-pane .ab {
+        height: 56px;
+        padding-block: 4px;
+      }
+      .usage-phone.s-pane .hero-i {
+        min-height: var(--touch);
+      }
+      .usage-phone .bn {
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .usage-phone .bn-i {
+        flex: none;
+        padding-inline: 8px;
+      }
+      .usage-phone .bn-i::before {
+        content: none;
+      }
+      .usage-phone .nb {
+        padding-inline: 36px;
+      }
+      .usage-phone .nb button {
+        display: grid;
+        place-items: center;
+      }
+      .phone-key {
+        min-width: var(--touch);
+        min-height: var(--touch);
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: inherit;
+        font: var(--T-label);
+        cursor: pointer;
+      }
+      .phone-key:hover:enabled {
+        background: var(--sf2);
+      }
+      .phone-key:focus-visible {
+        outline-offset: -3px;
+      }
+      .phone-key:disabled {
+        cursor: default;
+      }
+      .usage-key {
+        --signal: var(--ac);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding-inline: 6px;
+        color: var(--signal);
+      }
+      .usage-key[aria-expanded="true"] {
+        background: var(--sf2);
+      }
+      .usage-key .ic {
+        width: 18px;
+        height: 18px;
+      }
+      .usage-key .status-mark {
+        font-weight: 700;
+        line-height: 16px;
+      }
+      .usage-key[data-status="near"],
+      .usage-key[data-status="stale"],
+      .usage-key[data-status="passed"] {
+        --signal: var(--s-err);
+      }
+      .usage-key[data-status="reached"] {
+        --signal: var(--s-block);
+      }
+      .usage-key[data-status="missing"] {
+        --signal: var(--mu);
+      }
+      .usage-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        display: grid;
+      }
+      .usage-overlay[hidden] {
+        display: none;
+      }
+      .usage-scrim {
+        position: absolute;
+        inset: 0;
+        background: color-mix(in srgb, var(--t-bg) 34%, transparent);
+      }
+      .usage-panel {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--ln);
+        background: var(--sf);
+      }
+      .side .usage-overlay {
+        padding: 76px 0 12px;
+        place-items: start end;
+      }
+      .side .usage-panel {
+        width: min(260px, 79%);
+        max-height: 100%;
+        border-right: 0;
+      }
+      .side .usage-scrim {
+        background: color-mix(in srgb, var(--t-bg) 23%, transparent);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .side .usage-overlay.reveal .usage-panel {
+          animation: enter-right 210ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+        }
+      }
+      @keyframes enter-right {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+      .panel-head {
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-inline-start: 12px;
+        gap: 4px;
+        border-bottom: 1px solid var(--ln);
+      }
+      .panel-head h3 {
+        font: var(--T-title);
+      }
+      .panel-head .phone-key {
+        color: var(--ac);
+      }
+      .panel-scroll {
+        min-height: 0;
+        overflow: auto;
+        scrollbar-width: thin;
+        overscroll-behavior: contain;
+      }
+      .panel-actions {
+        padding: 8px;
+        border-top: 1px solid var(--ln);
+      }
+      .panel-actions .refresh-key {
+        width: 100%;
+        cursor: pointer;
+      }
+      .panel-actions .refresh-key:disabled {
+        opacity: 0.65;
+        cursor: default;
+      }
+      .panel-age,
+      .panel-note {
+        padding: 8px 12px;
+        color: var(--mu);
+        font: var(--T-cap);
+      }
+      .panel-age {
+        border-bottom: 1px solid var(--ln);
+      }
+      .panel-note {
+        border-top: 1px solid var(--ln);
+      }
+      .panel-age span + span {
+        margin-left: 6px;
+      }
+      .quota-state {
+        color: var(--tx);
+        font: 700 11px/16px var(--fm);
+      }
+      .quota-state b {
+        color: var(--tone, var(--mu));
+      }
+      .tone-near,
+      .tone-stale,
+      .tone-passed {
+        --tone: var(--s-err);
+      }
+      .tone-reached {
+        --tone: var(--s-block);
+      }
+      .tone-normal {
+        --tone: var(--s-work);
+      }
+      .quota-meta {
+        color: var(--mu);
+        font: var(--T-cap);
+      }
+      .quota-reset {
+        color: var(--mu);
+        font: var(--T-cap);
+      }
+      .quota-reset time {
+        white-space: nowrap;
+      }
+      .meter-sources {
+        display: grid;
+        gap: 10px;
+        padding: 10px 8px;
+      }
+      .meter-source {
+        min-width: 0;
+        border: 1px solid var(--ln);
+        margin: 0;
+        padding: 4px 8px 8px;
+      }
+      .meter-source legend {
+        padding-inline: 4px;
+        color: var(--mu);
+        text-transform: lowercase;
+        font: var(--T-label);
+      }
+      .meter-line {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0 8px;
+      }
+      .meter-item + .meter-item {
+        margin-top: 8px;
+      }
+      .meter-track {
+        height: 4px;
+        margin: 3px 0;
+        background: var(--sf2);
+      }
+      .meter-fill {
+        display: block;
+        height: 100%;
+        background: var(--tone);
+      }
+      .meter-item .quota-state {
+        display: block;
+      }
+      @media (min-width: 1260px) {
+        .gallery {
+          width: min(82%, 1024px);
+        }
+      }
+      @media (max-width: 1000px) {
+        .gallery {
+          max-width: 736px;
+        }
+        .comparison {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .controls {
+          position: static;
+        }
+        .controls form {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .state-control .choices {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 767px) {
+        .pair-help {
+          display: block;
+        }
+      }
+      @media (max-width: 540px) {
+        .gallery {
+          padding-top: 20px;
+        }
+        .state-control .choices {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="gallery">
+      <header class="gallery-head">
+        <h1>Usage limits</h1>
+        <p>Side meter on <code>~/spaces</code>.</p>
+      </header>
+      <div class="comparison">
+        <aside class="controls">
+          <form id="controls" aria-label="Mockup controls">
+            <fieldset class="state-control">
+              <legend>Preview state</legend>
+              <div class="choices" id="state-options"></div>
+            </fieldset>
+            <fieldset>
+              <legend>Appearance</legend>
+              <div class="choices inline" id="theme-options"></div>
+            </fieldset>
+          </form>
+        </aside>
+        <section class="side" aria-label="Side meter">
+          <p class="pair-help">Scroll across to see both frames.</p>
+          <div
+            class="frame-track"
+            tabindex="0"
+            role="group"
+            aria-label="Closed and open previews"
+          >
+            <figure class="frame">
+              <figcaption class="frame-caption">Closed</figcaption>
+              <div class="ui phone s-pane usage-phone"></div>
+            </figure>
+            <figure class="frame">
+              <figcaption class="frame-caption">Open</figcaption>
+              <div class="ui phone s-pane usage-phone"></div>
+            </figure>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="mockups.js"></script>
+    <script>
+      const pane = SYS.find((system) => system.id === "pane");
+      const exampleTime = "2026-11-18T10:24";
+      const shortReset = "2026-11-18T12:30";
+      const codexShortReset = "2026-11-18T11:45";
+      const weekReset = "2026-11-23T09:00";
+      const codexWeekReset = "2026-11-24T11:00";
+      const passedReset = "2026-11-18T10:20";
+      const claude = [
+        [300, 72, shortReset],
+        [10080, 62, weekReset],
+      ];
+      const codex = [[10080, 2, codexWeekReset]];
+      const fixtures = {
+        normal: { label: "Normal", claude, codex },
+        near: {
+          label: "Near limit",
+          claude: [[300, 94, shortReset], claude[1]],
+          codex: [[300, 91, codexShortReset], codex[0]],
+        },
+        reached: {
+          label: "Limit reached",
+          claude: [[300, 100, shortReset], claude[1]],
+          codex: [[300, 91, codexShortReset], codex[0]],
+        },
+        stale: {
+          label: "Stale",
+          read: "09:36",
+          age: 48,
+          claude: [[300, 94, shortReset], claude[1]],
+          codex,
+        },
+        passed: {
+          label: "Reset time passed",
+          read: "10:16",
+          age: 8,
+          claude: [[300, 100, passedReset], claude[1]],
+          codex,
+        },
+        missing: { label: "No data", claude: [], codex },
+      };
+      const states = {
+        normal: { label: "", mark: "" },
+        near: { label: "Near limit", mark: "!" },
+        reached: { label: "Limit reached", mark: "x" },
+        stale: { label: "Stale", mark: "~" },
+        passed: { label: "Reset time passed", mark: "↺" },
+        missing: { label: "No data", mark: "?" },
+      };
+      const form = document.getElementById("controls");
+      const utcDay = new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "short",
+        timeZone: "UTC",
+      });
+
+      function choices(id, name, options, selected) {
+        document.getElementById(id).innerHTML = Object.entries(options)
+          .map(
+            ([value, label]) =>
+              `<label class="choice"><input type="radio" name="${name}" value="${value}"${value === selected ? " checked" : ""} /><span><span class="choice-mark" aria-hidden="true"></span>${label}</span></label>`,
+          )
+          .join("");
+      }
+
+      function duration(minutes) {
+        if (minutes % 1440 === 0) return `${minutes / 1440} d`;
+        if (minutes % 60 === 0) return `${minutes / 60} h`;
+        return `${minutes} min`;
+      }
+
+      function sampleFor(state) {
+        const fixture = fixtures[state];
+        const sample = { read: "10:22", age: 2, ...fixture };
+        sample.sources = [
+          { name: "Claude Code", windows: fixture.claude },
+          { name: "Codex", plan: "Plus", windows: fixture.codex },
+        ].map((source) => ({
+          ...source,
+          windows: source.windows.map(([minutes, used, reset]) => {
+            const past = reset <= exampleTime;
+            const windowState = past
+              ? "passed"
+              : sample.age > 30
+                ? "stale"
+                : used >= 100
+                  ? "reached"
+                  : used >= 90
+                    ? "near"
+                    : "normal";
+            return {
+              length: duration(minutes),
+              used,
+              reset,
+              state: windowState,
+              historical: past || sample.age > 30,
+            };
+          }),
+        }));
+        return sample;
+      }
+
+      function flag(state) {
+        const { label, mark } = states[state];
+        return mark
+          ? `<span class="quota-state tone-${state}"><b aria-hidden="true">[${mark}]</b> ${label}</span>`
+          : "";
+      }
+      const windowFlag = (item) =>
+        item.state === "stale" ? "" : flag(item.state);
+      const planText = (source) =>
+        source.plan
+          ? `<span class="quota-meta">${source.plan} plan</span>`
+          : "";
+      const usedText = (item) =>
+        `${item.historical ? '<span class="quota-meta">Last read</span> ' : ""}<strong>${item.used}%</strong>`;
+      const resetDay = (item) =>
+        item.reset.slice(0, 10) === exampleTime.slice(0, 10)
+          ? "Today"
+          : utcDay.format(new Date(`${item.reset}Z`));
+      const resetClock = (item) => item.reset.slice(11);
+      const resetTime = (item) =>
+        `<time datetime="${item.reset}">${resetDay(item)} ${resetClock(item)}</time>`;
+      const resetLine = (item) =>
+        `<span class="quota-reset">${item.historical ? "Scheduled reset ·" : "Resets"} ${resetTime(item)}</span>`;
+
+      function meterStats(sample) {
+        return `<div class="meter-sources">${sample.sources
+          .map(
+            (source) => `<fieldset class="meter-source">
+          <legend>┤ ${source.name} ├</legend>
+          ${planText(source)}
+          ${
+            source.windows
+              .map(
+                (item) => `<div class="meter-item tone-${item.state}">
+            <div class="meter-line"><span>${item.length}</span>${item.state === "passed" ? windowFlag(item) : `<span>${usedText(item)} used</span>`}</div>
+            ${item.state === "passed" ? "" : `<div class="meter-track" aria-hidden="true"><span class="meter-fill" style="width: ${item.used}%"></span></div>${windowFlag(item)}`}
+            ${resetLine(item)}
+          </div>`,
+              )
+              .join("") || flag("missing")
+          }
+        </fieldset>`,
+          )
+          .join("")}</div>`;
+      }
+
+      function panelStats(sample) {
+        return `<div class="panel-age">${sample.age > 30 ? flag("stale") : ""}<span>Mac read ${sample.read} · ${sample.age} min ago</span></div>
+          ${meterStats(sample)}
+          <p class="panel-note">Claude Code updates only during a session.</p>`;
+      }
+
+      function phoneMarkup(panelId) {
+        const action = `<button class="phone-key usage-key" type="button" aria-haspopup="dialog" aria-controls="${panelId}" aria-label="Usage limits" aria-expanded="false"></button>`;
+        const root = scr({
+          top: appBar(pane, {
+            path: "~/spaces",
+            sub: "10 agents · 2 blocked",
+            action,
+          }),
+          body: `${hero(pane)}${sec("4 spaces")}<div class="list">${SPACES.map((space, index) => spaceRow(pane, space, index)).join("")}</div>`,
+          bottom: nav(pane, "spaces").bottom,
+        });
+        return `<div class="sb" aria-hidden="true"><span>${exampleTime.slice(11)}</span><span class="sb-r">${SB_R}</span></div>${root}${NAV}`;
+      }
+
+      function setOpen(frame, open, moveFocus = false) {
+        frame.overlay.hidden = !open;
+        frame.overlay.classList.toggle("reveal", open && moveFocus);
+        frame.key.setAttribute("aria-expanded", String(open));
+        frame.back.disabled = !open;
+        frame.caption.textContent = open ? "Open" : "Closed";
+        if (moveFocus)
+          (open ? frame.close : frame.key).focus({ preventScroll: true });
+      }
+
+      function buildFrame(phone, open) {
+        const panelId = `side-${open ? "open" : "closed"}-panel`;
+        phone.innerHTML = phoneMarkup(panelId);
+        phone.querySelector(".scr").insertAdjacentHTML(
+          "beforeend",
+          `
+          <div class="usage-overlay" hidden>
+            <div class="usage-scrim" aria-hidden="true"></div>
+            <section class="usage-panel" id="${panelId}" role="dialog" aria-labelledby="${panelId}-title">
+              <header class="panel-head"><h3 id="${panelId}-title">usage limits</h3><button type="button" class="phone-key close-key" aria-label="Close usage">[x]</button></header>
+              <div class="panel-scroll" tabindex="0" role="region" aria-label="Usage statistics"></div>
+              <footer class="panel-actions"><button type="button" class="btn txt refresh-key" data-k="r">Refresh</button></footer>
+            </section>
+          </div>`,
+        );
+        const backIcon = phone.querySelector(".nb").lastElementChild;
+        const back = document.createElement("button");
+        back.type = "button";
+        back.className = "phone-key";
+        back.setAttribute("aria-label", "Back");
+        backIcon.replaceWith(back);
+        backIcon.setAttribute("aria-hidden", "true");
+        back.append(backIcon);
+
+        const frame = {
+          back,
+          key: phone.querySelector(".usage-key"),
+          overlay: phone.querySelector(".usage-overlay"),
+          close: phone.querySelector(".close-key"),
+          stats: phone.querySelector(".panel-scroll"),
+          caption: phone.previousElementSibling,
+        };
+        const dismiss = () => setOpen(frame, false, true);
+        const refresh = phone.querySelector(".refresh-key");
+        refresh.addEventListener("click", () => {
+          refresh.disabled = true;
+          refresh.textContent = "Loading…";
+          setTimeout(() => {
+            refresh.disabled = false;
+            refresh.textContent = "Refresh";
+          }, 1100);
+        });
+        frame.key.addEventListener("click", () =>
+          setOpen(frame, frame.overlay.hidden, true),
+        );
+        frame.close.addEventListener("click", dismiss);
+        phone.querySelector(".usage-scrim").addEventListener("click", dismiss);
+        back.addEventListener("click", dismiss);
+        phone.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !frame.overlay.hidden) {
+            event.preventDefault();
+            dismiss();
+          }
+        });
+        setOpen(frame, open);
+        return frame;
+      }
+
+      function render() {
+        const { state, theme } = Object.fromEntries(new FormData(form));
+        const sample = sampleFor(state);
+        document.documentElement.style.cssText = vars(pane, theme);
+        document.documentElement.style.colorScheme = theme;
+        for (const { key, stats } of frames) {
+          const { label, mark } = states[state];
+          key.dataset.status = state;
+          key.setAttribute(
+            "aria-label",
+            label ? `Usage limits. ${label}` : "Usage limits",
+          );
+          key.innerHTML = `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17a9 9 0 0 1 18 0M12 17l5-6"/></svg>
+            ${mark ? `<span class="status-mark" aria-hidden="true">[${mark}]</span>` : ""}`;
+          stats.innerHTML = panelStats(sample);
+        }
+      }
+
+      choices(
+        "state-options",
+        "state",
+        Object.fromEntries(
+          Object.entries(fixtures).map(([id, state]) => [id, state.label]),
+        ),
+        "normal",
+      );
+      choices(
+        "theme-options",
+        "theme",
+        { dark: "Dark", light: "Light" },
+        "dark",
+      );
+      const frames = Array.from(
+        document.querySelectorAll(".usage-phone"),
+        (phone, index) => buildFrame(phone, index === 1),
+      );
+      form.addEventListener("change", render);
+      render();
+    </script>
+  </body>
+</html>

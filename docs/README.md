@@ -51,6 +51,7 @@ Each ADR keeps the number of its decision in the [decision table](history/techni
 | [0023](adr/0023-copy-transcript-text.md)        | Transcript text can be copied.                  | Accepted            |
 | [0024](adr/0024-allow-screenshots.md)           | Screenshots allowed, recents card blank.        | Accepted            |
 | [0026](adr/0026-show-agent-text.md)             | All agent text shows; only tool steps fold.     | Accepted            |
+| [0027](adr/0027-usage-limits.md)                | Read usage limits from local files.             | Accepted            |
 
 To add a decision:
 

@@ -150,6 +150,7 @@ flowchart TD
 | FR-13 | The user can send a text message of up to 4000 characters to an idle or working agent. It arrives as a normal prompt, at most once for each send. If the outcome is unknown, the app says so and does not send again by itself.                                                                                    |
 | FR-14 | Background watching is optional. When it is on, the phone shows one notification for each blocked episode and one when an agent finishes. A blocked alert shows the prompt and has Approve and Deny. Watching starts again after a reboot, and after an app update at the latest when the app opens.               |
 | FR-15 | The phone connects over the LAN or over Tailscale, with the same pairing.                                                                                                                                                                                                                                          |
+| FR-16 | On Android, the Spaces header opens a panel with Claude Code and Codex usage, reset times, and a manual Refresh key.                                                                                                                                                                                               |
 
 ## 8. Security and privacy requirements
 

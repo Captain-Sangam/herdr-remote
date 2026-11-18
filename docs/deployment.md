@@ -97,10 +97,12 @@ WARNING: Do not print, copy or commit `server.key`. It is the identity of the Ma
 | `admin.sock`   | 0600 | Socket for the CLI commands.                                                                                         |
 | `audit.log`    | 0600 | JSON lines. Rotates at 10 MiB to `audit.log.1`.                                                                      |
 | `daemon.log`   | 0600 | LaunchAgent stdout and stderr. The daemon rotates it at 10 MiB and sets it to 0600 at start (launchd makes it 0644). |
-| `config.json`  | 0600 | Optional. `{"mac_idle_seconds": 10}`.                                                                                |
+| `config.json`  | 0600 | Optional. Holds `mac_idle_seconds` and `claude_usage_file`.                                                          |
 
 - The start line in `daemon.log` prints the server pin. The pin is the public key hash from the QR code, not a secret.
 - `mac_idle_seconds` is the Mac-in-use guard: the daemon refuses an approval if the Mac had input in the last N seconds. 0 turns the guard off. Restart the daemon after a change.
+- `claude_usage_file` defaults to `~/.cache/herdr-slack/claude-usage.json`. Set it to the path the Claude Code status line writes, then restart the daemon.
+- The status line must write a JSON object with `at` (Unix seconds) and `rate_limits`. If the file is missing, the phone shows no Claude Code usage. Keep the file at or below 64 KiB.
 - If `server.key` is lost, the daemon makes a new one. Then every phone must pair again, because the pin changes.
 
 ## Network
