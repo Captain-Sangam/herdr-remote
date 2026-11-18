@@ -158,6 +158,8 @@ class HerdrApi(private val store: Store, pin: String, entry: KeyStore.PrivateKey
 
     suspend fun spaces(): List<Space> = withEndpoint { get(calls, "$it/v1/spaces") }
 
+    suspend fun usage(): UsageResponse = withEndpoint { get(calls, "$it/v1/usage") }
+
     suspend fun agents(): List<Agent> = withEndpoint { get(calls, "$it/v1/agents") }
 
     suspend fun terminal(t: String): Agent = withEndpoint { get(calls, "$it/v1/terminals/$t") }
