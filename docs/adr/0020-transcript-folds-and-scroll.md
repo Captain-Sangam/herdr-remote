@@ -1,6 +1,6 @@
 # ADR 0020: The transcript folds the steps and follows the end
 
-- **Status:** Accepted, 2026-11-10.
+- **Status:** Accepted, 2026-11-10. [ADR 0026](0026-show-agent-text.md) amends the folds: all text shows, and only tool steps fold.
 - **Decision:** 20. It is not in the decision table of the technical design.
 
 ## Context

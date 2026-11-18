@@ -150,6 +150,7 @@ The paths are `~/spaces`, `~/spaces/<space>`, `~/agents`, `~/<space>/<tab>` and 
 - **Question:** use `PaneBox("question", color = working)` and a "? " prefix. Show the question text (not the options) in a `CodeBlock`, then one full-width Plain key for each option, with the option's number as the key hint and its description on a second line. Show Next (`⇥`) after a multi-select, then Reload. A landed answer shows no note: the next screen of the question is the feedback.
 - **View-only prompt:** use the question pane, with the line "» Answer this on the Mac." in the error colour. Show no keys.
 - **Skills:** when the draft starts with "/" and has no space, show `PaneBox("skills")` above the message box. List `/name` for each skill that matches, at most one third of the screen high. A tap puts `/name ` in the draft. The Quiet "/" key beside Send starts the list.
+- **Transcript text:** show every message. Fold each run of tool steps into one "▸ 3 steps · Bash git status" row. In a message, show `# heading` and `**bold**` bold and `` `code` `` in the accent colour, without their marks ([ADR 0026](adr/0026-show-agent-text.md)).
 - **Copy:** a long press on a transcript message selects its text. Each copy is marked sensitive, so Android hides its preview.
 - **Result of an action:** show a `PaneNote` under the header. Use Ok for applied, Warn for sent but not confirmed, uncertain or outcome unknown, and Error for a refusal.
 - **Not connected:** show a `PaneBanner` with the age of the data. Show "○ offline" in the header. Dim the old content to 45%.

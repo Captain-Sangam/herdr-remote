@@ -61,8 +61,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -314,29 +318,52 @@ fun Approval(
     }
 }
 
-/** A transcript list entry: one message, or the steps of a turn in one fold. */
+/** A transcript list entry: one message, or a run of tool steps in one fold. */
 data class Entry(val items: List<TranscriptItem>, val steps: Boolean)
 
 /**
- * Folds a transcript like Claude does: the prompts and each turn's answer show, and the steps
- * between them (tool calls, results and the text between them) go into one fold per turn.
+ * Folds a transcript: every text shows, and each run of tool calls and results between two texts
+ * goes into one fold.
  */
 fun fold(items: List<TranscriptItem>): List<Entry> {
     val out = mutableListOf<Entry>()
-    val turn = mutableListOf<TranscriptItem>()
-    fun flush() {
-        // The answer is the text after the last tool step.
-        val last = turn.indexOfLast { it.kind != "text" }
-        if (last >= 0) out += Entry(turn.subList(0, last + 1).toList(), steps = true)
-        turn.drop(last + 1).forEach { out += Entry(listOf(it), steps = false) }
-        turn.clear()
-    }
-    for (it in items) if (it.kind == "text" && it.role == "user") {
-        flush()
+    var run = mutableListOf<TranscriptItem>()
+    for (it in items) if (it.kind == "text") {
+        if (run.isNotEmpty()) out += Entry(run, steps = true)
+        run = mutableListOf()
         out += Entry(listOf(it), steps = false)
-    } else turn += it
-    flush()
+    } else run += it
+    if (run.isNotEmpty()) out += Entry(run, steps = true)
     return out
+}
+
+private val heading = Regex("^#{1,6} ")
+// A code span opens and closes with the same one or two backticks; three start a fence.
+private val inline = Regex("""\*\*(.+?)\*\*|(?<!`)(`{1,2})(?!`)(.+?)(?<!`)\2(?!`)""")
+
+/**
+ * Light markdown for a message: `# heading` and `**bold**` show bold, `` `code` `` shows in the
+ * [code] colour, and their marks go. The rest (lists, tables, fences) stays as written.
+ */
+fun markdown(text: String, code: Color): AnnotatedString = buildAnnotatedString {
+    text.split('\n').forEachIndexed { i, raw ->
+        if (i > 0) append('\n')
+        val h = heading.find(raw)
+        val line = if (h == null) raw else raw.substring(h.range.last + 1)
+        val start = length
+        var at = 0
+        for (m in inline.findAll(line)) {
+            append(line, at, m.range.first)
+            val (bold, _, mono) = m.destructured
+            if (m.groups[1] != null)
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(bold) }
+            // "`` `x` ``" shows "`x`": the spaces only keep the inner backticks apart.
+            else withStyle(SpanStyle(color = code)) { append(mono.removeSurrounding(" ")) }
+            at = m.range.last + 1
+        }
+        append(line, at, line.length)
+        if (h != null) addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, length)
+    }
 }
 
 @Composable
@@ -614,7 +641,12 @@ fun TranscriptRow(it: TranscriptItem, app: String) {
                 maxLines = 1,
             )
         // A long press selects the text, for Copy.
-        SelectionContainer { Text(it.text, style = Pane.type.label, color = textColor) }
+        SelectionContainer {
+            // Tool steps and terminal text stay as written: their marks are part of the output.
+            if (it.kind == "text" && it.role != "terminal")
+                Text(markdown(it.text, c.accent), style = Pane.type.label, color = textColor)
+            else Text(it.text, style = Pane.type.label, color = textColor)
+        }
     }
 }
 
